@@ -8,7 +8,9 @@
   },
   "files": [
     "src/",
-    "skills/"
+    "skills/",
+    "logo.png",
+    "NOTICE"
   ],
   "scripts": {
     "install:local": "node ./src/cli.js install"
@@ -24,7 +26,7 @@
     "forge"
   ],
   "license": "Apache-2.0",
-  "author": "ronaldjdev",
+  "author": "Ronald J. Echeverry <ronaldjdev@gmail.com> (https://github.com/ronaldjdev)",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ronaldjdev/forge.git"
@@ -36,7 +38,10 @@
   "engines": {
     "node": ">=18"
   },
-  "dependencies": {
-    "@ronaldjdev/forge": "link:"
+  "main": "./src/cli.js",
+  "dependencies": {},
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }
