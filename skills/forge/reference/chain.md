@@ -1,0 +1,66 @@
+# Chain
+
+Gestiona las cadenas de dependencias entre features.
+
+## Cuándo usarlo
+
+- Antes de migrar un feature (para conocer sus dependencias)
+- Cuando se detectan imports directos entre features
+- Para determinar el orden topológico de migración
+- Para diagnosticar acoplamiento excesivo
+
+## Reglas
+
+- Nunca imports directos entre features
+- La comunicación entre features siempre via interfaces inyectadas
+- Un feature puede depender de otro, pero nunca al revés (sin ciclos)
+- Las interfaces compartidas se declaran en el feature que las define
+- Dependencias transitivas se inyectan, no se heredan
+
+## Orden topológico
+
+Migrar features en orden de menor a mayor dependencia:
+
+```
+1. Features sin dependencias
+2. Features que dependen solo de shared/
+3. Features que dependen de features ya migrados
+```
+
+## Cómo inyectar dependencias entre features
+
+### Entre features del mismo proyecto
+
+```
+Feature A (credit)
+├── domain/ICreditRepository.ts  ← define la interfaz
+└── adapters/out/CreditRepository.ts  ← implementa
+
+Feature B (payment)  ← necesita CreditRepository
+├── application/PaymentUseCase.ts
+    └── @inject(ICreditRepository) creditRepo
+```
+
+### Registro en bootstrap
+
+```typescript
+container.registerSingleton<ICreditRepository>(
+  ICreditRepository as symbol,
+  CreditRepository
+);
+```
+
+## Detectar dependencias
+
+```bash
+node .opencode/skills/forge/scripts/dependencies.mjs
+```
+
+Esto produce un grafo JSON con nodos, aristas y orden topológico.
+
+## Buenas prácticas
+
+- Mantener el grafo acíclico
+- Si hay ciclo, extraer la interfaz común a shared/
+- Documentar dependencias en ARCHITECTURE.md
+- Revisar dependencias después de cada migración
