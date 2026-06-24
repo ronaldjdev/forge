@@ -25,14 +25,24 @@ Migra un feature existente.
 
 ### inscribe
 
-Genera ARCHITECTURE.md.
+Genera ARCHITECTURE.md con grafo arquitectónico incluido.
 
 ```
-cat > ARCHITECTURE.md << 'EOF'
-# Architecture
+node .opencode/skills/forge/scripts/architecture.mjs
+```
 
-Project Name: ...
-EOF
+### architecture
+
+Construye el grafo arquitectónico del proyecto.
+
+```
+node .opencode/skills/forge/scripts/graph.mjs
+```
+
+Para salida JSON:
+
+```
+node .opencode/skills/forge/scripts/graph.mjs --json
 ```
 
 ### smelt
@@ -46,13 +56,13 @@ Extrae código reutilizable a shared/.
 Inspecciona la conformidad arquitectónica.
 
 ```
-node .opencode/skills/forge/scripts/audit.mjs
+node .opencode/skills/forge/scripts/inspect.mjs
 ```
 
 Para salida JSON:
 
 ```
-node .opencode/skills/forge/scripts/audit.mjs --json
+node .opencode/skills/forge/scripts/inspect.mjs --json
 ```
 
 ### quench
@@ -68,7 +78,7 @@ node .opencode/skills/forge/scripts/detect.mjs
 Analiza dependencias entre features.
 
 ```
-node .opencode/skills/forge/scripts/dependencies.mjs
+node .opencode/skills/forge/scripts/chain.mjs
 ```
 
 ## Refine

@@ -3,7 +3,7 @@
 import { join, basename } from "path";
 import { buildContext } from "./context.mjs";
 import { detectProfile } from "./profile.mjs";
-import { buildDependencyGraph } from "./dependencies.mjs";
+import { buildDependencyGraph } from "./chain.mjs";
 import { allChecks } from "./detect.mjs";
 
 const ROOT = process.cwd();
@@ -31,6 +31,7 @@ const CAT_NAMES = {
   decorators: "Decoradores",
   legacy: "Legacy",
   config: "Configuración",
+  graph: "Grafo",
 };
 
 const CAT_MAX = {
@@ -39,6 +40,7 @@ const CAT_MAX = {
   decorators: 20,
   legacy: 15,
   config: 10,
+  graph: 20,
 };
 
 function countBySeverity(checks) {
@@ -71,7 +73,7 @@ function buildReport(result) {
   return { total, max: maxTotal, categories: result.categories, violations, recommendations, severityCounts: countBySeverity(violations) };
 }
 
-function printReport(report, ctx, profile, graph) {
+function printReport(report, ctx, profile, graph, archGraph) {
   const barLen = 40;
   const pct = report.max > 0 ? Math.round((report.total / report.max) * 100) : 0;
 
@@ -116,6 +118,15 @@ function printReport(report, ctx, profile, graph) {
       console.log(`   ${GRAY}→ ${edge.source} depende de ${edge.target} (${edge.file})${RESET}`);
     }
   }
+
+  /* Architecture Graph summary */
+  if (archGraph) {
+    const ag = archGraph.stats;
+    console.log(`\n  ${BOLD}Grafo Arquitectónico${RESET}`);
+    console.log(`   Nodos: ${ag.totalNodes} | Edges: ${ag.totalEdges} | Violaciones: ${ag.violations}`);
+    console.log(`   Risk Score: ${ag.riskScore}/100 | Health: ${ag.health}`);
+    if (ag.health === "critical") console.log(`   ${RED}⚠ Salud crítica — se requieren acciones correctivas${RESET}`);
+  }
   console.log();
 
   /* Categories */
@@ -147,8 +158,8 @@ function printReport(report, ctx, profile, graph) {
   console.log("═".repeat(58) + "\n");
 }
 
-function printJson(report, ctx, profile, graph) {
-  console.log(JSON.stringify({ ...report, profile, context: ctx, dependencies: graph }, null, 2));
+function printJson(report, ctx, profile, graph, archGraph) {
+  console.log(JSON.stringify({ ...report, profile, context: ctx, dependencies: graph, architectureGraph: archGraph }, null, 2));
 }
 
 async function main() {
@@ -158,16 +169,17 @@ async function main() {
 
   const ctx = await buildContext();
   const profile = detectProfile(ctx);
-  const graph = buildDependencyGraph();
+  const chainGraph = buildDependencyGraph();
+  const archGraph = ctx.graph;
   const features = ctx.features.migrated;
-  const result = allChecks(features);
+  const result = allChecks(features, archGraph);
 
   const report = buildReport({ categories: result });
 
   if (isJson) {
-    printJson(report, ctx, profile, graph);
+    printJson(report, ctx, profile, chainGraph, archGraph);
   } else {
-    printReport(report, ctx, profile, graph);
+    printReport(report, ctx, profile, chainGraph, archGraph);
   }
 }
 

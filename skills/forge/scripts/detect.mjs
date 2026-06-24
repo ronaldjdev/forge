@@ -2,6 +2,7 @@
 
 import { join, relative, basename } from "path";
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
+import { buildGraph } from "./graph.mjs";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
@@ -611,13 +612,76 @@ export function checkConfig() {
   return { score, checks };
 }
 
-export function allChecks(features) {
+export function checkGraph(graph) {
+  const checks = [];
+  let score = 20; /* base */
+
+  if (!graph || graph.nodes.length === 0) {
+    checks.push({
+      ...severity("Grafo arquitectónico vacío — no hay nodos detectados", SEVERITY.WARNING),
+      pass: false,
+      fix: "Crear src/features/ con al menos un feature",
+    });
+    return { score: 0, checks };
+  }
+
+  checks.push({
+    ...severity(`Grafo arquitectónico: ${graph.stats.totalNodes} nodos, ${graph.stats.totalEdges} edges`, SEVERITY.INFO),
+    pass: true,
+  });
+
+  for (const v of graph.violations) {
+    const sev = v.severity === "CRITICAL" ? SEVERITY.CRITICAL
+      : v.severity === "ERROR" ? SEVERITY.ERROR
+      : SEVERITY.WARNING;
+
+    const penalty = v.severity === "CRITICAL" ? -5
+      : v.severity === "ERROR" ? -3
+      : -1;
+
+    checks.push({
+      severity: sev,
+      label: `[${v.rule}] ${v.description}`,
+      pass: false,
+      detail: `${v.from} → ${v.to}${v.file ? ` (${v.file})` : ""}`,
+      fix: v.rule === "R1" ? "Core no debe importar de features. Mover la lógica a shared."
+        : v.rule === "R2" ? "Domain no puede importar infraestructura. Extraer interfaz y usar adapter."
+        : v.rule === "R3" ? "Feature no accede infraestructura directamente. Crear adapter en el feature."
+        : v.rule === "R4" ? "Feature no importa otro feature directamente. Inyectar interfaz."
+        : v.rule === "R5" ? "Romper el ciclo de dependencias extrayendo interfaz común a shared/."
+        : "Revisar la dirección de la dependencia",
+    });
+    score += penalty;
+  }
+
+  if (graph.stats.hasCycles) {
+    checks.push({
+      ...severity("Ciclo de dependencias detectado entre features", SEVERITY.ERROR),
+      pass: false,
+      fix: "Extraer interfaz compartida a shared/ y romper el ciclo",
+    });
+    score -= 3;
+  }
+
+  if (graph.stats.health === "healthy") {
+    checks.push({
+      ...severity("Grafo arquitectónico saludable — sin violaciones", SEVERITY.INFO),
+      pass: true,
+    });
+  }
+
+  return { score: Math.max(score, 0), checks };
+}
+
+export function allChecks(features, graph) {
+  const g = graph || buildGraph(process.cwd());
   return {
     structure: checkStructure(features),
     layers: checkLayers(features),
     decorators: checkDecorators(features),
     legacy: checkLegacy(),
     config: checkConfig(),
+    graph: checkGraph(g),
   };
 }
 
@@ -629,7 +693,8 @@ async function main() {
   const format = args.includes("--json") ? "json" : "text";
 
   const features = detectFeaturesOnSrc();
-  const results = allChecks(features);
+  const graph = buildGraph(ROOT);
+  const results = allChecks(features, graph);
 
   let all = [];
   for (const [, cat] of Object.entries(results)) {

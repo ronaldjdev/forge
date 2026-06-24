@@ -6,7 +6,8 @@ description: >
   (vertical slices), hexagonal architecture y DDD pragmático. Triggers:
   "arquitectura", "migrar", "refactorizar", "features", "hexagonal",
   "puertos y adaptadores", "clean architecture", "cast", "inspect",
-  "quench", "chain". Excluye infraestructura (Docker, CI/CD),
+  "quench", "chain", "grafo", "graph", "nodo", "architecture graph",
+  "violaciones". Excluye infraestructura (Docker, CI/CD),
   optimización de queries y cambios de lógica de negocio sin reestructuración.
 ---
 
@@ -38,20 +39,22 @@ Ver `reference/principles.md` para el manifiesto completo y los 10 principios in
 ANTES de cualquier acción, Forge DEBE ejecutar esta secuencia. Si no lo haces, puedes dar respuestas incorrectas:
 
 1. Leer `ARCHITECTURE.md` desde la raíz del proyecto si existe (contexto persistente)
-2. Ejecutar `node .opencode/skills/forge/scripts/context.mjs` → detectar stack, features, estado
+2. Ejecutar `node .opencode/skills/forge/scripts/context.mjs` → detectar stack, features, grafo, estado
 3. Ejecutar `node .opencode/skills/forge/scripts/profile.mjs` → determinar perfil tecnológico
 4. Si NO existe `ARCHITECTURE.md`, preguntar al usuario si desea crearlo con `forge`
 5. Si el proyecto no tiene `src/features/`, detectar features legacy con `scripts/detect.mjs`
-6. Ejecutar `node .opencode/skills/forge/scripts/dependencies.mjs` → grafo de dependencias
-7. Guardar todo en `ctx` (variable de contexto local para esta conversación)
-8. Determinar qué comandos están disponibles según el estado del proyecto
-9. Recién ahora procesar el comando del usuario o preguntar
+6. Ejecutar `node .opencode/skills/forge/scripts/graph.mjs` → grafo arquitectónico completo
+7. Ejecutar `node .opencode/skills/forge/scripts/chain.mjs` → cadena de dependencias entre features
+8. Guardar todo en `ctx` (variable de contexto local para esta conversación)
+9. Determinar qué comandos están disponibles según el estado del proyecto
+10. Recién ahora procesar el comando del usuario o preguntar
 
 ```bash
 # Template de setup que debes ejecutar:
 ctx=$(node .opencode/skills/forge/scripts/context.mjs --json 2>/dev/null)
 profile=$(node .opencode/skills/forge/scripts/profile.mjs 2>/dev/null)
-deps=$(node .opencode/skills/forge/scripts/dependencies.mjs 2>/dev/null)
+graph=$(node .opencode/skills/forge/scripts/graph.mjs --json 2>/dev/null)
+deps=$(node .opencode/skills/forge/scripts/chain.mjs 2>/dev/null)
 ```
 
 ---
@@ -69,6 +72,7 @@ deps=$(node .opencode/skills/forge/scripts/dependencies.mjs 2>/dev/null)
 | "templar", "endurecer", "mejorar" | `temper` | `reference/temper.md` |
 | "cadena", "grafo", "acoplamiento" | `chain` | `reference/chain.md` |
 | "inscribir", "grabar", "ARCHITECTURE.md" | `inscribe` | `reference/inscribe.md` |
+| "grafo", "graph", "nodo", "violaciones", "risk score" | `graph` | `scripts/graph.mjs` |
 | "fundir", "compartir", "mover a shared" | `smelt` | `reference/smelt.md` |
 
 ---
@@ -127,6 +131,6 @@ El agente DEBE leer este archivo al inicio de cada interacción y actualizarlo a
 |---|---|
 | `reference/principles.md` | Manifiesto y 10 principios inquebrantables |
 | `profiles/` | Perfiles tecnológicos detallados (Express, Fastify, NestJS, etc.) |
-| `scripts/` | Scripts de análisis: context, architecture, audit, detect, dependencies, profile |
+| `scripts/` | Scripts de análisis: context, detect, inspect, chain, profile, graph, architecture |
 | `templates/feature/` | Templates de código (.ts.md) para entidades, use cases, controllers, etc. |
 | `command/forge.md` | Definición del comando `/forge` para opencode |

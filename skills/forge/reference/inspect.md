@@ -13,7 +13,7 @@ Inspecciona la conformidad arquitectónica del proyecto.
 
 1. Ejecutar `scripts/context.mjs` → detectar stack y estructura
 2. Ejecutar `scripts/profile.mjs` → determinar perfil activo
-3. Ejecutar `scripts/dependencies.mjs` → construir grafo de dependencias
+3. Ejecutar `scripts/chain.mjs` → construir cadena de dependencias
 4. Ejecutar `scripts/detect.mjs` → detectar todas las violaciones
 5. Construir reporte con puntuación y severidades
 6. Mostrar resultado al usuario
@@ -27,6 +27,7 @@ Inspecciona la conformidad arquitectónica del proyecto.
 | Decoradores | 20 | @injectable y @inject presentes donde corresponde |
 | Legacy | 15 | Archivos residuales en ubicaciones antiguas |
 | Configuración | 10 | tsconfig, dependencias, reflect-metadata |
+| Grafo | 20 | Violaciones arquitectónicas (R1-R6), risk score, salud del grafo |
 
 ## Severidades
 
@@ -51,7 +52,7 @@ Inspecciona la conformidad arquitectónica del proyecto.
 ## Ejecución
 
 ```bash
-node .opencode/skills/forge/scripts/audit.mjs
-node .opencode/skills/forge/scripts/audit.mjs --json
+node .opencode/skills/forge/scripts/inspect.mjs
+node .opencode/skills/forge/scripts/inspect.mjs --json
 node .opencode/skills/forge/scripts/detect.mjs --severity ERROR
 ```

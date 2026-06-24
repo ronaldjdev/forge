@@ -35,5 +35,8 @@
   "homepage": "https://github.com/ronaldjdev/forge#readme",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "@ronaldjdev/forge": "link:"
   }
 }

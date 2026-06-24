@@ -53,10 +53,17 @@ container.registerSingleton<ICreditRepository>(
 ## Detectar dependencias
 
 ```bash
-node .opencode/skills/forge/scripts/dependencies.mjs
+# Grafo de dependencias entre features (API legacy)
+node .opencode/skills/forge/scripts/chain.mjs
+
+# Grafo arquitectónico completo (nodos, edges, violaciones)
+node .opencode/skills/forge/scripts/graph.mjs
+
+# ARCHITECTURE.md con grafo incluido
+node .opencode/skills/forge/scripts/architecture.mjs
 ```
 
-Esto produce un grafo JSON con nodos, aristas y orden topológico.
+`chain.mjs` ahora es un wrapper sobre `graph.mjs`. Produce el mismo formato de salida para compatibilidad (nodos, edges, features, orden topológico). El nuevo `graph.mjs` amplía el análisis a todos los tipos de nodo (core, feature, domain, infra, adapter) y detecta violaciones de reglas arquitectónicas (R1-R6).
 
 ## Buenas prácticas
 

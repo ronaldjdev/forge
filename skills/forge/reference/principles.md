@@ -23,3 +23,5 @@
 9. **Inyección de dependencias disciplinada** — La inyección de dependencias es por constructor, sin service locators ni singletons globales. Si el proyecto es pequeño, DI manual basta. Si crece, usar el sistema de DI del framework o un contenedor externo. Nunca `container.resolve()` dentro de lógica de negocio.
 
 10. **Escalabilidad horizontal de features** — Agregar un nuevo feature NUNCA implica modificar un feature existente. Nuevo dominio = nuevo directorio `features/<name>/`, nuevos casos de uso, nuevos adapters. El acoplamiento entre features solo ocurre mediante inyección de interfaces, nunca con imports directos entre features.
+
+11. **El sistema es un grafo arquitectónico vivo** — Todo componente es un nodo tipado (core, feature, domain, infra, adapter). Toda relación es un edge validado. Las violaciones son edges prohibidos. El grafo es la fuente de verdad del sistema y se regenera en cada auditoría. Riesgo y salud se derivan del grafo, no de opiniones.

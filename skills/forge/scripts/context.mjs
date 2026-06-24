@@ -2,6 +2,7 @@
 
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
 import { join, basename } from "path";
+import { buildGraph } from "./graph.mjs";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
@@ -142,6 +143,8 @@ export async function buildContext(projectRoot = ROOT) {
 
   const migratedFeatures = detectFeatures();
   const legacyFeatures = detectLegacyFeatures();
+  const graph = buildGraph(root);
+
   const hasFeatures = migratedFeatures.length > 0;
   const hasLegacy = legacyFeatures.length > 0;
 
@@ -167,6 +170,7 @@ export async function buildContext(projectRoot = ROOT) {
     isFullyMigrated: hasFeatures && !hasLegacy,
     isLegacy: hasLegacy && !hasFeatures,
     isGreenfield: !hasLegacy && !hasFeatures && isDir(src),
+    graph,
     dependencies: {},
   };
 }

@@ -10,7 +10,7 @@ Migra un feature existente de la arquitectura legacy a la nueva estructura basad
 ## Flujo general
 
 1. Identificar features legacy con `scripts/context.mjs`
-2. Determinar orden topológico con `scripts/dependencies.mjs`
+2. Determinar orden topológico con `scripts/chain.mjs`
 3. Migrar feature por feature en ese orden
 4. Después de cada feature, ejecutar `forge quench`
 

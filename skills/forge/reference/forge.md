@@ -10,12 +10,13 @@ Inicializa un proyecto para trabajar con Forge.
 
 ## Flujo
 
-1. Ejecutar `scripts/context.mjs` para detectar stack actual
+1. Ejecutar `scripts/context.mjs` para detectar stack actual (incluye grafo arquitectónico)
 2. Ejecutar `scripts/profile.mjs` para determinar perfil tecnológico
-3. Si `ARCHITECTURE.md` no existe, crearlo con `forge inscribe`
-4. Si faltan dependencias clave (según perfil), listarlas
-5. Si el proyecto tiene código legacy, sugerir `forge relocate`
-6. Si el proyecto está limpio, sugerir `forge cast`
+3. Ejecutar `scripts/graph.mjs` para construir grafo arquitectónico
+4. Si `ARCHITECTURE.md` no existe, crearlo con `forge inscribe` (incluye sección de grafo)
+5. Si faltan dependencias clave (según perfil), listarlas
+6. Si el proyecto tiene código legacy, sugerir `forge relocate`
+7. Si el proyecto está limpio, sugerir `forge cast`
 
 ## Output esperado
 

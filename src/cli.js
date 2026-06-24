@@ -42,6 +42,12 @@ function copyRecursive(src, dest) {
   }
 }
 
+function detectPM(configDir) {
+  if (existsSync(join(configDir, "pnpm-lock.yaml")) || existsSync(join(process.cwd(), "pnpm-lock.yaml"))) return "pnpm";
+  if (existsSync(join(configDir, "bun.lock")) || existsSync(join(configDir, "bun.lockb"))) return "bun";
+  return "npm";
+}
+
 function ensureDependencies(configDir) {
   const pkgPath = join(configDir, "package.json");
   let pkg = {};
@@ -58,17 +64,59 @@ function ensureDependencies(configDir) {
     writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
     console.log(`  ✓ Actualizado ${relative(process.cwd(), pkgPath)}`);
   }
-  try {
-    execSync("npm install", { cwd: configDir, stdio: "pipe" });
-    console.log("  ✓ Dependencias instaladas");
-  } catch {
-    try {
-      execSync("bun install", { cwd: configDir, stdio: "pipe" });
-      console.log("  ✓ Dependencias instaladas (bun)");
-    } catch {
-      console.warn("  ⚠ No se pudieron instalar dependencias. Ejecuta 'npm install' manualmente en " + configDir);
-    }
+
+  const pm = detectPM(configDir);
+  const order = { pnpm: ["npm", "bun"], npm: ["bun", "pnpm"], bun: ["npm", "pnpm"] };
+
+  function runPM(bin) {
+    execSync(`${bin} install`, { cwd: configDir, stdio: "pipe" });
   }
+
+  try {
+    runPM(pm);
+    console.log(`  ✓ Dependencias instaladas (${pm})`);
+  } catch {
+    for (const fallback of order[pm]) {
+      try {
+        runPM(fallback);
+        console.log(`  ✓ Dependencias instaladas (${fallback})`);
+        return;
+      } catch {}
+    }
+    console.warn("  ⚠ No se pudieron instalar dependencias. Ejecuta 'pnpm install' | 'npm install' manualmente en " + configDir);
+  }
+}
+
+const COMMANDS = [
+  { name: "forge-forge",   desc: "Forge — inicializar proyecto arquitectónicamente" },
+  { name: "forge-cast",    desc: "Cast — crear un nuevo feature hexagonal desde cero" },
+  { name: "forge-inspect", desc: "Inspect — inspeccionar la conformidad arquitectónica" },
+  { name: "forge-relocate",desc: "Relocate — migrar feature legacy a la nueva estructura" },
+  { name: "forge-reforge", desc: "Reforge — refactorizar la arquitectura de un feature" },
+  { name: "forge-quench",  desc: "Quench — verificar reglas arquitectónicas del proyecto" },
+  { name: "forge-temper",  desc: "Temper — endurecer la arquitectura (DI, seguridad)" },
+  { name: "forge-chain",   desc: "Chain — analizar cadena de dependencias entre features" },
+  { name: "forge-inscribe",desc: "Inscribe — generar y mantener ARCHITECTURE.md" },
+  { name: "forge-smelt",   desc: "Smelt — extraer código reutilizable a shared/" },
+];
+
+function generateCommands(configDir) {
+  const cmdsDir = join(configDir, "commands");
+  mkdirSync(cmdsDir, { recursive: true });
+  for (const cmd of COMMANDS) {
+    const sub = cmd.name.replace("forge-", "");
+    const content = [
+      "---",
+      `description: ${cmd.desc}`,
+      "agent: build",
+      "---",
+      "",
+      `Ejecuta el subcomando ${sub} de Forge con los argumentos: $ARGUMENTS`,
+      "",
+    ].join("\n");
+    writeFileSync(join(cmdsDir, `${cmd.name}.md`), content);
+  }
+  console.log(`  ✓ Comandos /forge-* generados en .opencode/commands/`);
 }
 
 function printHelp() {
@@ -101,6 +149,7 @@ function install(global) {
 
   copyRecursive(SKILL_SRC, target);
   console.log(`  ✓ Skill copiada a ${relative(process.cwd(), target)}`);
+  generateCommands(configDir);
   ensureDependencies(configDir);
   console.log(`\n  ✓ Forge instalado correctamente`);
   console.log(`  ${"=".repeat(40)}\n`);

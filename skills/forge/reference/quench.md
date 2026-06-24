@@ -11,16 +11,29 @@ Valida que el proyecto cumpla las reglas arquitectónicas.
 
 ## Reglas críticas
 
-| Regla | Severidad | Descripción |
-|---|---|---|
-| Domain no importa infraestructura | CRITICAL | Domain no puede importar adapters, setting ni infraestructura |
-| Application no importa adapters | ERROR | Application solo importa de domain y shared |
-| Sin container.resolve() en use cases | ERROR | El contenedor solo se usa en bootstrap |
-| Sin lógica de negocio en controllers | ERROR | Controllers solo parsean, delegan y responden |
-| Sin BD directa fuera de repositorios | ERROR | Repositories son la única puerta a datos |
-| Sin imports directos entre features | WARNING | Comunicación via interfaces inyectadas |
-| DI consistente dentro del feature | WARNING | No mezclar manual + contenedor en el mismo feature |
-| Tests pasando | ERROR | Tests deben pasar después de cualquier cambio |
+| Regla | Código | Severidad | Descripción |
+|---|---|---|---|
+| Domain no importa infraestructura | — | CRITICAL | Domain no puede importar adapters, setting ni infraestructura |
+| Application no importa adapters | — | ERROR | Application solo importa de domain y shared |
+| Sin container.resolve() en use cases | — | ERROR | El contenedor solo se usa en bootstrap |
+| Sin lógica de negocio en controllers | — | ERROR | Controllers solo parsean, delegan y responden |
+| Sin BD directa fuera de repositorios | — | ERROR | Repositories son la única puerta a datos |
+| Sin imports directos entre features | — | WARNING | Comunicación via interfaces inyectadas |
+| DI consistente dentro del feature | — | WARNING | No mezclar manual + contenedor en el mismo feature |
+| Tests pasando | — | ERROR | Tests deben pasar después de cualquier cambio |
+
+## Reglas del grafo arquitectónico
+
+| Código | Regla | Severidad | Descripción |
+|---|---|---|---|
+| R1 | core → feature | CRITICAL | Core nunca debe depender de features |
+| R2 | domain → infra | CRITICAL | Domain no puede importar infraestructura |
+| R3 | feature → infra (directo) | CRITICAL | Features no acceden infraestructura sin adapter |
+| R4 | feature → feature (directo) | ERROR | Features no se importan directamente entre sí |
+| R5 | Ciclo de dependencias | ERROR | Ciclo detectado en el grafo de features |
+| R6 | infra → domain/feature | WARNING | Infraestructura no debe importar dominio interno |
+
+El grafo se construye automáticamente con `scripts/graph.mjs` y las violaciones se incluyen en `scripts/detect.mjs` (categoría `graph`).
 
 ## Checklist pre-migración
 
