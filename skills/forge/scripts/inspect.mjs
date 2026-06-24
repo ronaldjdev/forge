@@ -2,7 +2,7 @@
 
 import { join, basename } from "path";
 import { buildContext } from "./context.mjs";
-import { detectProfile } from "./profile.mjs";
+import { detectProfile, detectProfileExtended } from "./profile.mjs";
 import { buildDependencyGraph } from "./chain.mjs";
 import { allChecks } from "./detect.mjs";
 
@@ -28,18 +28,18 @@ const SEVERITY_COLORS = {
 const CAT_NAMES = {
   structure: "Estructura",
   layers: "Capas",
-  decorators: "Decoradores",
-  legacy: "Legacy",
-  config: "Configuración",
+  ownership: "Ownership",
+  platform: "Platform",
+  dependencies: "Dependencias",
   graph: "Grafo",
 };
 
 const CAT_MAX = {
-  structure: 30,
-  layers: 25,
-  decorators: 20,
-  legacy: 15,
-  config: 10,
+  structure: 20,
+  layers: 20,
+  ownership: 20,
+  platform: 15,
+  dependencies: 15,
   graph: 20,
 };
 
@@ -111,6 +111,9 @@ function printReport(report, ctx, profile, graph, archGraph) {
   console.log(`  ${BOLD}Contexto del proyecto${RESET}`);
   console.log(`   Features migrados: ${ctx.features.migrated.length}`);
   console.log(`   Features legacy:   ${ctx.features.legacy.length}`);
+  console.log(`   Platform:          ${ctx.platform.exists ? ctx.platform.components.join(", ") : "(no detectado)"}`);
+  console.log(`   Shared:            ${ctx.shared.exists ? ctx.shared.components.join(", ") : "(no detectado)"}`);
+  console.log(`   Infra:             ${ctx.infra.exists ? ctx.infra.components.join(", ") : "(no detectado)"}`);
   console.log(`   Dependencias:      ${graph.edges.length} edges entre ${graph.nodes.length} features`);
   if (graph.hasCycles) console.log(`   ${RED}Ciclos detectados en el grafo de dependencias${RESET}`);
   if (graph.edges.length > 0) {
@@ -125,6 +128,10 @@ function printReport(report, ctx, profile, graph, archGraph) {
     console.log(`\n  ${BOLD}Grafo Arquitectónico${RESET}`);
     console.log(`   Nodos: ${ag.totalNodes} | Edges: ${ag.totalEdges} | Violaciones: ${ag.violations}`);
     console.log(`   Risk Score: ${ag.riskScore}/100 | Health: ${ag.health}`);
+    console.log(`   Dependency Health: ${ag.dependencyHealth}%`);
+    if (ag.layers) {
+      console.log(`   Capas: Platform=${ag.layers.platform}, Feature=${ag.layers.feature}, Shared=${ag.layers.shared}, Infra=${ag.layers.infra}`);
+    }
     if (ag.health === "critical") console.log(`   ${RED}⚠ Salud crítica — se requieren acciones correctivas${RESET}`);
   }
   console.log();
@@ -172,7 +179,7 @@ async function main() {
   const chainGraph = buildDependencyGraph();
   const archGraph = ctx.graph;
   const features = ctx.features.migrated;
-  const result = allChecks(features, archGraph);
+  const result = allChecks(features, archGraph, ctx);
 
   const report = buildReport({ categories: result });
 

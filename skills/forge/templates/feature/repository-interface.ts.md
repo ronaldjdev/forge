@@ -1,5 +1,5 @@
 ```typescript
-// src/features/<domain>/domain/I<Domain>Repository.ts
+// src/features/<domain>/domain/I<Domain>.repository.ts
 import type { <Domain> } from "./<Domain>.entity.js";
 
 export interface I<Domain>Repository {

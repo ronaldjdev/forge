@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 
-import { join, relative, dirname } from "path";
+import { join, relative, dirname, basename } from "path";
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
-const FEATURES_DIR = join(SRC, "features");
 
 const IMPORT_RE = /import\s+(?:type\s+)?(?:\{[^}]*\}|[^;{]+)\s+from\s+['"]([^'"]+)['"]/g;
 
@@ -18,6 +17,7 @@ const INFRA_PACKAGES = {
   "redis": "infra:redis",
   "amqplib": "infra:rabbitmq",
   "kafka": "infra:kafka",
+  "kafkajs": "infra:kafka",
   "@nestjs/core": "infra:nestjs",
   "express": "infra:express",
   "fastify": "infra:fastify",
@@ -25,6 +25,10 @@ const INFRA_PACKAGES = {
   "drizzle-orm": "infra:drizzle",
   "aws-sdk": "infra:aws",
   "@aws-sdk/client-s3": "infra:aws",
+  "nodemailer": "infra:mail",
+  "stripe": "infra:stripe",
+  "bullmq": "infra:queue",
+  "ioredis": "infra:redis",
 };
 
 const SEVERITY = { CRITICAL: "CRITICAL", ERROR: "ERROR", WARNING: "WARNING" };
@@ -79,16 +83,17 @@ function parseImports(content) {
 
 function classifyPath(relPath) {
   const parts = relPath.split("/");
-  if (parts.includes("domain")) return "domain";
-  if (parts.includes("adapters")) return "adapter";
+  if (parts.includes("platform")) return "platform";
   if (parts.includes("features")) {
+    if (parts.includes("domain")) return "domain";
+    if (parts.includes("adapters")) return "adapter";
     if (parts.includes("application")) return "application";
     return "feature";
   }
-  if (parts.includes("core")) return "core";
-  if (parts.includes("shared")) return "core";
-  if (parts.includes("lib")) return "core";
-  if (parts.includes("infrastructure")) return "infra";
+  if (parts.includes("shared") || parts.includes("core")) return "shared";
+  if (parts.includes("infra") || parts.includes("infrastructure")) return "infra";
+  if (parts.includes("adapters")) return "adapter";
+  if (parts.includes("lib")) return "shared";
   return null;
 }
 
@@ -103,15 +108,34 @@ function resolveNodeId(importPath, featureMap) {
     }
   }
 
+  const platformMatch = importPath.match(/platform\/([^/]+)/);
+  if (platformMatch) {
+    const comp = platformMatch[1].replace(/\.(ts|js)$/, "");
+    return `platform:${comp}`;
+  }
+
+  const sharedMatch = importPath.match(/shared\/([^/]+)/);
+  if (sharedMatch) {
+    const comp = sharedMatch[1].replace(/\.(ts|js)$/, "");
+    return `shared:${comp}`;
+  }
+
+  const infraMatch = importPath.match(/infra(?:structure)?\/([^/]+)/);
+  if (infraMatch) {
+    const comp = infraMatch[1].replace(/\.(ts|js)$/, "");
+    return `infra:${comp}`;
+  }
+
   for (const [pkg, id] of Object.entries(INFRA_PACKAGES)) {
     if (importPath === pkg || importPath.startsWith(pkg + "/")) return id;
   }
 
   if (importPath.includes("/infrastructure/")) return "infra:infrastructure";
+  if (importPath.includes("/infra/")) return "infra:infrastructure";
 
-  if (importPath.includes("/core/") || importPath.startsWith("@/core") || importPath.startsWith("../core")) return "core:shared";
-  if (importPath.includes("/shared/") || importPath.startsWith("@/shared")) return "core:shared";
-  if (importPath.includes("/lib/")) return "core:shared";
+  if (importPath.includes("/core/") || importPath.startsWith("@/core")) return "shared:core";
+  if (importPath.includes("/shared/") || importPath.startsWith("@/shared")) return "shared:shared";
+  if (importPath.includes("/lib/")) return "shared:lib";
 
   if (importPath.includes("/adapters/")) return "adapter:global";
 
@@ -133,6 +157,9 @@ function extractNodeType(nodeId) {
 export function buildGraph(projectRoot = ROOT) {
   const src = join(projectRoot, "src");
   const featuresDir = join(src, "features");
+  const platformDir = join(src, "platform");
+  const sharedDir = join(src, "shared");
+  const infraDirs = [join(src, "infra"), join(src, "infrastructure")];
 
   const nodes = [];
   const edges = [];
@@ -156,7 +183,20 @@ export function buildGraph(projectRoot = ROOT) {
     }
   }
 
-  /* ── 1. Feature nodes ── */
+  /* ── 1. Platform Layer nodes ── */
+  if (isDir(platformDir)) {
+    for (const sub of listDir(platformDir)) {
+      const full = join(platformDir, sub);
+      if (isDir(full)) {
+        addNode(`platform:${sub}`, "platform", sub, `src/platform/${sub}/`);
+      } else if (sub.endsWith(".ts") || sub.endsWith(".js")) {
+        const name = sub.replace(/\.(ts|js)$/, "");
+        addNode(`platform:${name}`, "platform", name, `src/platform/${sub}`);
+      }
+    }
+  }
+
+  /* ── 2. Feature Layer nodes ── */
   const features = isDir(featuresDir)
     ? listDir(featuresDir).filter(f => isDir(join(featuresDir, f)))
     : [];
@@ -177,31 +217,52 @@ export function buildGraph(projectRoot = ROOT) {
     }
   }
 
-  /* ── 2. Core nodes ── */
-  for (const dir of ["core", "shared", "lib"]) {
+  /* ── 3. Shared Layer nodes ── */
+  if (isDir(sharedDir)) {
+    for (const sub of listDir(sharedDir)) {
+      const full = join(sharedDir, sub);
+      if (isDir(full)) {
+        addNode(`shared:${sub}`, "shared", sub, `src/shared/${sub}/`);
+      } else if (sub.endsWith(".ts") || sub.endsWith(".js")) {
+        const name = sub.replace(/\.(ts|js)$/, "");
+        addNode(`shared:${name}`, "shared", name, `src/shared/${sub}`);
+      }
+    }
+  }
+  /* Also detect core and lib as shared */
+  for (const dir of ["core", "lib"]) {
     const fullPath = join(src, dir);
     if (isDir(fullPath)) {
-      addNode(`core:${dir}`, "core", dir, `src/${dir}/`);
+      addNode(`shared:${dir}`, "shared", dir, `src/${dir}/`);
     }
   }
 
-  /* ── 3. Infra directory node ── */
-  const infraPath = join(src, "infrastructure");
-  if (isDir(infraPath)) {
-    addNode("infra:infrastructure", "infra", "infrastructure", "src/infrastructure/");
+  /* ── 4. Infra Layer nodes ── */
+  for (const infraDir of infraDirs) {
+    if (isDir(infraDir)) {
+      for (const sub of listDir(infraDir)) {
+        const full = join(infraDir, sub);
+        if (isDir(full)) {
+          addNode(`infra:${sub}`, "infra", sub, `src/${basename(infraDir)}/${sub}/`);
+        } else if (sub.endsWith(".ts") || sub.endsWith(".js")) {
+          const name = sub.replace(/\.(ts|js)$/, "");
+          addNode(`infra:${name}`, "infra", name, `src/${basename(infraDir)}/${sub}`);
+        }
+      }
+    }
   }
 
-  /* ── 4. Global adapters node ── */
+  /* ── 5. Global adapters node ── */
   const globalAdapters = join(src, "adapters");
   if (isDir(globalAdapters)) {
     addNode("adapter:global", "adapter", "adapters (global)", "src/adapters/");
   }
 
-  /* ── 5. Scan files and build edges ── */
+  /* ── 6. Scan files and build edges ── */
   const allFiles = findFiles(src, [".ts", ".js", ".tsx", ".jsx"], 8);
   const fileContents = allFiles.map(f => ({ file: f, content: read(f) })).filter(x => x.content);
 
-  /* 5a. Detect used infra packages first */
+  /* 6a. Detect used infra packages first */
   const usedPackages = new Set();
   for (const { content } of fileContents) {
     const imports = parseImports(content);
@@ -216,7 +277,7 @@ export function buildGraph(projectRoot = ROOT) {
     addNode(pkgId, "infra", label, `(package) ${label}`);
   }
 
-  /* 5b. Parse imports and create edges */
+  /* 6b. Parse imports and create edges */
   for (const { file: filePath, content } of fileContents) {
     const relPath = relative(projectRoot, filePath);
     const sourceType = classifyPath(relPath);
@@ -230,11 +291,30 @@ export function buildGraph(projectRoot = ROOT) {
       if (!featureMap[featName]) continue;
       if (sourceType === "domain") sourceId = `domain:${featName}`;
       else if (sourceType === "adapter") sourceId = `adapter:${featName}`;
+      else if (sourceType === "application") sourceId = `feature:${featName}`;
       else sourceId = `feature:${featName}`;
-    } else if (sourceType === "core") {
-      sourceId = "core:shared";
+    } else if (sourceType === "platform") {
+      const platformComp = relPath.match(/platform\/([^/]+)/);
+      if (platformComp) {
+        const comp = platformComp[1].replace(/\.(ts|js)$/, "");
+        sourceId = `platform:${comp}`;
+      }
+    } else if (sourceType === "shared") {
+      const sharedComp = relPath.match(/(?:shared|core|lib)\/([^/]+)/);
+      if (sharedComp) {
+        const comp = sharedComp[1].replace(/\.(ts|js)$/, "");
+        sourceId = `shared:${comp}`;
+      } else {
+        sourceId = "shared:shared";
+      }
     } else if (sourceType === "infra") {
-      sourceId = "infra:infrastructure";
+      const infraComp = relPath.match(/(?:infra|infrastructure)\/([^/]+)/);
+      if (infraComp) {
+        const comp = infraComp[1].replace(/\.(ts|js)$/, "");
+        sourceId = `infra:${comp}`;
+      } else {
+        sourceId = "infra:infrastructure";
+      }
     } else if (sourceType === "adapter") {
       sourceId = "adapter:global";
     }
@@ -264,13 +344,14 @@ export function buildGraph(projectRoot = ROOT) {
       if (fromType === "adapter" && toType === "domain") edgeType = "implements";
       else if (fromType === "adapter" && toType === "infra") edgeType = "adapts_to";
       else if (toType === "feature") edgeType = "depends_on";
-      else if (fromType === "domain" && toType !== "domain" && toType !== "core") edgeType = "violates";
+      else if (toType === "platform") edgeType = "depends_on";
+      else if (fromType === "domain" && toType !== "domain" && toType !== "shared") edgeType = "violates";
 
       addEdge(sourceId, targetId, edgeType, relPath, imp);
     }
   }
 
-  /* ── 6. Validate architecture rules ── */
+  /* ── 7. Validate architecture rules ── */
 
   function addViolation(from, to, severity, rule, description, file) {
     violations.push({
@@ -288,79 +369,103 @@ export function buildGraph(projectRoot = ROOT) {
     const fromType = extractNodeType(edge.from);
     const toType = extractNodeType(edge.to);
 
-    if (fromType === "core" && toType === "feature") {
-      addViolation(edge.from, edge.to, SEVERITY.CRITICAL, "R1",
-        "Core nunca debe depender de features", edge.file);
-      edge.type = "violates";
-    }
-
-    if (fromType === "domain" && toType === "infra") {
-      addViolation(edge.from, edge.to, SEVERITY.CRITICAL, "R2",
-        "Domain no puede importar infraestructura directamente", edge.file);
-      edge.type = "violates";
-    }
-
+    /* R1: feature → infra = CRITICAL */
     if (fromType === "feature" && toType === "infra") {
-      addViolation(edge.from, edge.to, SEVERITY.CRITICAL, "R3",
+      addViolation(edge.from, edge.to, SEVERITY.CRITICAL, "R1",
         "Features no acceden infraestructura directamente (deben usar adapter)", edge.file);
       edge.type = "violates";
     }
 
+    /* R2: platform → feature = CRITICAL */
+    if (fromType === "platform" && toType === "feature") {
+      addViolation(edge.from, edge.to, SEVERITY.CRITICAL, "R2",
+        "Platform no debe depender de features (el backbone es independiente del negocio)", edge.file);
+      edge.type = "violates";
+    }
+
+    /* R3: shared → feature = ERROR */
+    if (fromType === "shared" && toType === "feature") {
+      addViolation(edge.from, edge.to, SEVERITY.ERROR, "R3",
+        "Shared no debe importar de features (shared debe ser puro)", edge.file);
+      edge.type = "violates";
+    }
+
+    /* R4: shared → infra = ERROR */
+    if (fromType === "shared" && toType === "infra") {
+      addViolation(edge.from, edge.to, SEVERITY.ERROR, "R4",
+        "Shared no debe importar infraestructura (shared debe ser agnóstico)", edge.file);
+      edge.type = "violates";
+    }
+
+    /* R5: domain → infra = CRITICAL */
+    if (fromType === "domain" && toType === "infra") {
+      addViolation(edge.from, edge.to, SEVERITY.CRITICAL, "R5",
+        "Domain no puede importar infraestructura directamente", edge.file);
+      edge.type = "violates";
+    }
+
+    /* R6: domain → platform = CRITICAL */
+    if (fromType === "domain" && toType === "platform") {
+      addViolation(edge.from, edge.to, SEVERITY.CRITICAL, "R6",
+        "Domain no puede importar platform directamente (debe ser puro)", edge.file);
+      edge.type = "violates";
+    }
+
+    /* R7: infra → feature = WARNING */
+    if (fromType === "infra" && toType === "feature") {
+      addViolation(edge.from, edge.to, SEVERITY.WARNING, "R7",
+        "Infraestructura no debería importar features directamente", edge.file);
+      edge.type = "violates";
+    }
+
+    /* R8: Cross-feature direct imports */
     const fromFeatMatch = edge.from.match(/^(?:feature|domain|adapter):(.+)$/);
     const toFeatMatch = edge.to.match(/^(?:feature|domain|adapter):(.+)$/);
     if (fromFeatMatch && toFeatMatch && fromFeatMatch[1] !== toFeatMatch[1]) {
-      addViolation(edge.from, edge.to, SEVERITY.ERROR, "R4",
+      addViolation(edge.from, edge.to, SEVERITY.ERROR, "R8",
         "Features no deben importar código de otro feature directamente (usar interfaces inyectadas)", edge.file);
       edge.type = "violates";
     }
+  }
 
-    if (fromType === "infra" && (toType === "domain" || toType === "feature")) {
-      addViolation(edge.from, edge.to, SEVERITY.WARNING, "R6",
-        "Infraestructura no debería importar dominio interno del feature", edge.file);
-      edge.type = "violates";
+  /* R9: Cycle detection across all layers */
+  const allEdges = edges.filter(e => e.type !== "violates");
+  const directedEdges = {};
+  const allNodeIds = [...new Set(allEdges.flatMap(e => [e.from, e.to]))];
+  for (const nid of allNodeIds) directedEdges[nid] = [];
+  for (const e of allEdges) {
+    if (directedEdges[e.from]) directedEdges[e.from].push(e.to);
+  }
+
+  let hasCycle = false;
+  function dfs(node, visited, stack) {
+    if (stack.has(node)) return true;
+    if (visited.has(node)) return false;
+    visited.add(node);
+    stack.add(node);
+    for (const nb of directedEdges[node] || []) {
+      if (dfs(nb, visited, stack)) return true;
+    }
+    stack.delete(node);
+    return false;
+  }
+
+  const visited = new Set();
+  for (const n of allNodeIds) {
+    if (hasCycle) break;
+    if (!visited.has(n)) {
+      if (dfs(n, visited, new Set())) {
+        hasCycle = true;
+      }
     }
   }
 
-  /* R5: Cycle detection between features */
-  const featEdges = edges.filter(e =>
-    e.from.startsWith("feature:") && e.to.startsWith("feature:")
-  );
-  if (featEdges.length > 0) {
-    const featAdj = {};
-    const allFeatIds = [...new Set(featEdges.flatMap(e => [e.from, e.to]))];
-    for (const fid of allFeatIds) featAdj[fid] = [];
-    for (const e of featEdges) featAdj[e.from].push(e.to);
-
-    let hasCycle = false;
-    function dfs(node, visited, stack) {
-      if (stack.has(node)) return true;
-      if (visited.has(node)) return false;
-      visited.add(node);
-      stack.add(node);
-      for (const nb of featAdj[node] || []) {
-        if (dfs(nb, visited, stack)) return true;
-      }
-      stack.delete(node);
-      return false;
-    }
-
-    const visited = new Set();
-    for (const n of allFeatIds) {
-      if (hasCycle) break;
-      if (!visited.has(n)) {
-        if (dfs(n, visited, new Set())) {
-          hasCycle = true;
-        }
-      }
-    }
-
-    if (hasCycle) {
-      addViolation("(cycle)", "(cycle)", SEVERITY.ERROR, "R5",
-        "Ciclo de dependencia detectado entre features");
-    }
+  if (hasCycle) {
+    addViolation("(cycle)", "(cycle)", SEVERITY.ERROR, "R9",
+      "Ciclo de dependencia detectado en el grafo global");
   }
 
-  /* ── 7. Stats ── */
+  /* ── 8. Stats ── */
   const bySeverity = { CRITICAL: 0, ERROR: 0, WARNING: 0 };
   for (const v of violations) {
     bySeverity[v.severity] = (bySeverity[v.severity] || 0) + 1;
@@ -376,6 +481,18 @@ export function buildGraph(projectRoot = ROOT) {
     : riskScore <= 30 ? "degraded"
     : "critical";
 
+  /* Layer counts */
+  const layerStats = { platform: 0, feature: 0, shared: 0, infra: 0, domain: 0, adapter: 0 };
+  for (const n of nodes) {
+    if (layerStats[n.type] !== undefined) layerStats[n.type]++;
+  }
+
+  /* Dependency health: ratio of valid vs total edges */
+  const validEdges = edges.filter(e => e.type !== "violates").length;
+  const dependencyHealth = edges.length > 0
+    ? Math.round((validEdges / edges.length) * 100)
+    : 100;
+
   return {
     nodes,
     edges,
@@ -389,6 +506,8 @@ export function buildGraph(projectRoot = ROOT) {
       warningViolations: bySeverity.WARNING || 0,
       riskScore,
       health,
+      dependencyHealth,
+      layers: layerStats,
     },
   };
 }
@@ -406,17 +525,24 @@ export function exportGraph(graph) {
   out += `**Nodes:** ${graph.stats.totalNodes}  \n`;
   out += `**Edges:** ${graph.stats.totalEdges}  \n`;
   out += `**Risk Score:** ${graph.stats.riskScore}/100  \n`;
-  out += `**Health:** ${graph.stats.health}  \n\n`;
+  out += `**Health:** ${graph.stats.health}  \n`;
+  out += `**Dependency Health:** ${graph.stats.dependencyHealth}%  \n\n`;
 
-  const byType = {};
-  for (const n of graph.nodes) {
-    if (!byType[n.type]) byType[n.type] = [];
-    byType[n.type].push(n);
-  }
+  const typeLabels = {
+    platform: "Platform Layer",
+    feature: "Feature Layer",
+    shared: "Shared Layer",
+    infra: "Infrastructure Layer",
+    domain: "Domain Layer",
+    adapter: "Adapter Layer",
+  };
 
-  for (const [type, typeNodes] of Object.entries(byType)) {
-    const label = type.charAt(0).toUpperCase() + type.slice(1);
-    out += `### ${label} Layer\n`;
+  const typeOrder = ["platform", "feature", "shared", "infra", "domain", "adapter"];
+
+  for (const type of typeOrder) {
+    const typeNodes = graph.nodes.filter(n => n.type === type);
+    if (typeNodes.length === 0) continue;
+    out += `### ${typeLabels[type]}\n`;
     for (const n of typeNodes) {
       out += `- \`${n.id}\` — ${n.label}\n`;
     }
@@ -434,16 +560,17 @@ export function exportGraph(graph) {
   }
 
   out += "### Dependency Graph\n";
-  const featureEdges = graph.edges.filter(e =>
-    e.from.startsWith("feature:") || e.to.startsWith("feature:")
+  const layerEdges = graph.edges.filter(e =>
+    ["platform", "feature", "shared", "infra"].includes(extractNodeType(e.from)) ||
+    ["platform", "feature", "shared", "infra"].includes(extractNodeType(e.to))
   );
-  const featGroup = {};
-  for (const e of featureEdges) {
-    if (!featGroup[e.from]) featGroup[e.from] = [];
+  const edgeGroup = {};
+  for (const e of layerEdges) {
+    if (!edgeGroup[e.from]) edgeGroup[e.from] = [];
     const suffix = e.type === "violates" ? " (VIOLATION)" : "";
-    featGroup[e.from].push(`${e.to}${suffix}`);
+    edgeGroup[e.from].push(`${e.to}${suffix}`);
   }
-  for (const [from, targets] of Object.entries(featGroup)) {
+  for (const [from, targets] of Object.entries(edgeGroup)) {
     out += `- \`${from}\` → [${targets.join(", ")}]\n`;
   }
   out += "\n";

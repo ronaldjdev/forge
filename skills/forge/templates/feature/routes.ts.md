@@ -1,8 +1,8 @@
 ```typescript
-// src/features/<domain>/adapters/in/http/<domain>.routes.ts
+// src/features/<domain>/adapters/in/http/<Domain>.routes.ts
 import { Router } from "express";
 import { container } from "tsyringe";
-import { <Domain>Controller } from "./<Domain>Controller.js";
+import { <Domain>Controller } from "./<Domain>.controller.js";
 
 const router = Router();
 const controller = container.resolve(<Domain>Controller);

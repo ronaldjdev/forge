@@ -3,10 +3,15 @@
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
 import { join, basename } from "path";
 import { buildGraph } from "./graph.mjs";
+import { buildOwnershipReport } from "./armorer.mjs";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
 const FEATURES = join(SRC, "features");
+
+const PLATFORM_KNOWN = ["config", "database", "http", "server", "logger", "cache", "security", "events", "scheduler", "observability", "di"];
+const SHARED_KNOWN = ["errors", "contracts", "types", "utils", "helpers", "constants", "enums"];
+const INFRA_KNOWN = ["prisma", "mongodb", "postgres", "redis", "mail", "s3", "cloudinary", "stripe", "sqs", "rabbitmq", "kafka", "smtp"];
 
 function read(path) {
   try {
@@ -96,6 +101,40 @@ function detectLegacyFeatures() {
   return legacy;
 }
 
+function detectPlatform() {
+  const platformDir = join(SRC, "platform");
+  if (!isDir(platformDir)) return { components: [], exists: false };
+  const components = listDir(platformDir).filter((d) => isDir(join(platformDir, d)) || d.endsWith(".ts") || d.endsWith(".js"));
+  const known = components.filter((c) => PLATFORM_KNOWN.includes(c.replace(/\.(ts|js)$/, "")));
+  const unknown = components.filter((c) => !PLATFORM_KNOWN.includes(c.replace(/\.(ts|js)$/, "")));
+  return { components, exists: true, known, unknown };
+}
+
+function detectShared() {
+  const sharedDir = join(SRC, "shared");
+  if (!isDir(sharedDir)) return { components: [], exists: false };
+  const components = listDir(sharedDir).filter((d) => isDir(join(sharedDir, d)) || d.endsWith(".ts") || d.endsWith(".js"));
+  const known = components.filter((c) => SHARED_KNOWN.includes(c.replace(/\.(ts|js)$/, "")));
+  const unknown = components.filter((c) => !SHARED_KNOWN.includes(c.replace(/\.(ts|js)$/, "")));
+  return { components, exists: true, known, unknown };
+}
+
+function detectInfra() {
+  const infraDir = join(SRC, "infra");
+  const infraDir2 = join(SRC, "infrastructure");
+  const dir = isDir(infraDir) ? infraDir : isDir(infraDir2) ? infraDir2 : null;
+  if (!dir) return { components: [], exists: false };
+  const components = listDir(dir).filter((d) => isDir(join(dir, d)) || d.endsWith(".ts") || d.endsWith(".js"));
+  const known = components.filter((c) => INFRA_KNOWN.includes(c.replace(/\.(ts|js)$/, "")));
+  const unknown = components.filter((c) => !INFRA_KNOWN.includes(c.replace(/\.(ts|js)$/, "")));
+  return { components, exists: true, known, unknown };
+}
+
+function detectOrphans() {
+  const report = buildOwnershipReport();
+  return report.orphans;
+}
+
 function stripJsonComments(raw) {
   const lines = raw.split("\n");
   const out = [];
@@ -143,7 +182,12 @@ export async function buildContext(projectRoot = ROOT) {
 
   const migratedFeatures = detectFeatures();
   const legacyFeatures = detectLegacyFeatures();
+  const platform = detectPlatform();
+  const shared = detectShared();
+  const infra = detectInfra();
+  const orphans = detectOrphans();
   const graph = buildGraph(root);
+  const ownership = buildOwnershipReport(root);
 
   const hasFeatures = migratedFeatures.length > 0;
   const hasLegacy = legacyFeatures.length > 0;
@@ -159,13 +203,21 @@ export async function buildContext(projectRoot = ROOT) {
       experimentalDecorators: hasDecorators,
       emitDecoratorMetadata: hasDecoratorMetadata,
     },
+    platform,
+    shared,
+    infra,
     features: {
       migrated: migratedFeatures,
       legacy: legacyFeatures,
       total: migratedFeatures.length + legacyFeatures.length,
     },
+    orphans,
+    ownership,
     hasSrc: isDir(src),
     hasFeaturesDir: isDir(join(src, "features")),
+    hasPlatformDir: platform.exists,
+    hasSharedDir: shared.exists,
+    hasInfraDir: infra.exists,
     isMigrating: hasLegacy && hasFeatures,
     isFullyMigrated: hasFeatures && !hasLegacy,
     isLegacy: hasLegacy && !hasFeatures,

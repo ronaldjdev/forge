@@ -50,10 +50,41 @@ export function detectProfile(ctx) {
   return "unknown";
 }
 
+export function detectProfileExtended(ctx) {
+  const profile = detectProfile(ctx);
+
+  const diStrategy = ctx.diStrategy || "manual";
+  const hasPlatform = ctx.platform?.exists || false;
+  const hasShared = ctx.shared?.exists || false;
+  const hasInfra = ctx.infra?.exists || false;
+  const platformComponents = ctx.platform?.components || [];
+
+  return {
+    profile,
+    hasPlatform,
+    hasShared,
+    hasInfra,
+    platformComponents,
+    diStrategy,
+    layers: {
+      platform: hasPlatform,
+      features: ctx.hasFeaturesDir || false,
+      shared: hasShared,
+      infra: hasInfra,
+    },
+  };
+}
+
 async function main() {
   const ctx = await buildContext();
   const profile = detectProfile(ctx);
-  console.log(profile);
+  const extended = detectProfileExtended(ctx);
+  const args = process.argv.slice(2);
+  if (args.includes("--extended")) {
+    console.log(JSON.stringify(extended, null, 2));
+  } else {
+    console.log(profile);
+  }
 }
 
 if (process.argv[1] && (process.argv[1].endsWith("profile.mjs") || process.argv[1].endsWith("profile.js"))) {

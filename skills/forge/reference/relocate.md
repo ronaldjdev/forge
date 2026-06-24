@@ -1,52 +1,38 @@
 # Relocate
 
-Migra un feature existente de la arquitectura legacy a la nueva estructura basada en features.
+Migra un feature existente desde estructura legacy hacia la arquitectura basada en features.
+
+También puede migrar componentes legacy a los layers Platform, Shared o Infrastructure.
 
 ## Cuándo usarlo
 
-- El proyecto tiene código en ubicaciones legacy (`src/domain/`, `src/application/`, `src/adapters/out/database/`, etc.)
-- Se necesita migrar feature por feature siguiendo orden topológico
+- El proyecto tiene código legacy fuera de `src/features/`
+- Hay componentes en directorios legacy que deben migrarse a:
+  - `src/platform/` (si es infraestructura técnica global)
+  - `src/shared/` (si es código reutilizable puro)
+  - `src/infra/` (si es implementación concreta)
+  - `src/features/<name>/` (si es lógica de negocio)
 
-## Flujo general
+## Flujo
 
-1. Identificar features legacy con `scripts/context.mjs`
-2. Determinar orden topológico con `scripts/chain.mjs`
-3. Migrar feature por feature en ese orden
-4. Después de cada feature, ejecutar `forge quench`
+1. Identificar el componente a migrar
+2. Clasificarlo en el layer correcto:
+   - Configuración, servidor, logger, DI → **Platform**
+   - Lógica de negocio, entidades, casos de uso → **Feature**
+   - Código reutilizable sin dependencias externas → **Shared**
+   - Implementaciones de BD, servicios externos → **Infra**
+3. Crear la estructura target según el layer
+4. Migrar archivos manteniendo la lógica intacta
+5. Actualizar imports
+6. Eliminar estructura legacy
+7. Ejecutar `forge quench` para verificar
+8. Actualizar `ARCHITECTURE.md`
 
-## Fase 0 — Setup
+## Estrategias por layer
 
-1. Instalar dependencias del perfil activo (tsyringe, reflect-metadata, etc.)
-2. Configurar tsconfig (decorators según perfil)
-3. Configurar entry point (reflect-metadata import)
-4. Identificar features existentes y sus dependencias
-5. Determinar orden topológico
-
-## Fase N — Migrar un feature
-
-1. Crear estructura target bajo `src/features/<domain>/`
-2. Migrar entity → `domain/<Domain>.entity.ts`
-3. Migrar repository interface → `domain/I<Domain>Repository.ts`
-4. Migrar use cases → `application/use-cases/` (agregar DI según perfil)
-5. Migrar controller → `adapters/in/http/<Domain>Controller.ts`
-6. Migrar routes → `adapters/in/http/<domain>.routes.ts`
-7. Migrar schema → `adapters/out/persistence/<Domain>Schema.ts`
-8. Migrar repository impl → `adapters/out/persistence/<Domain>Repository.ts`
-9. Migrar mapper → `application/mappers/<Domain>.mapper.ts`
-10. Eliminar archivo `*.di.ts` legacy (si existe)
-11. Actualizar imports en routes/index.ts
-12. Migrar tests y actualizar imports
-13. Ejecutar validación: lint, build, test
-
-## Por feature
-
-- NUNCA migrar dos features simultáneamente
-- Si algo se rompe, detener y revertir el feature actual
-- No avanzar al siguiente si el actual no pasa validación
-
-## Post-migración total
-
-- Verificar que no queden archivos en ubicaciones legacy
-- Eliminar directorios legacy vacíos
-- Ejecutar `forge inspect` para confirmar puntuación
-- Actualizar `ARCHITECTURE.md`
+| Layer | Desde | Hacia |
+|---|---|---|
+| Platform | `src/config/`, `src/setting/`, `src/middleware/` | `src/platform/<name>/` |
+| Feature | `src/application/use-cases/<name>/` | `src/features/<name>/` |
+| Shared | `src/utils/`, `src/helpers/`, `src/lib/` | `src/shared/<name>/` |
+| Infra | `src/database/`, `src/providers/` | `src/infra/<name>/` |

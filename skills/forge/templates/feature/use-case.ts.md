@@ -1,8 +1,8 @@
 ```typescript
-// src/features/<domain>/application/use-cases/Create.ts
+// src/features/<domain>/application/use-cases/Create<Domain>.uc.ts
 import { injectable, inject } from "tsyringe";
 import type { <Domain> } from "../../domain/<Domain>.entity.js";
-import type { I<Domain>Repository } from "../../domain/I<Domain>Repository.js";
+import type { I<Domain>Repository } from "../../domain/I<Domain>.repository.js";
 import { UseCaseError } from "@/shared/errors/UseCaseError.js";
 
 @injectable()

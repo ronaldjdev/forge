@@ -3,6 +3,7 @@
 import { join, relative, basename } from "path";
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
 import { buildGraph } from "./graph.mjs";
+import { buildOwnershipReport } from "./armorer.mjs";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
@@ -673,14 +674,134 @@ export function checkGraph(graph) {
   return { score: Math.max(score, 0), checks };
 }
 
-export function allChecks(features, graph) {
+export function checkOwnership(ctx) {
+  const checks = [];
+  let score = 0;
+  const report = ctx.ownership || buildOwnershipReport();
+
+  if (report.health === "healthy") {
+    checks.push({ ...severity("Ownership saludable — sin huérfanos ni duplicados", SEVERITY.INFO), pass: true });
+    score += 8;
+  } else if (report.health === "degraded") {
+    checks.push({ ...severity("Ownership degradado — hay componentes huérfanos o duplicados", SEVERITY.WARNING), pass: false, fix: "Revisar el reporte de ownership y mover componentes a su capa correcta" });
+    score += 4;
+  } else {
+    checks.push({ ...severity("Ownership crítico — múltiples problemas de organización", SEVERITY.ERROR), pass: false, fix: "Ejecutar node .opencode/skills/forge/scripts/armorer.mjs para diagnóstico completo" });
+  }
+
+  if (report.orphans.length === 0) {
+    checks.push({ ...severity("Sin componentes huérfanos", SEVERITY.INFO), pass: true });
+    score += 3;
+  } else {
+    checks.push({ ...severity(`${report.orphans.length} componente(s) huérfano(s)`, SEVERITY.WARNING), pass: false, detail: report.orphans.map(o => o.path).join(", "), fix: "Mover cada componente a platform/, shared/, infra/ o features/" });
+  }
+
+  if (report.duplicates.length === 0) {
+    checks.push({ ...severity("Sin componentes duplicados entre capas", SEVERITY.INFO), pass: true });
+    score += 3;
+  } else {
+    checks.push({ ...severity(`${report.duplicates.length} componente(s) duplicado(s)`, SEVERITY.WARNING), pass: false, detail: report.duplicates.map(d => `${d.name} en [${d.layers.join(", ")}]`).join("; "), fix: "Unificar el componente en una sola capa" });
+  }
+
+  if (report.misplaced.length === 0) {
+    checks.push({ ...severity("Sin componentes mal ubicados", SEVERITY.INFO), pass: true });
+    score += 3;
+  } else {
+    checks.push({ ...severity(`${report.misplaced.length} componente(s) mal ubicado(s)`, SEVERITY.WARNING), pass: false, detail: report.misplaced.slice(0, 3).map(m => m.file).join(", "), fix: "Revisar sugerencias de reubicación en armorer" });
+  }
+
+  if (report.hasPlatform) {
+    checks.push({ ...severity("Platform layer presente", SEVERITY.INFO), pass: true });
+    score += 3;
+  } else {
+    checks.push({ ...severity("Platform layer ausente", SEVERITY.SUGGESTION), pass: false, fix: "Considerar crear src/platform/ con los componentes técnicos globales" });
+  }
+
+  return { score: Math.min(score, 20), checks };
+}
+
+export function checkPlatform(ctx) {
+  const checks = [];
+  let score = 0;
+
+  if (!ctx.platform || !ctx.platform.exists) {
+    checks.push({ ...severity("Platform layer no existe", SEVERITY.WARNING), pass: false, fix: "Crear src/platform/ con los componentes base del sistema" });
+    return { score: 0, checks };
+  }
+
+  checks.push({ ...severity("Platform layer existe", SEVERITY.INFO), pass: true });
+  score += 2;
+
+  const expected = ["config", "database", "http", "server", "logger", "di"];
+  const found = new Set((ctx.platform.components || []).map(c => c.replace(/\.(ts|js)$/, "")));
+
+  for (const comp of expected) {
+    if (found.has(comp)) {
+      checks.push({ ...severity(`platform/${comp}/ existe`, SEVERITY.INFO), pass: true });
+      score += 2;
+    } else {
+      const isCritical = comp === "config" || comp === "server";
+      checks.push({
+        ...severity(`platform/${comp}/ no existe`, isCritical ? SEVERITY.WARNING : SEVERITY.SUGGESTION),
+        pass: false,
+        fix: `Crear src/platform/${comp}/`,
+      });
+    }
+  }
+
+  return { score: Math.min(score, 15), checks };
+}
+
+export function checkDependencies(ctx) {
+  const checks = [];
+  let score = 0;
+  const graph = ctx.graph || buildGraph();
+
+  if (!graph || graph.nodes.length === 0) {
+    checks.push({ ...severity("No hay nodos en el grafo para analizar dependencias", SEVERITY.WARNING), pass: false });
+    return { score: 0, checks };
+  }
+
+  const allowedCount = graph.edges.filter(e => e.type !== "violates").length;
+  const totalCount = graph.edges.length;
+  const health = totalCount > 0 ? Math.round((allowedCount / totalCount) * 100) : 100;
+
+  checks.push({ ...severity(`Dependency Health: ${health}% (${allowedCount}/${totalCount} edges válidos)`, SEVERITY.INFO), pass: true });
+  score += 4;
+
+  if (graph.stats.criticalViolations === 0) {
+    checks.push({ ...severity("Sin violaciones CRITICAL en dependencias", SEVERITY.INFO), pass: true });
+    score += 4;
+  } else {
+    checks.push({ ...severity(`${graph.stats.criticalViolations} violación(es) CRITICAL`, SEVERITY.CRITICAL), pass: false, fix: "Corregir violaciones de reglas R1, R2, R5, R6" });
+  }
+
+  if (graph.stats.errorViolations === 0) {
+    checks.push({ ...severity("Sin violaciones ERROR en dependencias", SEVERITY.INFO), pass: true });
+    score += 4;
+  } else {
+    checks.push({ ...severity(`${graph.stats.errorViolations} violación(es) ERROR`, SEVERITY.ERROR), pass: false, fix: "Corregir violaciones de reglas R3, R4, R8, R9" });
+  }
+
+  if (graph.stats.riskScore === 0) {
+    checks.push({ ...severity("Risk Score 0 — sin riesgo estructural", SEVERITY.INFO), pass: true });
+    score += 3;
+  } else {
+    checks.push({ ...severity(`Risk Score: ${graph.stats.riskScore}/100`, graph.stats.riskScore > 30 ? SEVERITY.ERROR : SEVERITY.WARNING), pass: false, fix: "Reducir violaciones arquitectónicas para bajar el risk score" });
+  }
+
+  return { score: Math.min(score, 15), checks };
+}
+
+export function allChecks(features, graph, ctx) {
   const g = graph || buildGraph(process.cwd());
+  const c = ctx || {};
   return {
     structure: checkStructure(features),
     layers: checkLayers(features),
-    decorators: checkDecorators(features),
-    legacy: checkLegacy(),
-    config: checkConfig(),
+    ownership: checkOwnership(c),
+    platform: checkPlatform(c),
+    dependencies: checkDependencies(c),
     graph: checkGraph(g),
   };
 }
@@ -692,9 +813,11 @@ async function main() {
   const filterSeverity = args.includes("--severity") ? args[args.indexOf("--severity") + 1] : null;
   const format = args.includes("--json") ? "json" : "text";
 
+  const { buildContext } = await import("./context.mjs");
+  const ctx = await buildContext();
   const features = detectFeaturesOnSrc();
   const graph = buildGraph(ROOT);
-  const results = allChecks(features, graph);
+  const results = allChecks(features, graph, ctx);
 
   let all = [];
   for (const [, cat] of Object.entries(results)) {
