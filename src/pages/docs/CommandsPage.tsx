@@ -187,7 +187,16 @@ export function CommandsPage() {
             </div>
           )}
 
-          {'rules' in cmd && cmd.rules && (
+          {'rules' in cmd && cmd.rules && typeof cmd.rules[0] === 'string' && (
+            <div className="space-y-2">
+              <h3 className="font-display text-sm text-ink uppercase tracking-wider">Reglas</h3>
+              <ul className="list-disc list-inside text-light/80 text-sm space-y-1">
+                {cmd.rules.map((r: any, i: number) => <li key={i}>{r}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {'rules' in cmd && cmd.rules && typeof cmd.rules[0] === 'object' && (
             <div className="space-y-2">
               <h3 className="font-display text-sm text-ink uppercase tracking-wider">Reglas</h3>
               <div className="overflow-x-auto">
@@ -213,27 +222,27 @@ export function CommandsPage() {
                       <tr key={i} className="border-b border-white/5">
                         {'code' in r ? (
                           <>
-                            <td className="py-2 px-3 font-mono text-accent">{(r as any).code}</td>
-                            <td className="py-2 px-3">{(r as any).rule}</td>
+                            <td className="py-2 px-3 font-mono text-accent">{r.code}</td>
+                            <td className="py-2 px-3">{r.rule}</td>
                             <td className="py-2 px-3">
                               <span className={`text-xs px-2 py-0.5 rounded ${
-                                (r as any).severity === 'CRITICAL' ? 'bg-red-900/30 text-red-300' :
-                                (r as any).severity === 'ERROR' ? 'bg-orange-900/30 text-orange-300' :
+                                r.severity === 'CRITICAL' ? 'bg-red-900/30 text-red-300' :
+                                r.severity === 'ERROR' ? 'bg-orange-900/30 text-orange-300' :
                                 'bg-yellow-900/30 text-yellow-300'
                               }`}>
-                                {(r as any).severity}
+                                {r.severity}
                               </span>
                             </td>
                           </>
                         ) : (
                           <>
-                            <td className="py-2 px-3">{(r as any).text}</td>
+                            <td className="py-2 px-3">{r.text}</td>
                             <td className="py-2 px-3">
                               <span className={`text-xs px-2 py-0.5 rounded ${
-                                (r as any).severity === 'ERROR' ? 'bg-orange-900/30 text-orange-300' :
+                                r.severity === 'ERROR' ? 'bg-orange-900/30 text-orange-300' :
                                 'bg-yellow-900/30 text-yellow-300'
                               }`}>
-                                {(r as any).severity}
+                                {r.severity}
                               </span>
                             </td>
                           </>
