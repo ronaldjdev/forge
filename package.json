@@ -34,7 +34,7 @@
   "bugs": {
     "url": "https://github.com/ronaldjdev/forge/issues"
   },
-  "homepage": "https://github.com/ronaldjdev/forge#readme",
+  "homepage": "https://ronaldjdev.github.io/forge/",
   "engines": {
     "node": ">=18"
   },
