@@ -31,13 +31,19 @@ const frameworks = [
 
 export function Hero() {
   const [fontIndex, setFontIndex] = useState(0);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    document.fonts.ready.then(() => setReady(true));
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return;
     const interval = setInterval(() => {
       setFontIndex((prev) => (prev + 1) % pixelFonts.length);
     }, 600);
     return () => clearInterval(interval);
-  }, []);
+  }, [ready]);
 
   return (
     <section
@@ -61,7 +67,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-[clamp(1.75rem,7vw,4.5rem)] lg:text-7xl font-bold leading-tight font-display tracking-tight wrap-break-words text-ink"
+            className="text-[clamp(1.75rem,7vw,4.5rem)] lg:text-7xl leading-tight font-display tracking-tight wrap-break-words text-ink"
           >
             Arquitectura que
             <br />
