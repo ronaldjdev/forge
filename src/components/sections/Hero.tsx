@@ -1,8 +1,17 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { StarButton } from "../StarButton";
 import { Flash } from "../icons";
 import { Button } from "../ui/Button";
 import { Badge } from "../ui/Badge";
+
+const pixelFonts = [
+  "'Geist Pixel Square'",
+  "'Geist Pixel Circle'",
+  "'Geist Pixel Grid'",
+  "'Geist Pixel Triangle'",
+  "'Geist Pixel Line'",
+];
 
 const layers = [
   { name: "Platform", color: "#e7ffa5", desc: "Backbone técnico" },
@@ -21,6 +30,15 @@ const frameworks = [
 ];
 
 export function Hero() {
+  const [fontIndex, setFontIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFontIndex((prev) => (prev + 1) % pixelFonts.length);
+    }, 600);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <section
       className="min-h-screen flex items-center pt-20 bg-dark"
@@ -47,7 +65,7 @@ export function Hero() {
           >
             Arquitectura que
             <br />
-            <span className="text-accent">evoluciona</span> contigo
+            <span className="text-accent" style={{ fontFamily: pixelFonts[fontIndex] }}>evoluciona</span> contigo
           </motion.h1>
 
           <motion.p
