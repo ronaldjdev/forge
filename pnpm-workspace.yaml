@@ -1,2 +1,2 @@
-overrides:
-  '@ronaldjdev/forge': 'link:'
+allowBuilds:
+  sharp: true

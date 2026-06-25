@@ -1,47 +1,31 @@
 {
-  "name": "@ronaldjdevfs/forge",
-  "version": "1.0.1",
-  "description": "Forge — Architecture Operating System for backend systems. Arquitectura Hexagonal, DDD pragmático y vertical slices.",
+  "name": "page-app",
+  "private": true,
+  "version": "0.0.0",
   "type": "module",
-  "bin": {
-    "forge": "./src/cli.js"
-  },
-  "files": [
-    "src/",
-    "skills/",
-    "logo.png",
-    "NOTICE"
-  ],
   "scripts": {
-    "install:local": "node ./src/cli.js install"
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "deploy": "pnpm build && gh-pages -d dist -b gh-pages"
   },
-  "keywords": [
-    "opencode",
-    "skill",
-    "architecture",
-    "hexagonal",
-    "ddd",
-    "vertical-slices",
-    "backend",
-    "forge"
-  ],
-  "license": "Apache-2.0",
-  "author": "Ronald J. Echeverry <ronaldjdev@gmail.com> (https://github.com/ronaldjdev)",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ronaldjdev/forge.git"
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.1",
+    "framer-motion": "^12.41.0",
+    "geist": "^1.7.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tailwindcss": "^4.3.1"
   },
-  "bugs": {
-    "url": "https://github.com/ronaldjdev/forge/issues"
-  },
-  "homepage": "https://github.com/ronaldjdev/forge#readme",
-  "engines": {
-    "node": ">=18"
-  },
-  "main": "./src/cli.js",
-  "dependencies": {},
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
+  "devDependencies": {
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "gh-pages": "^6.3.0",
+    "oxlint": "^1.69.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.0"
   }
 }
