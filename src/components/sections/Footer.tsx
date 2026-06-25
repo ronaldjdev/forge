@@ -1,29 +1,29 @@
-const links = {
-  producto: [
-    { label: "Características", href: "#features" },
-    { label: "Arquitectura", href: "#arquitectura" },
-    { label: "Comandos", href: "#comandos" },
-    { label: "Instalación", href: "#instalacion" },
-  ],
-  recursos: [
-    { label: "GitHub", href: "https://github.com/ronaldjdev/forge" },
-    {
-      label: "Documentación",
-      href: "https://github.com/ronaldjdev/forge#readme",
-    },
-    { label: "Issues", href: "https://github.com/ronaldjdev/forge/issues" },
-  ],
-  legal: [
-    {
-      label: "Licencia Apache-2.0",
-      href: "https://github.com/ronaldjdev/forge/blob/main/LICENSE",
-    },
-  ],
-};
+import { useCallback } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+
+const anchorLink = [
+  { href: '#features', label: 'Características' },
+  { href: '#arquitectura', label: 'Arquitectura' },
+  { href: '#comandos', label: 'Comandos' },
+  { href: '#instalacion', label: 'Instalación' },
+]
 
 const currentYear = new Date().getFullYear();
 
 export function Footer() {
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+
+  const handleAnchor = useCallback((href: string) => (e: React.MouseEvent) => {
+    e.preventDefault()
+    const id = href.replace('#', '')
+    if (pathname === '/') {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    } else {
+      navigate(href)
+    }
+  }, [pathname, navigate])
+
   return (
     <footer className="py-16 px-6 bg-dark border-t border-accent/20">
       <div className="max-w-6xl mx-auto">
@@ -45,14 +45,14 @@ export function Footer() {
               Producto
             </h4>
             <ul className="space-y-2">
-              {links.producto.map((link) => (
+              {anchorLink.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-light/60 hover:text-light transition-opacity"
+                  <button
+                    onClick={handleAnchor(link.href)}
+                    className="text-sm text-light/60 hover:text-light transition-opacity bg-transparent border-none cursor-pointer"
                   >
                     {link.label}
-                  </a>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -63,18 +63,31 @@ export function Footer() {
               Recursos
             </h4>
             <ul className="space-y-2">
-              {links.recursos.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-light/60 hover:text-light transition-opacity"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
+              <li>
+                <a
+                  href="https://github.com/ronaldjdev/forge"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-light/60 hover:text-light transition-opacity"
+                >
+                  GitHub
+                </a>
+              </li>
+              <li>
+                <Link to="/docs" className="text-sm text-light/60 hover:text-light transition-opacity">
+                  Documentación
+                </Link>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/ronaldjdev/forge/issues"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-light/60 hover:text-light transition-opacity"
+                >
+                  Issues
+                </a>
+              </li>
             </ul>
           </div>
 
@@ -83,18 +96,16 @@ export function Footer() {
               Legal
             </h4>
             <ul className="space-y-2">
-              {links.legal.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-light/60 hover:text-light transition-opacity"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
+              <li>
+                <a
+                  href="https://github.com/ronaldjdev/forge/blob/main/LICENSE"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-light/60 hover:text-light transition-opacity"
+                >
+                  Licencia Apache-2.0
+                </a>
+              </li>
             </ul>
           </div>
         </div>

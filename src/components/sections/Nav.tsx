@@ -1,21 +1,21 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../ui/Button'
 
-const navLinks = [
+const anchorLinks = [
   { href: '#features', label: 'Características' },
   { href: '#arquitectura', label: 'Arquitectura' },
   { href: '#comandos', label: 'Comandos' },
   { href: '#comparacion', label: 'Comparación' },
   { href: '#instalacion', label: 'Instalación' },
-  { href: '/docs', label: 'Docs', external: false },
 ]
 
 export function Nav() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const isDocs = pathname.startsWith('/docs')
 
   useEffect(() => {
@@ -23,6 +23,17 @@ export function Nav() {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  const handleAnchor = useCallback((href: string) => (e: React.MouseEvent) => {
+    e.preventDefault()
+    setMobileOpen(false)
+    const id = href.replace('#', '')
+    if (pathname === '/') {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    } else {
+      navigate(href)
+    }
+  }, [pathname, navigate])
 
   return (
     <motion.nav
@@ -40,25 +51,18 @@ export function Nav() {
         <Link to="/" className="font-display text-xl tracking-tight text-ink">FORGE</Link>
 
         <div className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) =>
-            link.external === false ? (
-              <Link
-                key={link.href}
-                to={link.href}
-                className="text-sm text-light/80 hover:text-light transition-colors"
-              >
-                {link.label}
-              </Link>
-            ) : (
-              <a
-                key={link.href}
-                href={link.href}
-                className="text-sm text-light/80 hover:text-light transition-colors"
-              >
-                {link.label}
-              </a>
-            )
-          )}
+          {anchorLinks.map((link) => (
+            <button
+              key={link.href}
+              onClick={handleAnchor(link.href)}
+              className="text-sm text-light/80 hover:text-light transition-colors bg-transparent border-none cursor-pointer"
+            >
+              {link.label}
+            </button>
+          ))}
+          <Link to="/docs" className="text-sm text-light/80 hover:text-light transition-colors">
+            Docs
+          </Link>
           <Button variant="primary" href="https://github.com/ronaldjdev/forge" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-sm">
             GitHub
           </Button>
@@ -91,27 +95,18 @@ export function Nav() {
             style={{ backgroundColor: 'rgba(5, 5, 5, 0.98)' }}
           >
             <div className="flex flex-col gap-4 pt-4 border-t border-accent/20">
-              {navLinks.map((link) =>
-                link.external === false ? (
-                  <Link
-                    key={link.href}
-                    to={link.href}
-                    onClick={() => setMobileOpen(false)}
-                    className="text-light"
-                  >
-                    {link.label}
-                  </Link>
-                ) : (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setMobileOpen(false)}
-                    className="text-light"
-                  >
-                    {link.label}
-                  </a>
-                )
-              )}
+              {anchorLinks.map((link) => (
+                <button
+                  key={link.href}
+                  onClick={handleAnchor(link.href)}
+                  className="text-light bg-transparent border-none cursor-pointer text-left"
+                >
+                  {link.label}
+                </button>
+              ))}
+              <Link to="/docs" onClick={() => setMobileOpen(false)} className="text-light">
+                Docs
+              </Link>
               <Button variant="primary" href="https://github.com/ronaldjdev/forge" target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)} className="px-4 py-2 text-sm text-center">
                 GitHub
               </Button>
