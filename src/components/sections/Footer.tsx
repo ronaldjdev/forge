@@ -20,7 +20,7 @@ export function Footer() {
     if (pathname === '/') {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
     } else {
-      navigate(href)
+      navigate('/' + href)
     }
   }, [pathname, navigate])
 
