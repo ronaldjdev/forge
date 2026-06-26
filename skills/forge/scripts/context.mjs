@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
-import { join, basename } from "path";
+import { join, basename, resolve } from "path";
 import { buildGraph } from "./graph.mjs";
 import { buildOwnershipReport } from "./armorer.mjs";
 
@@ -9,9 +9,9 @@ const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
 const FEATURES = join(SRC, "features");
 
-const PLATFORM_KNOWN = ["config", "database", "http", "server", "logger", "cache", "security", "events", "scheduler", "observability", "di"];
-const SHARED_KNOWN = ["errors", "contracts", "types", "utils", "helpers", "constants", "enums"];
-const INFRA_KNOWN = ["prisma", "mongodb", "postgres", "redis", "mail", "s3", "cloudinary", "stripe", "sqs", "rabbitmq", "kafka", "smtp"];
+export const PLATFORM_KNOWN = ["config", "database", "http", "server", "logger", "cache", "security", "events", "scheduler", "observability", "di"];
+export const SHARED_KNOWN = ["errors", "contracts", "types", "utils", "helpers", "constants", "enums"];
+export const INFRA_KNOWN = ["prisma", "mongodb", "postgres", "redis", "mail", "s3", "cloudinary", "stripe", "sqs", "rabbitmq", "kafka", "smtp"];
 
 function read(path) {
   try {
@@ -101,38 +101,10 @@ function detectLegacyFeatures() {
   return legacy;
 }
 
-function detectPlatform() {
-  const platformDir = join(SRC, "platform");
-  if (!isDir(platformDir)) return { components: [], exists: false };
-  const components = listDir(platformDir).filter((d) => isDir(join(platformDir, d)) || d.endsWith(".ts") || d.endsWith(".js"));
-  const known = components.filter((c) => PLATFORM_KNOWN.includes(c.replace(/\.(ts|js)$/, "")));
-  const unknown = components.filter((c) => !PLATFORM_KNOWN.includes(c.replace(/\.(ts|js)$/, "")));
-  return { components, exists: true, known, unknown };
-}
-
-function detectShared() {
-  const sharedDir = join(SRC, "shared");
-  if (!isDir(sharedDir)) return { components: [], exists: false };
-  const components = listDir(sharedDir).filter((d) => isDir(join(sharedDir, d)) || d.endsWith(".ts") || d.endsWith(".js"));
-  const known = components.filter((c) => SHARED_KNOWN.includes(c.replace(/\.(ts|js)$/, "")));
-  const unknown = components.filter((c) => !SHARED_KNOWN.includes(c.replace(/\.(ts|js)$/, "")));
-  return { components, exists: true, known, unknown };
-}
-
-function detectInfra() {
-  const infraDir = join(SRC, "infra");
-  const infraDir2 = join(SRC, "infrastructure");
-  const dir = isDir(infraDir) ? infraDir : isDir(infraDir2) ? infraDir2 : null;
-  if (!dir) return { components: [], exists: false };
-  const components = listDir(dir).filter((d) => isDir(join(dir, d)) || d.endsWith(".ts") || d.endsWith(".js"));
-  const known = components.filter((c) => INFRA_KNOWN.includes(c.replace(/\.(ts|js)$/, "")));
-  const unknown = components.filter((c) => !INFRA_KNOWN.includes(c.replace(/\.(ts|js)$/, "")));
-  return { components, exists: true, known, unknown };
-}
-
-function detectOrphans() {
-  const report = buildOwnershipReport();
-  return report.orphans;
+function classifyComponents(components, knownList) {
+  const known = components.filter((c) => knownList.includes(c.replace(/\.(ts|js)$/, "")));
+  const unknown = components.filter((c) => !knownList.includes(c.replace(/\.(ts|js)$/, "")));
+  return { components, exists: components.length > 0, known, unknown };
 }
 
 function stripJsonComments(raw) {
@@ -163,8 +135,129 @@ function readJson(path) {
   }
 }
 
-export async function buildContext(projectRoot = ROOT) {
-  const root = projectRoot;
+// ── Monorepo detection (D2) ──
+
+function resolveGlob(pattern, base) {
+  // Simple glob: supports * (single dir) and ** (recursive)
+  // Not full glob but enough for pnpm-workspace.yaml patterns like "packages/*"
+  if (!pattern) return [];
+  const starStar = pattern.includes("**");
+  const star = pattern.includes("*") && !starStar;
+  const baseDir = join(base, pattern.split("*")[0].replace(/\/+$/, ""));
+  if (!existsSync(baseDir)) return [];
+
+  const results = [];
+  if (star) {
+    for (const entry of readdirSync(baseDir, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        const pkgPath = join(baseDir, entry.name);
+        if (existsSync(join(pkgPath, "package.json"))) results.push(pkgPath);
+      }
+    }
+  } else if (starStar) {
+    function walk(dir) {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (entry.isDirectory() && !entry.name.startsWith(".") && entry.name !== "node_modules") {
+          const sub = join(dir, entry.name);
+          if (existsSync(join(sub, "package.json"))) results.push(sub);
+          walk(sub);
+        }
+      }
+    }
+    walk(baseDir);
+  }
+  return results;
+}
+
+export function detectMonorepo(projectRoot = ROOT) {
+  const configs = [];
+
+  // pnpm-workspace.yaml — must have packages: key
+  const pnpmWorkspace = join(projectRoot, "pnpm-workspace.yaml");
+  if (existsSync(pnpmWorkspace)) {
+    const content = readFileSync(pnpmWorkspace, "utf-8");
+    if (content.includes("packages:")) {
+      configs.push({ type: "pnpm", file: "pnpm-workspace.yaml" });
+    }
+  }
+
+  // turbo.json
+  if (existsSync(join(projectRoot, "turbo.json"))) {
+    configs.push({ type: "turbo", file: "turbo.json" });
+  }
+
+  // nx.json
+  if (existsSync(join(projectRoot, "nx.json"))) {
+    configs.push({ type: "nx", file: "nx.json" });
+  }
+
+  // package.json workspaces
+  const pkg = readJson(join(projectRoot, "package.json"));
+  if (pkg?.workspaces) {
+    const patterns = Array.isArray(pkg.workspaces) ? pkg.workspaces : pkg.workspaces.packages || [];
+    if (patterns.length > 0) {
+      configs.push({ type: "npm", file: "package.json" });
+    }
+  }
+
+  // Lerna
+  if (existsSync(join(projectRoot, "lerna.json"))) {
+    configs.push({ type: "lerna", file: "lerna.json" });
+  }
+
+  return configs;
+}
+
+export function detectWorkspaces(projectRoot = ROOT) {
+  const workspaces = [];
+  const pkg = readJson(join(projectRoot, "package.json"));
+
+  // 1. pnpm-workspace.yaml
+  const pnpmYaml = join(projectRoot, "pnpm-workspace.yaml");
+  if (existsSync(pnpmYaml)) {
+    const content = readFileSync(pnpmYaml, "utf-8");
+    const lines = content.split("\n");
+    let inPackages = false;
+    for (let line of lines) {
+      line = line.trim();
+      if (line.startsWith("packages:")) { inPackages = true; continue; }
+      if (inPackages && line.startsWith("-")) {
+        const pattern = line.replace(/^-\s*['"]?|['"]?\s*$/g, "").trim();
+        if (pattern) {
+          const resolved = resolveGlob(pattern, projectRoot);
+          workspaces.push(...resolved);
+        }
+      }
+      if (inPackages && line.startsWith("#")) continue;
+      if (inPackages && !line.startsWith("-") && line !== "") inPackages = false;
+    }
+  }
+
+  // 2. package.json workspaces
+  if (pkg?.workspaces) {
+    const patterns = Array.isArray(pkg.workspaces) ? pkg.workspaces : pkg.workspaces.packages || [];
+    for (const pattern of patterns) {
+      const resolved = resolveGlob(pattern, projectRoot);
+      workspaces.push(...resolved);
+    }
+  }
+
+  // Deduplicate
+  const seen = new Set();
+  return workspaces.filter(w => {
+    if (seen.has(w)) return false;
+    seen.add(w);
+    return true;
+  }).map(w => ({
+    path: w,
+    name: basename(w),
+    hasSrc: existsSync(join(w, "src")),
+    hasFeatures: existsSync(join(w, "src", "features")),
+  }));
+}
+
+export async function buildContext(projectRoot = ROOT, workspaceScope = null) {
+  const root = workspaceScope || projectRoot;
   const src = join(root, "src");
 
   const pkg = readJson(join(root, "package.json")) || {};
@@ -182,18 +275,25 @@ export async function buildContext(projectRoot = ROOT) {
 
   const migratedFeatures = detectFeatures();
   const legacyFeatures = detectLegacyFeatures();
-  const platform = detectPlatform();
-  const shared = detectShared();
-  const infra = detectInfra();
-  const orphans = detectOrphans();
-  const graph = buildGraph(root);
   const ownership = buildOwnershipReport(root);
+  const platform = classifyComponents(ownership.ownership.platform, PLATFORM_KNOWN);
+  const shared = classifyComponents(ownership.ownership.shared, SHARED_KNOWN);
+  const infra = classifyComponents(ownership.ownership.infra, INFRA_KNOWN);
+  const orphans = ownership.orphans;
+  const graph = buildGraph(root);
 
   const hasFeatures = migratedFeatures.length > 0;
   const hasLegacy = legacyFeatures.length > 0;
 
+  // Monorepo detection
+  const isRoot = root === projectRoot;
+  const monorepo = isRoot ? detectMonorepo(projectRoot) : null;
+  const workspaces = isRoot ? detectWorkspaces(projectRoot) : [];
+
   return {
     projectName: basename(root),
+    isWorkspace: !isRoot,
+    workspaceScope: isRoot ? null : basename(root),
     framework,
     runtime: `Node ${process.version}`,
     database,
@@ -222,6 +322,10 @@ export async function buildContext(projectRoot = ROOT) {
     isFullyMigrated: hasFeatures && !hasLegacy,
     isLegacy: hasLegacy && !hasFeatures,
     isGreenfield: !hasLegacy && !hasFeatures && isDir(src),
+    // Monorepo
+    monorepo,
+    workspaces,
+    isMonorepo: monorepo !== null && monorepo.length > 0,
     graph,
     dependencies: {},
   };

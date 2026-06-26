@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 
 import { join, relative, basename } from "path";
-import { readFileSync, existsSync, readdirSync, statSync } from "fs";
+import { readFileSync, existsSync, readdirSync, statSync, writeFileSync, renameSync, mkdirSync } from "fs";
 import { buildGraph } from "./graph.mjs";
 import { buildOwnershipReport } from "./armorer.mjs";
+import { parseImportsWithLines } from "./parse-imports.mjs";
+import { detectNamingViolations, computeExpectedName } from "./rename.mjs";
+import { formatViolation, formatCheck, GREEN, RED, YELLOW, CYAN, BOLD, RESET, DIM, GRAY } from "./formatter.mjs";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
@@ -19,8 +22,6 @@ const LEGACY_DIRS = [
   ["src/adapters/out/database/mappers", "Mappers legacy"],
   ["src/setting/dependencies", "DI wiring legacy (.di.ts)"],
 ];
-
-const IMPORT_RE = /import\s+(?:type\s+)?(?:\{[^}]*\}|[^;{]+)\s+from\s+['"]([^'"]+)['"]/g;
 const INJECTABLE_RE = /@injectable\s*\(\)/g;
 const INJECT_RE = /@inject\s*\([^)]+\)/g;
 const BD_MODEL_RE = /\b\w+Model\s*\.\s*(find|findOne|findById|create|insertMany|updateOne|updateMany|deleteOne|deleteMany|aggregate|save|lean)\s*\(/g;
@@ -77,7 +78,7 @@ function findFiles(dir, ext, maxDepth = 5) {
   return results;
 }
 
-function detectFeaturesOnSrc() {
+export function detectFeaturesOnSrc() {
   if (!isDir(FEATURES)) return [];
   return listDir(FEATURES).filter((f) => isDir(join(FEATURES, f)));
 }
@@ -98,18 +99,7 @@ function detectLegacyFeatures() {
 }
 
 function parseImports(content, filePath) {
-  const imports = [];
-  const lines = content.split("\n");
-  for (let i = 0; i < lines.length; i++) {
-    const m = lines[i].match(IMPORT_RE);
-    if (m) {
-      for (const full of m) {
-        const src = full.match(/from\s+['"]([^'"]+)['"]/);
-        if (src) imports.push({ file: filePath, source: src[1], line: i + 1 });
-      }
-    }
-  }
-  return imports;
+  return parseImportsWithLines(content, filePath);
 }
 
 function hasDecorator(content, decoratorRe) {
@@ -127,6 +117,99 @@ function hasSubdir(dir, sub) {
 
 function severity(label, sev) {
   return { severity: sev, label };
+}
+
+// ── Inline Ignores ──
+
+/**
+ * Parse all forge-ignore comments in a file.
+ * Returns a Set of rule IDs that should be ignored for each line.
+ */
+export function parseInlineIgnores(content) {
+  const ignores = {}; // lineNumber → Set<ruleId>
+  const lines = content.split("\n");
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+
+    // // forge-ignore-next-line
+    if (trimmed.includes("// forge-ignore-next-line")) {
+      const targetLine = i + 2; // next line is 1-indexed
+      if (!ignores[targetLine]) ignores[targetLine] = new Set();
+      ignores[targetLine].add("*");
+      continue;
+    }
+
+    // // forge-ignore: R1, R3  (applies to current line)
+    const match = trimmed.match(/\/\/\s*forge-ignore:\s*(.+)/);
+    if (match) {
+      if (!ignores[i + 1]) ignores[i + 1] = new Set();
+      const rules = match[1].split(",").map(r => r.trim().toUpperCase());
+      for (const r of rules) ignores[i + 1].add(r);
+    }
+  }
+
+  return ignores;
+}
+
+/**
+ * Load inline ignores for all .ts/.mjs files in a directory (recursive).
+ * Returns Map<filePath, Map<lineNumber, Set<ruleId>>>
+ */
+export function loadAllInlineIgnores(dir, maxDepth = 10) {
+  const allIgnores = new Map();
+
+  function walk(d, depth) {
+    if (depth > maxDepth) return;
+    try {
+      for (const entry of readdirSync(d, { withFileTypes: true })) {
+        const full = join(d, entry.name);
+        if (entry.isDirectory()) {
+          walk(full, depth + 1);
+        } else if (entry.name.endsWith(".ts") || entry.name.endsWith(".mjs") || entry.name.endsWith(".js")) {
+          const content = read(full);
+          if (!content) continue;
+          const ignores = parseInlineIgnores(content);
+          if (Object.keys(ignores).length > 0) {
+            allIgnores.set(full, ignores);
+          }
+        }
+      }
+    } catch { /* skip */ }
+  }
+
+  if (existsSync(dir)) walk(dir, 0);
+  return allIgnores;
+}
+
+/**
+ * Check if a violation should be ignored based on inline ignores.
+ */
+export function isIgnored(violation, allIgnores) {
+  if (!violation.detail) return false;
+  const filePath = violation.detail.split(":")[0];
+  const lineMatch = violation.detail.match(/:(\d+)/);
+  if (!lineMatch) return false;
+
+  const line = parseInt(lineMatch[1], 10);
+  const fileIgnores = allIgnores.get(filePath);
+  if (!fileIgnores) return false;
+
+  const lineIgnores = fileIgnores[line];
+  if (!lineIgnores) return false;
+
+  if (lineIgnores.has("*")) return true;
+
+  const ruleMatch = violation.label.match(/\[([^\]]+)\]/);
+  if (ruleMatch) {
+    const ruleId = ruleMatch[1].toUpperCase();
+    if (lineIgnores.has(ruleId)) return true;
+  }
+
+  // Also check if the violation's rule id is in the ignores
+  if (violation.rule && lineIgnores.has(violation.rule.toUpperCase())) return true;
+
+  return false;
 }
 
 /* ── Checks ── */
@@ -793,17 +876,232 @@ export function checkDependencies(ctx) {
   return { score: Math.min(score, 15), checks };
 }
 
+// ── Custom rules (B2) ──
+
+const CUSTOM_RULES_PATH = join(ROOT, ".forge", "rules.json");
+
+export function loadCustomRules() {
+  try {
+    const raw = readFileSync(CUSTOM_RULES_PATH, "utf-8");
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+export function checkCustomRules(features) {
+  const rules = loadCustomRules();
+  const checks = [];
+  let score = 0;
+
+  if (rules.length === 0) {
+    checks.push({ severity: SEVERITY.INFO, label: "Reglas custom: vacío (usa .forge/rules.json)", pass: true });
+    score += 5;
+    return { score, checks };
+  }
+
+  let totalPatterns = 0;
+  let violations = 0;
+
+  for (const rule of rules) {
+    if (!rule.id || !rule.pattern) continue;
+    totalPatterns++;
+
+    let fileRe = null;
+    let contentRe = null;
+    try {
+      if (rule.files) fileRe = new RegExp(rule.files);
+      contentRe = new RegExp(rule.pattern);
+    } catch {
+      checks.push({ severity: SEVERITY.ERROR, label: `Regla custom ${rule.id}: patrón inválido`, pass: false });
+      continue;
+    }
+
+    for (const feat of features) {
+      if (!feat.files) continue;
+      for (const f of feat.files) {
+        if (fileRe && !fileRe.test(f)) continue;
+        const content = read(f);
+        if (!content) continue;
+
+        contentRe.lastIndex = 0;
+        let match;
+        while ((match = contentRe.exec(content)) !== null) {
+          violations++;
+          const line = content.slice(0, match.index).split("\n").length;
+          checks.push({
+            severity: rule.severity || SEVERITY.ERROR,
+            label: `[${rule.id}] ${rule.message || "Violación de regla custom"} en ${relative(ROOT, f)}:${line}`,
+            pass: false,
+            detail: `Match: "${match[0].slice(0, 80)}"`,
+            fix: rule.fix || null,
+          });
+        }
+      }
+    }
+  }
+
+  if (totalPatterns > 0 && violations === 0) {
+    checks.push({ severity: SEVERITY.INFO, label: `Reglas custom: ${totalPatterns} patrón(es) activo(s), 0 violaciones`, pass: true });
+    score += 5;
+  } else if (totalPatterns > 0) {
+    checks.push({ severity: SEVERITY.WARNING, label: `Reglas custom: ${totalPatterns} patrón(es), ${violations} violación(es)`, pass: violations === 0 });
+  }
+
+  return { score, checks };
+}
+
+export function checkNaming(projectRoot = ROOT) {
+  const checks = [];
+  let score = 10;
+
+  const violations = detectNamingViolations(projectRoot);
+
+  if (violations.length === 0) {
+    checks.push({ ...severity("Naming conventions: sin violaciones", SEVERITY.INFO), pass: true });
+    return { score, checks };
+  }
+
+  checks.push({
+    ...severity(`${violations.length} violacion(es) de naming conventions`, SEVERITY.WARNING),
+    pass: false,
+    fix: "Ejecutar `node .opencode/skills/forge/scripts/rename.mjs --all` o `forge reforge <filename>` para corregir",
+  });
+
+  for (const v of violations) {
+    checks.push({
+      ...severity(`Naming: ${relative(ROOT, v.current)}`, SEVERITY.SUGGESTION),
+      pass: false,
+      detail: `→ ${relative(ROOT, v.expected)}`,
+      fix: v.rule,
+    });
+    score -= 1;
+  }
+
+  return { score: Math.max(score, 0), checks };
+}
+
 export function allChecks(features, graph, ctx) {
   const g = graph || buildGraph(process.cwd());
   const c = ctx || {};
   return {
     structure: checkStructure(features),
     layers: checkLayers(features),
+    decorators: checkDecorators(features),
     ownership: checkOwnership(c),
     platform: checkPlatform(c),
     dependencies: checkDependencies(c),
     graph: checkGraph(g),
+    customRules: checkCustomRules(features),
+    naming: checkNaming(),
   };
+}
+
+// ── Auto-Fix ──
+
+/**
+ * Apply auto-fixes for non-CRITICAL violations.
+ * Returns { fixed: number, skipped: number, details: string[] }
+ */
+export function applyFixes(checks, projectRoot = ROOT) {
+  let fixed = 0;
+  let skipped = 0;
+  const details = [];
+  const SRC = join(projectRoot, "src");
+
+  for (const check of checks) {
+    if (check.pass) continue;
+    if (check.severity === "CRITICAL") {
+      skipped++;
+      continue;
+    }
+
+    // Fix missing @injectable()
+    if (check.fix?.startsWith("Agregar @injectable()") && check.detail) {
+      const filePath = check.detail.includes(":")
+        ? join(projectRoot, check.detail.split(":")[0])
+        : null;
+      if (filePath && existsSync(filePath)) {
+        const content = readFileSync(filePath, "utf-8");
+        const className = check.detail.replace(/.*\//, "").replace(/\.[jt]s/, "");
+        const newContent = content.replace(
+          /(export\s+class\s+\w+)/,
+          "@injectable()\n$1"
+        );
+        if (newContent !== content) {
+          writeFileSync(filePath, newContent);
+          fixed++;
+          details.push(`  ${GREEN}✔${RESET} ${relative(projectRoot, filePath)}: agregado @injectable()`);
+        }
+      }
+    }
+
+    // Fix missing experimentalDecorators
+    if (check.fix?.includes('"experimentalDecorators"')) {
+      const tsconfigPath = join(projectRoot, "tsconfig.json");
+      if (existsSync(tsconfigPath)) {
+        try {
+          const content = readFileSync(tsconfigPath, "utf-8");
+          const json = JSON.parse(content);
+          json.compilerOptions = json.compilerOptions || {};
+          json.compilerOptions.experimentalDecorators = true;
+          json.compilerOptions.emitDecoratorMetadata = true;
+          writeFileSync(tsconfigPath, JSON.stringify(json, null, 2) + "\n");
+          fixed++;
+          details.push(`  ${GREEN}✔${RESET} tsconfig.json: agregado experimentalDecorators / emitDecoratorMetadata`);
+        } catch {}
+      }
+    }
+
+    // Fix naming violations
+    if (check.label.includes("Naming:") && check.detail?.includes("→")) {
+      const current = join(projectRoot, check.detail.split(" →")[0].trim());
+      const expected = join(projectRoot, check.detail.split("→ ")[1].trim());
+      if (existsSync(current) && !existsSync(expected)) {
+        try {
+          const dir = join(expected, "..");
+          mkdirSync(dir, { recursive: true });
+          renameSync(current, expected);
+          fixed++;
+          details.push(`  ${GREEN}✔${RESET} Renombrado: ${relative(projectRoot, current)} → ${relative(projectRoot, expected)}`);
+        } catch (e) {
+          skipped++;
+          details.push(`  ${YELLOW}⚠${RESET} No se pudo renombrar: ${e.message}`);
+        }
+      }
+    }
+
+    // Fix container.resolve()
+    if (check.fix?.includes("container.resolve") && check.detail) {
+      const filePath = join(projectRoot, check.detail);
+      if (existsSync(filePath)) {
+        const content = readFileSync(filePath, "utf-8");
+        const newContent = content
+          .replace(/container\.resolve\([^)]+\)/g, "/* DI: injected via constructor */ null")
+          .replace(/import.*container.*from.*tsyringe.*/g, "// container resolve removed");
+        if (newContent !== content) {
+          writeFileSync(filePath, newContent);
+          fixed++;
+          details.push(`  ${GREEN}✔${RESET} ${relative(projectRoot, filePath)}: container.resolve() reemplazado`);
+        }
+      }
+    }
+
+    // Fix missing reflect-metadata import
+    if (check.fix?.includes('import "reflect-metadata"') && check.detail) {
+      const filePath = join(projectRoot, check.detail);
+      if (existsSync(filePath)) {
+        const content = readFileSync(filePath, "utf-8");
+        if (!content.includes('import "reflect-metadata"')) {
+          writeFileSync(filePath, 'import "reflect-metadata";\n' + content);
+          fixed++;
+          details.push(`  ${GREEN}✔${RESET} ${relative(projectRoot, filePath)}: agregado import reflect-metadata`);
+        }
+      }
+    }
+  }
+
+  return { fixed, skipped, details };
 }
 
 /* ── CLI ── */
@@ -812,6 +1110,8 @@ async function main() {
   const filterType = args.includes("--type") ? args[args.indexOf("--type") + 1] : null;
   const filterSeverity = args.includes("--severity") ? args[args.indexOf("--severity") + 1] : null;
   const format = args.includes("--json") ? "json" : "text";
+  const doFix = args.includes("--fix");
+  const showIgnores = args.includes("--show-ignores");
 
   const { buildContext } = await import("./context.mjs");
   const ctx = await buildContext();
@@ -819,22 +1119,71 @@ async function main() {
   const graph = buildGraph(ROOT);
   const results = allChecks(features, graph, ctx);
 
+  // Load inline ignores
+  const allIgnores = loadAllInlineIgnores(join(ROOT, "src"));
+
   let all = [];
   for (const [, cat] of Object.entries(results)) {
     all = all.concat(cat.checks);
   }
 
+  // Filter out ignored violations
+  const filtered = all.filter(c => {
+    if (c.pass) return true;
+    if (isIgnored(c, allIgnores)) return false;
+    return true;
+  });
+
   if (filterSeverity) all = all.filter((c) => c.severity === filterSeverity);
 
-  if (format === "json") {
-    console.log(JSON.stringify({ checks: all, total: all.length }, null, 2));
-  } else {
-    for (const c of all) {
-      const icon = c.pass ? "✔" : "✘";
-      console.log(`[${c.severity}] ${icon} ${c.label}${c.detail ? ` — ${c.detail}` : ""}`);
-      if (!c.pass && c.fix) console.log(`     → Fix: ${c.fix}`);
+  if (doFix) {
+    const result = applyFixes(filtered);
+    console.log(`\n${BOLD}Auto-Fix${RESET}`);
+    if (result.fixed > 0) {
+      result.details.forEach(d => console.log(d));
+      console.log(`\n${GREEN}✔${RESET} ${result.fixed} violación(es) corregidas automáticamente`);
+    } else {
+      console.log(` ${GRAY}No se encontraron violaciones auto-corregibles${RESET}`);
     }
-    console.log(`\nTotal: ${all.length} checks`);
+    if (result.skipped > 0) {
+      console.log(` ${YELLOW}⚠${RESET} ${result.skipped} violación(es) CRITICAL no se auto-corrigieron (requieren intervención manual)`);
+    }
+    console.log();
+    return;
+  }
+
+  // Show inline ignores summary
+  let totalIgnores = 0;
+  for (const [, fileIgnores] of allIgnores) {
+    for (const [, rules] of Object.entries(fileIgnores)) {
+      totalIgnores += rules.size;
+    }
+  }
+  const ignoredCount = all.length - filtered.length;
+
+  if (format === "json") {
+    console.log(JSON.stringify({
+      checks: filtered,
+      total: filtered.length,
+      ignoredCount,
+      inlineIgnores: totalIgnores,
+    }, null, 2));
+  } else {
+    if (showIgnores && totalIgnores > 0) {
+      console.log(`\n${BOLD}Inline Ignores${RESET}`);
+      console.log(`  ${totalIgnores} ignore(s) en ${allIgnores.size} archivo(s)`);
+      for (const [file, lines] of allIgnores) {
+        for (const [line, rules] of Object.entries(lines)) {
+          console.log(`  ${GRAY}${relative(ROOT, file)}:${line}${RESET} → ${[...rules].join(", ")}`);
+        }
+      }
+      console.log();
+    }
+
+    for (const c of filtered) {
+      console.log(formatCheck(c));
+    }
+    console.log(`\nTotal: ${filtered.length} checks${ignoredCount > 0 ? ` (${ignoredCount} ignorados inline)` : ""}`);
   }
 }
 

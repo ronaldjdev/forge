@@ -17,11 +17,84 @@ Antes de crear un feature, verificar la existencia de los layers arquitectónico
 
 Si alguno no existe, ejecutar `bootstrapPlatform()` automáticamente para crearlos.
 
+## ⚠️ Pre-Cast Discovery — 3 Gates Obligatorios
+
+**NO escribir código hasta pasar los 3 gates de aprobación.** Cast solía crear scaffolding directamente del nombre del feature. Esto producía features genéricos que requerían refactor posterior. Ahora todo `cast` requiere descubrimiento direccional multi-ronda.
+
+Usar las **señales de `forge-signals.mjs`** para contextualizar el descubrimiento:
+- Si hay features existentes, revisar sus entidades y casos de uso para mantener coherencia.
+- Si el perfil está detectado, usarlo para preguntas específicas (ej: "Prisma detectado → schema primero").
+- Si hay archivos modificados en git, considerarlos como contexto del nuevo feature.
+
+### Gate 1: Brief del Feature
+
+Hacer **al menos 1 ronda de preguntas** usando la herramienta `question`. No inferir todas las respuestas del prompt inicial. Preguntar:
+
+**Ronda 1 (obligatoria — 2-3 preguntas):**
+- ¿Cuál es la entidad principal del dominio? (ej: "Factura", "Suscripción", "Producto")
+- ¿Qué operaciones CRUD necesita? ¿Todas o solo un subconjunto?
+- ¿Este feature se relaciona con algún feature existente? ¿Cuál y cómo?
+
+**Ronda 2 (si aplica — preguntar solo si la Ronda 1 dejó dudas):**
+- ¿Necesita eventos de dominio o integración con scheduler?
+- ¿Expone API REST? ¿También GraphQL o gRPC?
+- ¿Requiere cache? ¿Lectura > escritura o viceversa?
+
+**No preguntes sobre detalles de implementación (nombre de columnas, puertos, etc.) en esta fase.** Eso se resuelve en el scaffold. El brief es sobre qué hace el feature, no cómo se implementa.
+
+**Salida:** Brief del feature confirmado por el usuario.
+
+### Gate 2: Confirmar Estructura
+
+Tras el brief, presentar la estructura propuesta al usuario para confirmación:
+
+```
+src/features/<name>/
+├── domain/
+│   ├── <Name>.entity.ts
+│   └── I<Name>.repository.ts
+├── application/
+│   ├── use-cases/
+│   │   ├── Create<Name>.uc.ts
+│   │   ├── Get<Name>.uc.ts
+│   │   └── List<Name>.uc.ts     (los que apliquen según brief)
+│   └── mappers/
+│       └── <Name>.mapper.ts
+└── adapters/
+    ├── in/http/
+    │   ├── <Name>.controller.ts
+    │   └── <name>.routes.ts
+    └── out/persistence/
+        ├── <Name>.schema.ts
+        └── <Name>.repository.ts
+```
+
+Preguntar: "¿Esta estructura cubre el dominio? ¿Falta algo, sobra algo?"
+
+**No avanzar sin confirmación explícita del usuario.**
+
+### Gate 3: Confirmar Wiring
+
+Antes de escribir código, confirmar las decisiones de integración:
+
+- **Repository**: "Inyecto `I<Name>Repository` vía interfaz. Implementación concreta en `adapters/out/persistence/`. ¿OK?"
+- **Controller**: "El controller parsea, llama al use case, responde. Sin lógica de negocio. ¿OK?"
+- **DI**: Según perfil: "Uso `@injectable()` + `@inject(Token)` con tsyringe" o "DI manual en bootstrap". ¿OK?
+- **Routing**: "Registro las rutas en el enrutador principal de HTTP. ¿OK?"
+
+Preguntar: "¿Confirmas este wiring antes de generar el feature?"
+
+**Sin Gate 3 confirmado, no se escribe ni un archivo.**
+
+---
+
 ## Flujo
 
 1. Verificar que `src/platform/`, `src/shared/`, `src/infra/` existan (crearlos si no)
-2. Determinar el nombre del feature (formato: kebab-case)
-3. Crear estructura de directorios:
+2. **Ejecutar Pre-Cast Discovery** (3 gates obligatorios)
+3. Determinar el nombre del feature (formato: kebab-case) — ya debería estar claro del brief
+4. Opcional: persistir brief en `.forge/features/<name>/brief.md` para futuras referencias
+5. Crear estructura de directorios:
    ```
    src/features/<name>/
    ├── domain/
@@ -32,18 +105,18 @@ Si alguno no existe, ejecutar `bootstrapPlatform()` automáticamente para crearl
        ├── in/http/
        └── out/persistence/
    ```
-4. Crear archivos del feature en este orden (ver `templates/feature/`):
+6. Crear archivos del feature en este orden (ver `templates/feature/`):
    - `<Name>.entity.ts` — interfaz de dominio
    - `I<Name>Repository.ts` — puerto de repositorio
    - `<Name>.mapper.ts` — mapper dominio ↔ persistencia
    - `<Name>Schema.ts` — schema de BD (según perfil)
    - `<Name>Repository.ts` — implementación del repositorio
-   - Use cases (`Create.ts`, `Get.ts`, `List.ts`, `Update.ts`, `Delete.ts`)
+   - Use cases (`Create.ts`, `Get.ts`, `List.ts`, `Update.ts`, `Delete.ts` — según brief)
    - `<Name>Controller.ts` — controlador HTTP
    - `<name>.routes.ts` — rutas HTTP
-5. Registrar rutas en el enrutador principal
-6. Ejecutar `forge quench` para verificar el feature
-7. Actualizar `ARCHITECTURE.md`
+7. Registrar rutas en el enrutador principal
+8. Ejecutar `forge quench` para verificar el feature
+9. Actualizar `ARCHITECTURE.md` + estado persistente
 
 ## Convenciones
 
@@ -75,3 +148,4 @@ Usar el perfil detectado para determinar:
 - `forge quench` — verificar que no hay violaciones
 - `forge inspect` — confirmar puntuación
 - `ARCHITECTURE.md` actualizado automáticamente
+- `.forge/state.json` actualizado automáticamente

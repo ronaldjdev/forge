@@ -100,6 +100,7 @@ inspect=$(node .opencode/skills/forge/scripts/inspect.mjs --json 2>/dev/null)
 
 | Lenguaje natural | Comando | Archivo |
 |---|---|---|
+| "ayuda", "help", "comandos", "lista", "--help" | `forge --help` | `reference/help.md` |
 | "inicializar", "setup", "empezar" | `forge` | `reference/forge.md` |
 | "crear feature", "nuevo dominio" | `cast` | `reference/cast.md` |
 | "inspeccionar", "diagnóstico", "evaluar" | `inspect` | `reference/inspect.md` |
@@ -112,6 +113,13 @@ inspect=$(node .opencode/skills/forge/scripts/inspect.mjs --json 2>/dev/null)
 | "grafo", "graph", "nodo", "violaciones", "risk score" | `graph` | `scripts/graph.mjs` |
 | "fundir", "compartir", "mover a shared" | `smelt` | `reference/smelt.md` |
 | "ownership", "huérfanos", "armorer" | `inspect` | (incluido en auditoría) |
+| "fijar", "pinar", "atajo", "shortcut" | `nail` | `scripts/pin.mjs` |
+| "desfijar", "despinar", "remover atajo" | `unnail` | `scripts/pin.mjs` |
+| "hook", "pre-commit", "githook", "validar commit" | `forge hook` | `reference/hooks.md` |
+| "api", "contrato", "openapi", "swagger", "graphql" | `forge api` | `scripts/forge-api.mjs` |
+| "rollback", "restaurar", "deshacer", "backup" | `forge rollback` | `scripts/rollback.mjs` |
+| "estado", "state", "último audit" | `forge state --show` | `scripts/forge-state.mjs` |
+| "examinar","calidad", "assay", "opinión", "personas", "critique", "evaluación cualitativa" | `assay` | `reference/assay.md` |
 
 ---
 
@@ -140,6 +148,23 @@ Para cada comando, Forge sigue este flujo:
 - Si `ARCHITECTURE.md` está desactualizado (fecha de auditoría > 7 días), sugerir `forge inscribe`.
 - Todos los resultados se muestran con severidades: `[CRITICAL]`, `[ERROR]`, `[WARNING]`, `[INFO]`, `[SUGGESTION]`.
 
+### Inline Ignores
+
+Forge soporta comentarios inline para excepcionar violaciones línea por línea:
+
+```ts
+// forge-ignore-next-line
+import { something } from "../infra/prisma";  // ← esta línea no se reporta
+
+// forge-ignore: R1
+import { PrismaClient } from "../../infra/prisma/client"; // ← solo R1 ignorada
+
+// forge-ignore: R1, R8
+import { crossFeature } from "../other-feature/domain/Entity"; // ← R1 y R8 ignoradas
+```
+
+---
+
 ## ARCHITECTURE.md
 
 Forge mantiene un archivo `ARCHITECTURE.md` en la raíz del proyecto con el contexto persistente. Contiene:
@@ -147,15 +172,15 @@ Forge mantiene un archivo `ARCHITECTURE.md` en la raíz del proyecto con el cont
 ```md
 # Architecture State
 
-Project Name: <name>
-Framework: <detectado>
-Runtime: <detectado>
-Database: <detectado>
-ORM: <detectado>
-DI Strategy: <detectado>
-Profile: <detectado>
-Architecture: hexagonal-feature (Platform + Features + Shared + Infra)
-Last Audit: <fecha> (score: <puntaje>)
+- Project Name: <name>
+- Framework: <detectado>
+- Runtime: <detectado>
+- Database: <detectado>
+- ORM: <detectado>
+- DI Strategy: <detectado>
+- Profile: <detectado>
+- Architecture: hexagonal-feature (Platform + Features + Shared + Infra)
+- Last Audit: <fecha> (score: <puntaje>)
 
 ## Platform
 - platform/config/
@@ -175,11 +200,11 @@ Last Audit: <fecha> (score: <puntaje>)
 ...
 
 ## Ownership
-Health: healthy | degraded | critical
-Score: 0-100
-Orphans: 0
-Duplicates: 0
-Misplaced: 0
+- Health: healthy | degraded | critical
+- Score: 0-100
+- Orphans: 0
+- Duplicates: 0
+- Misplaced: 0
 
 ## Architecture Graph
 ...
@@ -198,10 +223,56 @@ El agente DEBE leer este archivo al inicio de cada interacción y actualizarlo a
 |---|---|
 | `reference/principles.md` | Manifiesto y 12 principios inquebrantables |
 | `reference/patterns.md` | Convenciones de nomenclatura globales (PascalCase.artifact, kebab dirs, etc.) |
+| `reference/errors.md` | Manejo de errores tipados en dominio y aplicación |
+| `reference/di-strategies.md` | Estrategias de inyección de dependencias según tamaño |
+| `reference/testing-patterns.md` | Pirámide de tests, unit mocks, integration tests |
+| `reference/api-design.md` | REST / GraphQL, paginación, validación, contratos |
+| `reference/observability.md` | Logging, tracing, métricas, health checks |
+| `reference/data-patterns.md` | Repository, Unit of Work, CQRS, Event Sourcing |
+| `reference/security-patterns.md` | AuthN, AuthZ, RBAC, rate limiting, validación |
+| `reference/events.md` | Eventos de dominio, outbox pattern, sagas |
+| `reference/hooks.md` | Git pre-commit hook para validación arquitectónica |
+| `reference/help.md` | Lista completa de comandos y flags de Forge |
+| `reference/assay.md` | Ensayo arquitectónico multi-persona — interpretación cualitativa del audit |
 | `profiles/` | Perfiles tecnológicos detallados (Express, Fastify, NestJS, etc.) |
-| `scripts/` | Scripts de análisis: context, detect, inspect, chain, profile, graph, architecture, armorer, bootstrap |
+| `scripts/` | Scripts: context, detect, inspect, chain, profile, graph, architecture, armorer, bootstrap, forge-config, forge-signals, forge-state, forge-api, pin, update, rollback, hook, posttool, formatter, assay, registry/rules |
+| `scripts/registry/rules.mjs` | Anti-pattern rule registry (R1-R9 + custom rules desacopladas de detect.mjs) |
+| `scripts/formatter.mjs` | Output formatter unificado (JSON, tabla, severidad coloreada, scoreBar, formatCheck, formatViolation) |
+| `scripts/posttool.mjs` | PostToolUse hook — analiza archivos modificados tras escritura y reporta violaciones |
+| `scripts/assay.mjs` | Motor de ensayo arquitectónico multi-persona (Bezos, Fowler, Hacker, PM, Arquitecta Senior) |
 | `templates/feature/` | Templates de feature (entity, repository, uc, controller, routes, schema, mapper) |
 | `templates/platform/` | Templates de platform (config, server, database, logger, http, di) |
 | `templates/shared/` | Templates de shared (errors, contracts, types, utils) |
 | `templates/infra/` | Templates de infra (prisma, mongodb, redis, mail) |
 | `command/forge.md` | Definición del comando `/forge` para opencode |
+
+### Tests
+
+Forge incluye tests unitarios con `node:test` (sin dependencias externas).
+
+```bash
+node --test .opencode/skills/forge/tests/core.test.mjs
+```
+
+| Módulo | Tests | Descripción |
+|--------|-------|-------------|
+| `profile.mjs` | 8 | Detección de perfiles |
+| `graph.mjs` | 1 | Grafo vacío |
+| `armorer.mjs` | 1 | Ownership vacío |
+| `forge-config.mjs` | 2 | Load/save state |
+| `chain.mjs` | 1 | Grafo de dependencias vacío |
+| `formatter.mjs` | 4 | Output format, colores, JSON |
+| `registry/rules.mjs` | 4 | R1-R9, evaluación, custom rules |
+| `detect.mjs` (inline ignores) | 5 | parseInlineIgnores, isIgnored |
+| `posttool.mjs` | 1 | PostToolUse hook |
+| `assay.mjs` | 4 | Personas, generateAssay, opiniones |
+
+### Flags adicionales
+
+| Flag | Comando | Descripción |
+|------|---------|-------------|
+| `--fix` | `quench` | Auto-corrige violaciones WARNING/INFO (missing @injectable(), tsconfig, naming, container.resolve) |
+| `--show-ignores` | `quench` | Muestra los inline ignores encontrados en el código |
+| `--persona=<id>` | `assay` | Filtra ensayo por una persona (bezos, fowler, hacker, pm, senior) |
+| `--save` | `assay` | Persiste ensayo en `.forge/assay/` |
+| `--json` | `assay` | Salida JSON |

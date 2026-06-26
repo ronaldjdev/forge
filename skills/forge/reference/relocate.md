@@ -15,6 +15,7 @@ También puede migrar componentes legacy a los layers Platform, Shared o Infrast
 
 ## Flujo
 
+0. **Backup automático**: Ejecutar `forge rollback backup <target>` antes de cualquier cambio
 1. Identificar el componente a migrar
 2. Clasificarlo en el layer correcto:
    - Configuración, servidor, logger, DI → **Platform**
@@ -25,8 +26,20 @@ También puede migrar componentes legacy a los layers Platform, Shared o Infrast
 4. Migrar archivos manteniendo la lógica intacta
 5. Actualizar imports
 6. Eliminar estructura legacy
-7. Ejecutar `forge quench` para verificar
-8. Actualizar `ARCHITECTURE.md`
+7. Verificar con `forge rollback verify` — si el score empeora, restaurar con `forge rollback restore <backup-id>`
+8. Ejecutar `forge quench` para verificar
+9. Actualizar `ARCHITECTURE.md`
+
+## Rollback
+
+Si la migración introduce violaciones (R1-R9), el agente DEBE restaurar automáticamente:
+
+```bash
+forge rollback list          # ver backups disponibles
+forge rollback restore <id>  # restaurar
+```
+
+El backup se almacena en `.forge/backups/<target>--<timestamp>/` y preserva la estructura original completa.
 
 ## Estrategias por layer
 

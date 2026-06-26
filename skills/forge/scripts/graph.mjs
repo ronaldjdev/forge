@@ -2,11 +2,10 @@
 
 import { join, relative, dirname, basename } from "path";
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
+import { parseImportPaths } from "./parse-imports.mjs";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
-
-const IMPORT_RE = /import\s+(?:type\s+)?(?:\{[^}]*\}|[^;{]+)\s+from\s+['"]([^'"]+)['"]/g;
 
 const INFRA_PACKAGES = {
   "prisma": "infra:prisma",
@@ -64,21 +63,6 @@ function findFiles(dir, exts, maxDepth = 6) {
   }
   if (existsSync(dir)) walk(dir, 0);
   return results;
-}
-
-function parseImports(content) {
-  const imports = [];
-  const lines = content.split("\n");
-  for (let i = 0; i < lines.length; i++) {
-    const m = lines[i].match(IMPORT_RE);
-    if (m) {
-      for (const full of m) {
-        const src = full.match(/from\s+['"]([^'"]+)['"]/);
-        if (src) imports.push(src[1]);
-      }
-    }
-  }
-  return imports;
 }
 
 function classifyPath(relPath) {
@@ -264,9 +248,9 @@ export function buildGraph(projectRoot = ROOT) {
 
   /* 6a. Detect used infra packages first */
   const usedPackages = new Set();
-  for (const { content } of fileContents) {
-    const imports = parseImports(content);
-    for (const imp of imports) {
+  for (const { file: filePath, content } of fileContents) {
+    const gImports = parseImportPaths(content, filePath);
+    for (const imp of gImports) {
       for (const [pkg, id] of Object.entries(INFRA_PACKAGES)) {
         if (imp === pkg || imp.startsWith(pkg + "/")) usedPackages.add(id);
       }
@@ -321,7 +305,7 @@ export function buildGraph(projectRoot = ROOT) {
 
     if (!sourceId || !idSet.has(sourceId)) continue;
 
-    const imports = parseImports(content);
+    const gImports = parseImportPaths(content, filePath);
     const seenTargets = new Set();
 
     for (const imp of imports) {

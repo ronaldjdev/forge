@@ -1,29 +1,16 @@
 #!/usr/bin/env node
 
-import { join, basename } from "path";
+import { join, basename, relative } from "path";
+import { execFileSync } from "child_process";
 import { buildContext } from "./context.mjs";
 import { detectProfile, detectProfileExtended } from "./profile.mjs";
 import { buildDependencyGraph } from "./chain.mjs";
-import { allChecks } from "./detect.mjs";
+import { allChecks, checkStructure, checkLayers, checkDecorators } from "./detect.mjs";
+import { saveHistory, updateStateFromAudit } from "./forge-config.mjs";
 
 const ROOT = process.cwd();
 
-const CYAN = "\x1b[36m";
-const GREEN = "\x1b[32m";
-const RED = "\x1b[31m";
-const YELLOW = "\x1b[33m";
-const BOLD = "\x1b[1m";
-const RESET = "\x1b[0m";
-const DIM = "\x1b[2m";
-const GRAY = "\x1b[90m";
-
-const SEVERITY_COLORS = {
-  CRITICAL: RED,
-  ERROR: RED,
-  WARNING: YELLOW,
-  INFO: CYAN,
-  SUGGESTION: GRAY,
-};
+import { CYAN, GREEN, RED, YELLOW, BOLD, RESET, DIM, GRAY, SEVERITY_COLORS, col, formatJson, formatCheck, scoreBar, formatReport } from "./formatter.mjs";
 
 const CAT_NAMES = {
   structure: "Estructura",
@@ -73,7 +60,7 @@ function buildReport(result) {
   return { total, max: maxTotal, categories: result.categories, violations, recommendations, severityCounts: countBySeverity(violations) };
 }
 
-function printReport(report, ctx, profile, graph, archGraph) {
+function printReport(report, ctx, profile, graph, archGraph, profileExtended) {
   const barLen = 40;
   const pct = report.max > 0 ? Math.round((report.total / report.max) * 100) : 0;
 
@@ -162,6 +149,36 @@ function printReport(report, ctx, profile, graph, archGraph) {
     console.log();
   }
 
+  /* Contextual suggestions */
+  const suggestions = [];
+  const v = report.severityCounts;
+  if ((v.CRITICAL || 0) > 0) suggestions.push("forge quench — revisar reglas CRITICAL en detalle");
+  if ((v.ERROR || 0) > 0) suggestions.push("forge quench — corregir violaciones ERROR antes de avanzar");
+  if (graph.hasCycles) suggestions.push("forge reforge — eliminar ciclos del grafo de dependencias");
+  if (ctx.platform.exists && ctx.platform.components.length < 3) suggestions.push("forge forge — bootstrap de componentes platform faltantes");
+  if (!ctx.platform.exists) suggestions.push("forge forge — iniciar bootstrap de platform");
+  if (ctx.features.legacy.length > 0) suggestions.push(`forge relocate — migrar ${ctx.features.legacy.length} feature(s) legacy a estructura hexagonal`);
+  if (archGraph && archGraph.stats.dependencyHealth < 70) suggestions.push("forge temper — endurecer inyección de dependencias");
+  if (archGraph && archGraph.stats.riskScore > 50) suggestions.push("forge reforge — reducir riesgo arquitectónico");
+  if (pct >= 80) suggestions.push("forge inspect — mantener auditoría periódica");
+  if (pct < 50) suggestions.push("forge inspect — auditoría focalizada tras correcciones");
+
+  // Profile-derived suggestions
+  if (profileExtended) {
+    for (const dep of profileExtended.depIssues || []) {
+      suggestions.push(`profiler: ${dep}`);
+    }
+    for (const s of profileExtended.suggestions || []) {
+      suggestions.push(`profiler: ${s}`);
+    }
+  }
+
+  if (suggestions.length > 0) {
+    console.log(`  ${BOLD}${CYAN}Siguientes pasos sugeridos${RESET}`);
+    suggestions.forEach((s, i) => console.log(`   ${i + 1}. ${s}`));
+    console.log();
+  }
+
   console.log("═".repeat(58) + "\n");
 }
 
@@ -169,24 +186,156 @@ function printJson(report, ctx, profile, graph, archGraph) {
   console.log(JSON.stringify({ ...report, profile, context: ctx, dependencies: graph, architectureGraph: archGraph }, null, 2));
 }
 
+/**
+ * Get files changed vs default branch (or working tree as fallback).
+ */
+function getChangedFiles() {
+  // Try 1: changes vs default branch (committed but not merged)
+  let files = [];
+  try {
+    const defaultBranch = execFileSync("git", ["symbolic-ref", "refs/remotes/origin/HEAD"], { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] })
+      .trim().replace("refs/remotes/origin/", "");
+    const raw = execFileSync("git", ["diff", "--name-only", "--diff-filter=ACMR", `${defaultBranch}...HEAD`], { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] });
+    files = raw.trim().split("\n").filter(Boolean);
+  } catch {}
+
+  // Try 2: working tree changes (unstaged + uncommitted)
+  if (files.length === 0) {
+    try {
+      const raw = execFileSync("git", ["status", "--porcelain"], { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] });
+      files = raw.split("\n").filter(Boolean).map(l => l.slice(3));
+    } catch {}
+  }
+
+  // Try 3: staged changes only
+  if (files.length === 0) {
+    try {
+      const raw = execFileSync("git", ["diff", "--cached", "--name-only", "--diff-filter=ACMR"], { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] });
+      files = raw.trim().split("\n").filter(Boolean);
+    } catch {}
+  }
+
+  return files;
+}
+
+/**
+ * Determine which features are affected by changed files.
+ */
+function getChangedFeatures(changedFiles, allFeatures) {
+  if (changedFiles.length === 0) return [];
+  const affected = new Set();
+  for (const file of changedFiles) {
+    const match = file.match(/src\/features\/([^/]+)\//);
+    if (match) affected.add(match[1]);
+  }
+  return allFeatures.filter(f => affected.has(f));
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const isJson = args.includes("--json");
+  const isDiff = args.includes("--diff");
   const filterSeverity = args.includes("--severity") ? args[args.indexOf("--severity") + 1] : null;
 
   const ctx = await buildContext();
-  const profile = detectProfile(ctx);
+  const profileExtended = detectProfileExtended(ctx);
+  const profile = profileExtended.profile;
   const chainGraph = buildDependencyGraph();
   const archGraph = ctx.graph;
   const features = ctx.features.migrated;
-  const result = allChecks(features, archGraph, ctx);
 
+  if (isDiff) {
+    const changedFiles = getChangedFiles();
+    const changedFeatures = getChangedFeatures(changedFiles, features);
+
+    if (!isJson) {
+      console.log(`\n${CYAN}═══ Diff-Aware Audit ═══${RESET}`);
+      console.log(`${DIM}Archivos cambiados: ${changedFiles.length}${RESET}`);
+      if (changedFiles.length > 0) {
+        for (const f of changedFiles.slice(0, 10)) {
+          console.log(`  ${DIM}${f}${RESET}`);
+        }
+        if (changedFiles.length > 10) console.log(`  ${DIM}... (+${changedFiles.length - 10})${RESET}`);
+      }
+    }
+
+    if (changedFeatures.length === 0) {
+      if (!isJson) {
+        console.log(`\n${YELLOW}⚠ No hay features afectados por los cambios.${RESET}`);
+        console.log(`${DIM}Los cambios están fuera de src/features/ o no hay features migrados.${RESET}\n`);
+      } else {
+        console.log(JSON.stringify({ diff: { changedFiles: changedFiles.length, changedFeatures: [], affectedFeatures: false } }));
+      }
+      process.exit(0);
+    }
+
+    if (!isJson) {
+      console.log(`${DIM}Features afectados: ${changedFeatures.join(", ")}${RESET}\n`);
+    }
+
+    // Run only feature-specific checks on changed features
+    const result = {
+      structure: checkStructure(changedFeatures),
+      layers: checkLayers(changedFeatures),
+      decorators: checkDecorators(changedFeatures),
+      graph: archGraph ? { score: 0, checks: [{ severity: "INFO", label: `Grafo: ${archGraph.stats.totalNodes} nodos, ${archGraph.stats.violations} violaciones (global)`, pass: true }] } : { score: 0, checks: [] },
+    };
+
+    // Provide a simpler report
+    let totalScore = result.structure.score + result.layers.score + (result.decorators?.score || 0);
+    const maxScore = 60; // structure 20 + layers 20 + decorators 20
+    const pct = Math.round((totalScore / maxScore) * 100);
+
+    if (!isJson) {
+      console.log(`${BOLD}Score en features afectados: ${pct >= 80 ? GREEN : pct >= 50 ? YELLOW : RED}${totalScore}/${maxScore} (${pct}%)${RESET}\n`);
+
+      for (const [key, cat] of Object.entries(result)) {
+        const name = key.charAt(0).toUpperCase() + key.slice(1);
+        console.log(`  ${BOLD}${name} (${cat.score}/${cat.score === 0 && cat.checks.length > 0 ? "—" : maxScore})${RESET}`);
+        for (const check of cat.checks) {
+          const icon = check.pass ? `${GREEN}✔${RESET}` : `${RED}✘${RESET}`;
+          const sev = check.pass ? "" : ` ${SEVERITY_COLORS[check.severity]}[${check.severity}]${RESET}`;
+          const detail = check.detail ? ` ${GRAY}— ${check.detail}${RESET}` : "";
+          console.log(`   ${icon}${sev} ${check.label}${detail}`);
+          if (!check.pass && check.fix) {
+            console.log(`     ${DIM}→ Fix: ${check.fix}${RESET}`);
+          }
+        }
+        console.log();
+      }
+    } else {
+      console.log(JSON.stringify({
+        diff: { changedFiles: changedFiles.length, changedFeatures, totalScore, maxScore, pct },
+        categories: result,
+      }, null, 2));
+    }
+    updateStateFromAudit({ total: totalScore, grade: `${pct}%`, violations: [], health: "diff", context: { features: { total: features.length, migrated: features, legacy: [] } } });
+    saveHistory({ score: totalScore, grade: `${pct}%`, violationCount: 0, totalFeatures: features.length, migratedFeatures: features.length });
+    process.exit(0);
+  }
+
+  const result = allChecks(features, archGraph, ctx);
   const report = buildReport({ categories: result });
+
+  updateStateFromAudit({
+    total: report.total,
+    grade: report.grade,
+    violations: report.violations || [],
+    health: report.total >= 80 ? "healthy" : report.total >= 50 ? "fair" : "poor",
+    context: { features: { total: features.length, migrated: features, legacy: ctx.features?.legacy || [] } },
+  });
+  saveHistory({
+    score: report.total,
+    grade: report.grade,
+    violationCount: (report.violations || []).length,
+    totalFeatures: features.length,
+    migratedFeatures: features.length,
+  });
 
   if (isJson) {
     printJson(report, ctx, profile, chainGraph, archGraph);
   } else {
-    printReport(report, ctx, profile, chainGraph, archGraph);
+    printReport(report, ctx, profile, chainGraph, archGraph, profileExtended);
   }
 }
 

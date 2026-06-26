@@ -46,7 +46,7 @@ Los proyectos backend degeneran en código acoplado porque la infraestructura t�
 Detecta el stack tecnológico, ejecuta bootstrap de platform/shared/infra si no existen, determina el perfil activo, analiza ownership y prepara el proyecto. Crea `ARCHITECTURE.md` si no existe.
 
 ```
-Boot sequence: context → bootstrap → profile → armorer → graph → chain → inscribe
+Boot sequence: context → armorer → profile → graph → chain → inspect → architecture → execute → architecture
 ```
 
 ### `cast` — Crear feature
@@ -143,6 +143,99 @@ src/shared/
 └── utils/       # <util>.ts (formatDate, pagination)
 ```
 
+### `assay` — Ensayo multi-persona
+
+Evalúa la arquitectura desde 5 perspectivas distintas:
+
+| Persona | Enfoque |
+|---------|---------|
+| **Jeff Bezos** | Acoplamiento, escalabilidad, equipos autónomos (API mandate) |
+| **Martin Fowler** | Refactoring, deuda técnica, microservicios vs monolitos |
+| **Hacker** | Seguridad, performance, edge cases, vulnerabilidades |
+| **Alex (PM)** | Tiempo de entrega, complejidad, ROI técnico |
+| **Dra. Carter** | Dependencias cíclicas, violaciones de capas, salud estructural |
+
+```
+forge assay                    # Ensayo completo (5 personas)
+forge assay --persona=bezos    # Solo Bezos
+forge assay --persona=fowler   # Solo Fowler
+forge assay --save             # Persiste en .forge/assay/
+forge assay --json             # Salida JSON
+```
+
+### `nail / unnail` — Shortcuts de navegación
+
+Fija rutas del proyecto como atajos para acceso rápido:
+
+```
+nail src/features/auth        # Crea atajo "auth"
+nail src/platform/config      # Crea atajo "config"
+nail --list                   # Lista atajos
+unnail auth                   # Elimina atajo
+```
+
+### `forge state` — Estado persistente
+
+Muestra y guarda el estado post-auditoría:
+
+```
+forge state          # Último score, grade, violaciones
+forge state --show   # Estado detallado
+forge state --json   # Salida JSON
+forge state --history # Histórico de auditorías
+```
+
+### `forge hook` — Git pre-commit hook
+
+Instala un hook pre-commit que valida la arquitectura en cada commit:
+
+```
+forge hook install      # Instalar hook
+forge hook status       # Ver estado
+forge hook check        # Validar archivos staged
+forge hook uninstall    # Eliminar hook
+```
+
+### `forge rollback` — Restauración
+
+Restaura el proyecto a un punto anterior:
+
+```
+forge rollback                   # Último checkpoint
+forge rollback --list            # Lista checkpoints
+forge rollback --id <checkpoint> # Restaurar específico
+```
+
+### `forge update` — Actualización
+
+Verifica si hay una nueva versión de Forge disponible.
+
+### Inline Ignores
+
+Forge soporta excepciones línea por línea para reglas arquitectónicas:
+
+```ts
+// forge-ignore-next-line
+import { something } from "../infra/prisma";  // ← no se reporta
+
+// forge-ignore: R1
+import { PrismaClient } from "../../infra/prisma/client"; // ← solo R1 ignorada
+
+// forge-ignore: R1, R8
+import { crossFeature } from "../other-feature/domain/Entity"; // ← R1 y R8 ignoradas
+```
+
+Usar `quench --show-ignores` para listar todos los ignores en el código.
+
+### Flags adicionales
+
+| Flag | Comando | Descripción |
+|------|---------|-------------|
+| `--fix` | `quench` | Auto-corrige violaciones WARNING/INFO (missing @injectable(), tsconfig, naming, container.resolve) |
+| `--show-ignores` | `quench` | Muestra los inline ignores encontrados en el código |
+| `--persona=<id>` | `assay` | Filtra ensayo por una persona (bezos, fowler, hacker, pm, senior) |
+| `--save` | `assay` | Persiste ensayo en `.forge/assay/` |
+
 ---
 
 ## Modelo arquitectónico
@@ -224,7 +317,12 @@ Ver `reference/patterns.md` para el detalle completo.
 | `express-mongodb` | Express | MongoDB | Mongoose | tsyringe |
 | `express-postgres` | Express | PostgreSQL | raw pg | Manual |
 | `express-prisma` | Express | PostgreSQL | Prisma | tsyringe |
+| `express-drizzle` | Express | PostgreSQL | Drizzle | tsyringe |
+| `fastify-mongodb` | Fastify | MongoDB | Mongoose | Manual |
 | `fastify-postgres` | Fastify | PostgreSQL | Prisma | Manual |
+| `fastify-prisma` | Fastify | PostgreSQL | Prisma | Manual |
+| `nestjs-mongodb` | NestJS | MongoDB | Mongoose | NestJS DI |
+| `nestjs-postgres` | NestJS | PostgreSQL | Prisma | NestJS DI |
 | `nestjs-prisma` | NestJS | PostgreSQL | Prisma | NestJS DI |
 
 Cada perfil define estructura de directorios, setup de DI, routing, persistencia, testing y naming conventions.
@@ -251,17 +349,33 @@ Donde vive toda la inteligencia arquitectónica:
 | `scripts/profile.mjs` | Matchea stack contra perfiles conocidos o sintetiza uno genérico |
 | `scripts/graph.mjs` | Grafo completo: 6 tipos de nodo, 4 capas, 9 reglas (R1-R9), risk score, dependency health |
 | `scripts/chain.mjs` | Grafo multi-capa (platform, features, shared, infra) con orden topológico |
-| `scripts/detect.mjs` | 6 categorías de chequeo arquitectónico (110 pts) |
+| `scripts/detect.mjs` | Validación de reglas R1-R9 con inline ignores y `--fix` |
 | `scripts/inspect.mjs` | Orquesta auditoría completa con reporte coloreado |
 | `scripts/architecture.mjs` | Genera/actualiza `ARCHITECTURE.md` vivo |
 | `scripts/bootstrap.mjs` | Inicializa platform/shared/infra según perfil (interno) |
+| `scripts/formatter.mjs` | Output unificado: colores, JSON, scoreBar, formatCheck |
+| `scripts/registry/rules.mjs` | Registry de reglas R1-R9 + custom rules desacoplado |
+| `scripts/assay.mjs` | Ensayo multi-persona (Bezos, Fowler, Hacker, PM, Arquitecta) |
+| `scripts/posttool.mjs` | PostToolUse hook con `--reminder` y `--strict` |
+| `scripts/forge-config.mjs` | Persistencia de config, estado e histórico |
+| `scripts/forge-state.mjs` | CLI wrapper de estado post-auditoría |
+| `scripts/forge-signals.mjs` | Manejo de señales (SIGINT, SIGTERM) |
+| `scripts/forge-api.mjs` | Validación de contratos API |
+| `scripts/hook.mjs` | Gestión de git pre-commit hook |
+| `scripts/pin.mjs` | Shortcuts de navegación (`nail`/`unnail`) |
+| `scripts/rollback.mjs` | Restauración de puntos de guardado |
+| `scripts/rename.mjs` | Renombrado bulk de componentes |
+| `scripts/parse-imports.mjs` | Parsing de imports ESM |
+| `scripts/update.mjs` | Verificador de actualizaciones |
 | `reference/` | Documentación detallada de cada comando y principios |
 | `reference/patterns.md` | Convenciones de nomenclatura globales |
-| `profiles/` | Convenciones por stack tecnológico |
-| `templates/feature/` | Templates TypeScript para features |
-| `templates/platform/` | Templates para componentes de platform |
-| `templates/shared/` | Templates para shared (errors, contracts, types, utils) |
-| `templates/infra/` | Templates para infra (prisma, mongodb, redis, mail) |
+| `reference/assay.md` | Documentación del comando assay |
+| `reference/hooks.md` | Documentación del sistema de hooks |
+| `profiles/` | 10 perfiles tecnológicos detallados |
+| `templates/feature/` | 11 templates TypeScript para features |
+| `templates/platform/` | 6 templates para componentes de platform |
+| `templates/shared/` | 4 templates para shared (errors, contracts, types, utils) |
+| `templates/infra/` | 4 templates para infra (prisma, mongodb, redis, mail) |
 
 ---
 
@@ -297,7 +411,7 @@ forge install -g   # global
 
 ## Uso
 
-Una vez instalada, OpenCode carga automáticamente la skill `forge` al trabajar en el proyecto. Los comandos se invocan por lenguaje natural:
+Una vez instalada, OpenCode carga automáticamente la skill `forge` al trabajar en el proyecto. Usa `forge --help` para ver la lista completa de comandos. Los comandos también se invocan por lenguaje natural:
 
 | Lenguaje natural | Comando |
 |---|---|
@@ -311,6 +425,14 @@ Una vez instalada, OpenCode carga automáticamente la skill `forge` al trabajar 
 | "cadena", "grafo", "acoplamiento" | `chain` |
 | "inscribir", "grabar", "ARCHITECTURE.md" | `inscribe` |
 | "fundir", "compartir", "mover a shared" | `smelt` |
+| "examinar", "calidad", "opinión", "critique" | `assay` |
+| "fijar", "pinar", "shortcut" | `nail` |
+| "desfijar", "despinar" | `unnail` |
+| "estado", "state", "último audit" | `forge state --show` |
+| "hook", "pre-commit", "githook" | `forge hook` |
+| "api", "contrato", "openapi", "swagger" | `forge api` |
+| "rollback", "restaurar", "deshacer" | `forge rollback` |
+| "actualizar", "update", "nueva versión" | `forge update` |
 
 ---
 

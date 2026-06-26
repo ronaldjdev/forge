@@ -86,6 +86,58 @@ src/features/<feature-name>/
 
 ---
 
+## Events
+
+| Archivo | Formato | Ejemplo |
+|---------|---------|---------|
+| Eventos de dominio | `<Domain><Accion>.event.ts` | `UserCreated.event.ts`, `OrderPaid.event.ts` |
+| Handlers | `<Domain><Accion>.handler.ts` | `SendWelcomeEmail.handler.ts` |
+| Outbox record | `<Entidad>.outbox.ts` | `User.outbox.ts` |
+
+Los eventos siempre en pasado (`Created`, `Updated`, `Deleted`, `Paid`, `Shipped`), nunca en imperativo.
+
+---
+
+## Observability
+
+| Archivo | Formato | Ejemplo |
+|---------|---------|---------|
+| Loggers | `Logger.service.ts`, `Logger.config.ts` | — |
+| Métricas | `Metrics.ts`, `Metrics.middleware.ts` | — |
+| Tracing | `Tracing.ts` | — |
+| Health | `Health.ts`, `Health.controller.ts` | — |
+
+Toda instrumentación vive en `platform/observability/`.
+Para referencia completa ver `reference/observability.md`.
+
+---
+
+## Errors
+
+| Archivo | Formato | Ejemplo |
+|---------|---------|---------|
+| Error base | `<Name>Error.ts` | `AppError.ts` |
+| Error específico | `<Name>Error.ts` | `NotFoundError.ts`, `ValidationError.ts`, `ConflictError.ts` |
+
+Los errores transversales viven en `shared/errors/`. Errores específicos de feature en `features/<name>/domain/errors/`.
+Para guía completa ver `reference/errors.md`.
+
+---
+
+## API
+
+| Archivo | Formato | Ejemplo |
+|---------|---------|---------|
+| Esquemas de validación | `<name>.schema.ts` | `createUser.schema.ts` |
+| Routes | `<Name>.routes.ts` | `User.routes.ts` |
+| Controller | `<Name>.controller.ts` | `User.controller.ts` |
+| DTOs request | `<Name>.req.ts` | `CreateUser.req.ts` |
+| DTOs response | `<Name>.res.ts` | `User.res.ts` |
+
+REST prefiere `/api/v1/resources`. GraphQL schema en `adapters/in/graphql/` dentro del feature.
+
+---
+
 ## Infra Layer
 
 | Directorio | Archivos | Ejemplo |
