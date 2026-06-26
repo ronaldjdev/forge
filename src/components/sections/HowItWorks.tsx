@@ -60,13 +60,13 @@ export function HowItWorks() {
                   </span>
                 </div>
                 <div className="flex-1 pt-2">
-                  <h3 className="text-2xl font-bold mb-3 text-ink">
+                  <h3 className="text-2xl font-bold mb-3 text-ink font-display">
                     {step.title}
                   </h3>
                   <p className="mb-5 max-w-xl text-light/70">
                     {step.desc}
                   </p>
-                  <code className="inline-block px-5 py-3 text-sm font-mono bg-dark text-accent">
+                  <code className="inline-block px-5 py-3 text-sm tracking-wider bg-dark text-accent font-display">
                     {step.code}
                   </code>
                 </div>

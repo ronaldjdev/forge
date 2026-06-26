@@ -20,16 +20,13 @@ const comparisons = [
   },
   {
     before: "Auditoría manual",
-    after: "Score 0-100 en segundos",
+    after: "Score 0-110 en segundos",
   },
 ];
 
 export function Comparison() {
   return (
-    <section
-      id="comparacion"
-      className="py-24 bg-dark"
-    >
+    <section id="comparacion" className="py-24 bg-dark">
       <div className="max-w-4xl mx-auto px-6">
         <SectionHeader
           title="Sin Forge vs Con Forge"
@@ -46,7 +43,7 @@ export function Comparison() {
               className="flex flex-col md:grid md:grid-cols-3 gap-4 items-center p-6 bg-surface border border-accent/15"
             >
               <div className="w-full md:col-span-1 flex flex-row md:flex-col items-center md:items-start gap-3 md:gap-0">
-                <div className="flex-1 md:flex-none">
+                <div className="flex-1  md:flex-none">
                   <div className="text-xs md:text-sm mb-0 md:mb-1 text-light/50">
                     Sin Forge
                   </div>
@@ -54,7 +51,9 @@ export function Comparison() {
                     {item.before}
                   </div>
                 </div>
-                <div className="shrink-0 px-3 py-1 md:px-4 md:py-2 text-sm font-medium bg-accent/10 text-accent">
+              </div>
+              <div className="flex justify-center items-center">
+                <div className="rotate-90 md:rotate-0 shrink-0 px-3 py-1 md:px-4 md:py-2 text-sm font-medium bg-accent/10 text-accent">
                   →
                 </div>
               </div>
@@ -62,7 +61,7 @@ export function Comparison() {
                 <div className="text-xs md:text-sm mb-1 text-accent">
                   Con Forge
                 </div>
-                <div className="text-sm md:text-base font-semibold text-ink">
+                <div className="text-sm md:text-base font-semibold text-ink font-display tracking-wider">
                   {item.after}
                 </div>
               </div>

@@ -63,7 +63,7 @@ export function Features() {
                 className="p-8 transition-all duration-300 bg-surface border border-accent/15"
               >
                 <Icon className="mb-4 w-[50px] h-[50px] text-accent" />
-                <h3 className="text-xl font-semibold mb-3 text-ink">
+                <h3 className="text-xl font-semibold mb-3 text-ink font-display">
                   {feat.title}
                 </h3>
                 <p className="leading-relaxed text-light/80">

@@ -110,7 +110,7 @@ export function Hero() {
                     <div className="marquee-badge font-display">
                       {fw.letter}
                     </div>
-                    <span className="marquee-label">{fw.label}</span>
+                    <span className="marquee-label font-display">{fw.label}</span>
                   </div>
                 ))}
               </div>
@@ -143,7 +143,7 @@ export function Hero() {
                     style={{ backgroundColor: layer.color }}
                   ></div>
                   <div className="flex-1">
-                    <p className="font-semibold text-sm text-ink">
+                    <p className="font-semibold text-sm text-ink font-display">
                       {layer.name}
                     </p>
                     <p className="text-xs text-light/60">

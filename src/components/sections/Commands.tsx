@@ -124,7 +124,7 @@ export function Commands() {
               }}
               className="p-5 cursor-pointer transition-all bg-dark border border-accent/20"
             >
-              <div className="font-mono text-lg font-bold mb-2 text-accent">
+              <div className="text-lg font-bold mb-2 text-accent font-display tracking-widest">
                 {cmd.name}
               </div>
               <div className="text-xs leading-relaxed text-light/80">
@@ -142,14 +142,14 @@ export function Commands() {
           className="mt-12 p-6 flex flex-col md:flex-row items-center justify-between gap-4 bg-accent/5 border border-accent/20"
         >
           <div>
-            <h3 className="font-semibold mb-1 text-ink">
+            <h3 className="font-semibold mb-1 text-ink font-display tracking-wider">
               ¿Prefieres no instalar?
             </h3>
             <p className="text-sm text-light/70">
               Usa npx directamente sin instalación global
             </p>
           </div>
-          <code className="px-4 py-2 font-mono text-sm bg-dark text-accent">
+          <code className="px-4 py-2 font-display tracking-wider text-sm bg-dark text-accent">
             npx @ronaldjdev/forge &lt;command&gt;
           </code>
         </motion.div>

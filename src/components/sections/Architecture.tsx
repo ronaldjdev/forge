@@ -55,7 +55,7 @@ export function Architecture() {
             >
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-4 h-4 shrink-0" style={{ backgroundColor: colorMap[layer.color] }}></div>
-                <h3 className="text-xl font-bold" style={{ color: colorMap[layer.color] }}>{layer.name}</h3>
+                <h3 className="text-xl font-bold font-display" style={{ color: colorMap[layer.color] }}>{layer.name}</h3>
               </div>
               <p className="mb-6 text-sm text-light/70">{layer.desc}</p>
               <div className="flex flex-wrap gap-2">
@@ -78,7 +78,7 @@ export function Architecture() {
           viewport={{ once: true }}
           className="p-8 bg-surface border border-accent/20"
         >
-          <h3 className="text-xl font-bold mb-6 text-center text-ink">
+          <h3 className="text-xl font-bold mb-6 text-center text-ink font-display">
             Reglas de dependencia R1-R9
           </h3>
           <div className="grid md:grid-cols-3 gap-4">

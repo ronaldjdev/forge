@@ -25,10 +25,10 @@ export function Install() {
             <div className="text-sm font-medium mb-2 text-accent">
               En un proyecto
             </div>
-            <h3 className="text-lg font-semibold mb-4 text-ink">
+            <h3 className="text-lg font-semibold mb-4 text-ink font-display tracking-wider">
               Instalación local
             </h3>
-            <code className="block p-4 text-sm font-mono leading-relaxed bg-surface text-light">
+            <code className="block p-4 text-sm leading-relaxed bg-surface text-light font-display tracking-wider">
               npx @ronaldjdev/forge install
             </code>
           </motion.div>
@@ -43,10 +43,10 @@ export function Install() {
             <div className="text-sm font-medium mb-2 text-accent">
               Global
             </div>
-            <h3 className="text-lg font-semibold mb-4 text-ink">
+            <h3 className="text-lg font-semibold mb-4 text-ink font-display tracking-wider">
               Disponible en todos tus proyectos
             </h3>
-            <code className="block p-4 text-sm font-mono leading-relaxed bg-surface text-light">
+            <code className="block p-4 text-sm leading-relaxed bg-surface text-light font-display tracking-wider">
               npx @ronaldjdev/forge install --global
             </code>
           </motion.div>
