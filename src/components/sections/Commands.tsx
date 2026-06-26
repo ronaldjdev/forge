@@ -11,7 +11,7 @@ const commands = [
   },
   {
     name: "inspect",
-    desc: "Auditoría arquitectónica 110pts",
+    desc: "Auditoría arquitectónica 0-100",
     category: "audit",
   },
   { name: "quench", desc: "Validar 9 reglas R1-R9", category: "audit" },
@@ -19,6 +19,16 @@ const commands = [
     name: "chain",
     desc: "Análisis de dependencias en grafo",
     category: "audit",
+  },
+  {
+    name: "graph",
+    desc: "Grafo arquitectónico y risk score",
+    category: "audit",
+  },
+  {
+    name: "assay",
+    desc: "Ensayo arquitectónico multi-persona",
+    category: "review",
   },
   {
     name: "relocate",
@@ -35,8 +45,18 @@ const commands = [
     desc: "Aplicar inyección de dependencias",
     category: "refactor",
   },
-  { name: "inscribe", desc: "Generar ARCHITECTURE.md", category: "docs" },
   { name: "smelt", desc: "Extraer código a shared/", category: "refactor" },
+  {
+    name: "forge hook",
+    desc: "Pre-commit hook arquitectónico",
+    category: "ops",
+  },
+  {
+    name: "forge state",
+    desc: "Estado persistente post-auditoría",
+    category: "audit",
+  },
+  { name: "inscribe", desc: "Generar ARCHITECTURE.md", category: "docs" },
 ];
 
 const categories = [
@@ -44,7 +64,9 @@ const categories = [
   { id: "init", label: "Inicializar" },
   { id: "create", label: "Crear" },
   { id: "audit", label: "Auditar" },
+  { id: "review", label: "Evaluar" },
   { id: "refactor", label: "Refactorizar" },
+  { id: "ops", label: "Automatizar" },
   { id: "docs", label: "Documentar" },
 ];
 
@@ -61,7 +83,7 @@ export function Commands() {
     >
       <div className="max-w-6xl mx-auto px-6">
         <SectionHeader
-          title="10 comandos CLI"
+          title="+10 comandos CLI"
           description="Comandos directos que imponen disciplina arquitectónica sin negociar"
         >
           <div className="flex flex-wrap justify-center gap-2 mt-8">

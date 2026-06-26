@@ -14,15 +14,15 @@ const iconComponents = [
 const features = [
   {
     title: "Arquitectura auditable",
-    desc: "Score 0-100 con grado A-F en 6 categorías: Structure, Layers, Ownership, Platform, Dependencies y Graph.",
+    desc: "Score 0-110 con grado A-F en 6 categorías: Structure, Layers, Ownership, Platform, Dependencies y Graph.",
   },
   {
     title: "Ownership automático",
     desc: "Detecta huérfanos, duplicados y componentes mal ubicados con sugerencias de reubicación precisas.",
   },
   {
-    title: "5 perfiles predefinidos",
-    desc: "Express + MongoDB, Express + PostgreSQL, Express + Prisma, Fastify + Prisma, NestJS + Prisma.",
+    title: "10 perfiles predefinidos",
+    desc: "Express + MongoDB, PostgreSQL, Prisma, Drizzle, Fastify, NestJS.",
   },
   {
     title: "Sin dependencias runtime",

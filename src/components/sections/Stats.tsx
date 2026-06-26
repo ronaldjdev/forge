@@ -10,7 +10,7 @@ const stats = [
     desc: "Platform, Features, Shared, Infra",
   },
   {
-    value: "10",
+    value: "+10",
     label: "Comandos CLI",
     desc: "Forge, cast, inspect, quench...",
   },

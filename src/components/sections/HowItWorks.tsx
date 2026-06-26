@@ -4,33 +4,33 @@ import { SectionHeader } from "../ui/SectionHeader";
 const steps = [
   {
     num: "01",
-    title: "Inicializa",
-    desc: "Ejecuta `forge` para detectar stack, crear estructura base y generar ARCHITECTURE.md",
+    title: "Instala",
+    desc: "Instala Forge como skill de OpenCode en tu proyecto con un solo comando",
     code: "npx @ronaldjdev/forge install",
   },
   {
     num: "02",
-    title: "Crea features",
-    desc: "Usa `cast` para generar features completos con arquitectura hexagonal",
-    code: "forge cast users",
+    title: "Inicializa",
+    desc: "Ejecuta `forge` para detectar stack, determinar perfil, analizar ownership y generar ARCHITECTURE.md",
+    code: "forge",
   },
   {
     num: "03",
-    title: "Audita",
-    desc: "Ejecuta `inspect` para evaluar tu arquitectura con score de 0-100",
-    code: "forge inspect",
+    title: "Crea features",
+    desc: "Usa `cast` para generar features completos con estructura hexagonal y todas sus capas",
+    code: "forge cast users",
   },
   {
     num: "04",
-    title: "Refina",
-    desc: "Aplica reglas R1-R9 con `quench` y refactoriza con `reforge`",
-    code: "forge quench",
+    title: "Audita y refina",
+    desc: "Evalúa con `inspect`, valida reglas R1-R9 con `quench` y auto-corrige violaciones con `--fix`",
+    code: "forge inspect && forge quench --fix",
   },
-    {
+  {
     num: "05",
-    title: "Itera",
-    desc: "Repite el proceso hasta alcanzar tu arquitectura ideal",
-    code: "forge temper",
+    title: "Evalúa con Assay",
+    desc: "Genera un ensayo multi-persona (Bezos, Fowler, Hacker, PM, Senior) para interpretar los resultados",
+    code: "forge assay",
   },
 ];
 
@@ -40,7 +40,7 @@ export function HowItWorks() {
       <div className="max-w-5xl mx-auto px-6">
         <SectionHeader
           title="Cómo funciona"
-          description="5 pasos para imponer disciplina arquitectónica en tu proyecto"
+          description="5 pasos para auditar, construir y evolucionar tu arquitectura backend"
         />
         <div className="relative">
           <div className="absolute left-9 top-0 bottom-0 w-px hidden md:block bg-accent/20" />

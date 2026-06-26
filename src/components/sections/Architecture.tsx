@@ -1,29 +1,36 @@
 import { motion } from 'framer-motion'
 import { SectionHeader } from "../ui/SectionHeader"
 
+const colorMap: Record<string, string> = {
+  accent: '#e7ffa5',
+  'blue-300': '#93c5fd',
+  'purple-300': '#d8b4fe',
+  'gray-400': '#9ca3af',
+}
+
 const layers = [
   {
     name: 'Platform',
     desc: 'Backbone técnico global. Configuración, servidor, logging, DI, seguridad, cache, eventos.',
-    color: '#e7ffa5',
+    color: 'accent',
     components: ['config/', 'database/', 'http/', 'server/', 'logger/', 'di/', 'security/', 'events/', 'cache/', 'observability/'],
   },
   {
     name: 'Features',
     desc: 'Capacidades de negocio. Cada feature es un vertical slice con su propia lógica.',
-    color: '#eeeeee',
+    color: 'blue-300',
     components: ['domain/', 'application/', 'adapters/'],
   },
   {
     name: 'Shared',
     desc: 'Componentes reutilizables puros. Sin dependencias de negocio ni infraestructura.',
-    color: '#e7ffa5',
+    color: 'purple-300',
     components: ['errors/', 'contracts/', 'types/', 'utils/'],
   },
   {
     name: 'Infra',
     desc: 'Implementaciones concretas. ORMs, clientes de BD, servicios externos.',
-    color: '#eeeeee',
+    color: 'gray-400',
     components: ['prisma/', 'mongodb/', 'redis/', 'mail/', 'storage/'],
   },
 ]
@@ -47,8 +54,8 @@ export function Architecture() {
               className="p-8 bg-surface border border-accent/20"
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-4 h-4 shrink-0" style={{ backgroundColor: layer.color }}></div>
-                <h3 className="text-xl font-bold" style={{ color: layer.color }}>{layer.name}</h3>
+                <div className="w-4 h-4 shrink-0" style={{ backgroundColor: colorMap[layer.color] }}></div>
+                <h3 className="text-xl font-bold" style={{ color: colorMap[layer.color] }}>{layer.name}</h3>
               </div>
               <p className="mb-6 text-sm text-light/70">{layer.desc}</p>
               <div className="flex flex-wrap gap-2">
@@ -93,7 +100,7 @@ export function Architecture() {
                 <span className="font-mono font-bold text-accent">{r.rule}</span>
                 <span className="text-sm flex-1 text-light">{r.from}</span>
                 <span
-                  className={`text-xs px-2 py-1 font-medium ${r.severity === 'CRITICAL' ? 'bg-red-900/20' : 'bg-accent/20'}`}
+                  className={`text-xs px-2 py-1 font-medium ${r.severity === 'CRITICAL' ? 'bg-[#FF3403]' : 'bg-accent/20'}`}
                   style={{ color: r.color }}
                 >
                   {r.severity}

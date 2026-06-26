@@ -37,12 +37,12 @@ const commands: any[] = [
     subtitle: 'Auditoría arquitectónica completa',
     use: ['Diagnóstico inicial del proyecto', 'Post-migración de feature', 'Pre-deploy para garantizar calidad', 'On demand para verificar estado'],
     categories: [
-      { name: 'Estructura', pts: 30, desc: 'Features completos (domain, application, adapters)' },
-      { name: 'Capas', pts: 25, desc: 'Imports prohibidos, lógica en controllers, BD directa' },
-      { name: 'Decoradores', pts: 20, desc: '@injectable y @inject presentes donde corresponde' },
-      { name: 'Legacy', pts: 15, desc: 'Archivos residuales en ubicaciones antiguas' },
-      { name: 'Configuración', pts: 10, desc: 'tsconfig, dependencias, reflect-metadata' },
-      { name: 'Grafo', pts: 20, desc: 'Violaciones arquitectónicas R1-R6, risk score, salud del grafo' },
+      { name: 'Estructura', pts: 20, desc: 'Features completos (domain, application, adapters)' },
+      { name: 'Capas', pts: 20, desc: 'Imports prohibidos, lógica en controllers, BD directa' },
+      { name: 'Ownership', pts: 20, desc: 'Huérfanos, duplicados y componentes mal ubicados' },
+      { name: 'Platform', pts: 15, desc: 'Configuración tsconfig, dependencias, reflect-metadata' },
+      { name: 'Dependencias', pts: 15, desc: 'Violaciones R1-R9, acoplamiento entre features' },
+      { name: 'Grafo', pts: 20, desc: 'Risk score, salud del grafo, ciclos de dependencia' },
     ],
     score: [
       { range: '90-100', grade: 'A', meaning: 'Arquitectura sólida. Cumple todos los principios.' },
@@ -67,6 +67,72 @@ const commands: any[] = [
       { code: 'R8', rule: 'Cross-feature direct imports', severity: 'ERROR' },
       { code: 'R9', rule: 'Ciclos de dependencia', severity: 'ERROR' },
     ],
+    fix: 'quench soporta --fix para auto-corregir violaciones WARNING/INFO (missing @injectable(), tsconfig, naming, container.resolve).',
+  },
+  {
+    name: 'graph',
+    subtitle: 'Grafo arquitectónico y risk score',
+    use: ['Diagnosticar el estado del grafo de dependencias', 'Obtener risk score del sistema', 'Visualizar violaciones arquitectónicas por nodo', 'Antes de una migración o refactor mayor'],
+    nodeTypes: [
+      { type: 'platform', example: 'config, server, logger, di' },
+      { type: 'feature', example: 'users, payments, credit' },
+      { type: 'domain', example: 'users/domain, payments/domain' },
+      { type: 'adapter', example: 'users/adapters/http, credit/adapters/persistence' },
+      { type: 'shared', example: 'errors, contracts, types, utils' },
+      { type: 'infra', example: 'prisma, mongodb, redis, mail' },
+    ],
+  },
+  {
+    name: 'assay',
+    subtitle: 'Ensayo arquitectónico multi-persona',
+    use: ['Después de forge inspect para obtener interpretación cualitativa', 'Para evaluar el impacto de violaciones desde ángulos complementarios', 'Para priorizar acciones de refactor con criterio multi-disciplinario', 'En revisiones arquitectónicas de equipo'],
+    personas: [
+      { name: 'Jeff Bezos', role: 'Arquitecto de Escalabilidad', focus: 'Acoplamiento entre features, autonomía de equipos, contratos de API' },
+      { name: 'Martin Fowler', role: 'Refinador de Patrones', focus: 'Dirección de dependencias, code smells, refactoring evolutivo' },
+      { name: 'El Hacker', role: 'Pragmático', focus: 'Over-engineering, complejidad innecesaria, costo real de mantenimiento' },
+      { name: 'Alex', role: 'Product Manager Técnico', focus: 'Velocidad de entrega, ROI de deuda técnica, time-to-market' },
+      { name: 'Dra. Carter', role: 'Arquitecta Senior', focus: 'Sostenibilidad a 3-5 años, consistencia entre equipos, gobernanza' },
+    ],
+    flags: '--persona=<id>, --save, --json',
+  },
+  {
+    name: 'forge state',
+    subtitle: 'Estado persistente post-auditoría',
+    use: ['Consultar el último estado auditado del proyecto', 'Verificar cuándo fue la última auditoría', 'Obtener score y violaciones sin re-ejecutar inspect'],
+  },
+  {
+    name: 'forge hook',
+    subtitle: 'Git pre-commit hook arquitectónico',
+    use: ['Bloquear commits que introduzcan violaciones CRITICAL o ERROR', 'Automatizar validación arquitectónica en el flujo de trabajo', 'Integrar Forge en el pipeline de calidad del equipo'],
+    subcommands: [
+      { cmd: 'install', desc: 'Instalar el hook en .git/hooks/pre-commit' },
+      { cmd: 'status', desc: 'Ver estado del hook' },
+      { cmd: 'check', desc: 'Ejecutar validación manual sobre staged files' },
+      { cmd: 'uninstall', desc: 'Desinstalar el hook' },
+      { cmd: 'ignore R1', desc: 'Ignorar una regla específica' },
+      { cmd: 'unignore R1', desc: 'Dejar de ignorar una regla' },
+      { cmd: 'list-ignored', desc: 'Listar reglas ignoradas' },
+    ],
+  },
+  {
+    name: 'nail / unnail',
+    subtitle: 'Shortcuts de navegación',
+    use: ['Crear atajos a directorios de uso frecuente', 'Navegar rápidamente entre features durante una sesión'],
+  },
+  {
+    name: 'forge api',
+    subtitle: 'Validación de contratos API',
+    use: ['Verificar consistencia entre rutas definidas y contratos OpenAPI', 'Detectar endpoints sin documentación', 'Validar tipos de request/response contra schemas'],
+  },
+  {
+    name: 'forge rollback',
+    subtitle: 'Restauración de puntos de guardado',
+    use: ['Recuperar un estado anterior del proyecto', 'Deshacer cambios después de una migración fallida', 'Restaurar ARCHITECTURE.md a una versión previa'],
+  },
+  {
+    name: 'forge update',
+    subtitle: 'Verificar actualizaciones',
+    use: ['Comprobar si hay una versión más reciente de Forge disponible', 'Mantener la skill actualizada'],
   },
   {
     name: 'temper',
@@ -153,7 +219,7 @@ export function CommandsPage() {
     <article className="space-y-12">
       <h1 className="font-display text-4xl text-ink">Comandos</h1>
       <p className="text-light/80 leading-relaxed">
-        Forge expone 10 comandos para modelar, construir, auditar y evolucionar la arquitectura de tu backend.
+        Forge expone +10 comandos para modelar, construir, auditar, evaluar y evolucionar la arquitectura de tu backend.
         Se invocan por lenguaje natural dentro de OpenCode.
       </p>
 
@@ -370,8 +436,162 @@ export function CommandsPage() {
               </div>
             </div>
           )}
+
+          {'fix' in cmd && (
+            <div className="space-y-2">
+              <h3 className="font-display text-sm text-ink uppercase tracking-wider">Auto-fix</h3>
+              <div className="bg-surface border border-accent/10 rounded-lg p-4">
+                <p className="text-light/80 text-sm">{cmd.fix}</p>
+                <code className="block mt-2 text-sm text-accent">forge quench --fix</code>
+              </div>
+            </div>
+          )}
+
+          {'nodeTypes' in cmd && (
+            <div className="space-y-2">
+              <h3 className="font-display text-sm text-ink uppercase tracking-wider">Tipos de nodo</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-accent/10">
+                      <th className="text-left py-2 px-3 text-accent font-display">Tipo</th>
+                      <th className="text-left py-2 px-3 text-accent font-display">Ejemplos</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-light/80">
+                    {cmd.nodeTypes.map((n: any) => (
+                      <tr key={n.type} className="border-b border-white/5">
+                        <td className="py-2 px-3 font-mono text-accent">{n.type}</td>
+                        <td className="py-2 px-3 text-sm text-light/70">{n.example}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {'personas' in cmd && (
+            <div className="space-y-2">
+              <h3 className="font-display text-sm text-ink uppercase tracking-wider">Las 5 personas</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-accent/10">
+                      <th className="text-left py-2 px-3 text-accent font-display">Persona</th>
+                      <th className="text-left py-2 px-3 text-accent font-display">Enfoque</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-light/80">
+                    {cmd.personas.map((p: any) => (
+                      <tr key={p.name} className="border-b border-white/5">
+                        <td className="py-2 px-3">
+                          <span className="text-accent font-display">{p.name}</span>
+                          <span className="block text-xs text-light/50">{p.role}</span>
+                        </td>
+                        <td className="py-2 px-3 text-sm">{p.focus}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {'flags' in cmd && (
+                <div className="bg-surface border border-accent/10 rounded-lg p-3 mt-2">
+                  <p className="text-light/70 text-xs">
+                    Flags: <code className="text-accent">{cmd.flags}</code>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {'subcommands' in cmd && (
+            <div className="space-y-2">
+              <h3 className="font-display text-sm text-ink uppercase tracking-wider">Subcomandos</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-accent/10">
+                      <th className="text-left py-2 px-3 text-accent font-display">Comando</th>
+                      <th className="text-left py-2 px-3 text-accent font-display">Descripción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-light/80">
+                    {cmd.subcommands.map((s: any) => (
+                      <tr key={s.cmd} className="border-b border-white/5">
+                        <td className="py-2 px-3 font-mono text-xs text-accent">{s.cmd}</td>
+                        <td className="py-2 px-3 text-sm">{s.desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </section>
       ))}
+      <section className="space-y-6">
+        <h2 className="font-display text-2xl text-ink pt-8 border-t border-accent/10">Flags globales</h2>
+        <p className="text-light/80 text-sm">
+          Algunos comandos aceptan flags adicionales para controlar su comportamiento:
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-accent/10">
+                <th className="text-left py-2 px-3 text-accent font-display">Flag</th>
+                <th className="text-left py-2 px-3 text-accent font-display">Comando</th>
+                <th className="text-left py-2 px-3 text-accent font-display">Descripción</th>
+              </tr>
+            </thead>
+            <tbody className="text-light/80">
+              {[
+                ['--fix', 'quench', 'Auto-corrige violaciones WARNING/INFO (@injectable, tsconfig, naming, container.resolve)'],
+                ['--show-ignores', 'quench', 'Muestra los inline ignores encontrados en el código'],
+                ['--persona=&lt;id&gt;', 'assay', 'Filtra ensayo por una persona (bezos, fowler, hacker, pm, senior)'],
+                ['--save', 'assay', 'Persiste el ensayo en .forge/assay/'],
+                ['--json', 'assay, forge state', 'Salida en formato JSON'],
+              ].map(([flag, cmd, desc]) => (
+                <tr key={flag} className="border-b border-white/5">
+                  <td className="py-2 px-3 font-mono text-accent text-xs">{flag}</td>
+                  <td className="py-2 px-3 font-mono text-xs text-light/50">{cmd}</td>
+                  <td className="py-2 px-3 text-sm">{desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-display text-2xl text-ink pt-8 border-t border-accent/10">Inline Ignores</h2>
+        <p className="text-light/80 text-sm">
+          Forge soporta comentarios inline para excepcionar violaciones línea por línea. Útil cuando una violación es intencional y documentada:
+        </p>
+        <div className="bg-surface border border-accent/10 rounded-lg p-4 space-y-3">
+          <div>
+            <code className="block text-sm text-light/70 font-mono leading-relaxed">
+              {'// forge-ignore-next-line'}<br />
+              {"import { something } from \"../infra/prisma\";  "}<span className="text-accent/50">{'// ← no se reporta'}</span>
+            </code>
+          </div>
+          <div>
+            <code className="block text-sm text-light/70 font-mono leading-relaxed">
+              {'// forge-ignore: R1'}<br />
+              {"import { PrismaClient } from \"../../infra/prisma/client\"; "}<span className="text-accent/50">{'// ← solo R1 ignorada'}</span>
+            </code>
+          </div>
+          <div>
+            <code className="block text-sm text-light/70 font-mono leading-relaxed">
+              {'// forge-ignore: R1, R8'}<br />
+              {"import { crossFeature } from \"../other-feature/domain/Entity\"; "}<span className="text-accent/50">{'// ← R1 y R8 ignoradas'}</span>
+            </code>
+          </div>
+        </div>
+        <p className="text-light/60 text-xs">
+          Los inline ignores se pueden visualizar con <code className="text-accent">forge quench --show-ignores</code>.
+        </p>
+      </section>
     </article>
   )
 }

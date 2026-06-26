@@ -59,13 +59,21 @@ export function Overview() {
                 ['forge', 'Inicializa el proyecto, detecta stack, crea ARCHITECTURE.md'],
                 ['cast', 'Crea un nuevo feature con estructura hexagonal completa'],
                 ['inspect', 'Audita la arquitectura con scoring 0-100 y grado A-F'],
+                ['quench', 'Valida las 9 reglas arquitectónicas R1-R9 (--fix)'],
+                ['chain', 'Analiza el grafo de dependencias multi-capa'],
+                ['graph', 'Construye el grafo arquitectónico con risk score'],
+                ['assay', 'Ensayo multi-persona para interpretación cualitativa'],
                 ['relocate', 'Migra código legacy a su layer correcto'],
                 ['reforge', 'Refactoriza la arquitectura multi-capa'],
-                ['quench', 'Valida las 9 reglas arquitectónicas R1-R9'],
                 ['temper', 'Endurece la inyección de dependencias'],
-                ['chain', 'Analiza el grafo de dependencias multi-capa'],
-                ['inscribe', 'Genera y mantiene ARCHITECTURE.md'],
                 ['smelt', 'Extrae código reutilizable a shared/'],
+                ['inscribe', 'Genera y mantiene ARCHITECTURE.md'],
+                ['forge hook', 'Git pre-commit hook para validación arquitectónica'],
+                ['forge state', 'Estado persistente post-auditoría'],
+                ['nail / unnail', 'Shortcuts de navegación entre directorios'],
+                ['forge api', 'Validación de contratos API'],
+                ['forge rollback', 'Restaura puntos de guardado'],
+                ['forge update', 'Verifica actualizaciones de Forge'],
               ].map(([cmd, desc]) => (
                 <tr key={cmd} className="border-b border-white/5">
                   <td className="py-2 px-3 font-mono text-accent">{cmd}</td>
@@ -95,8 +103,13 @@ export function Overview() {
                 ['express-mongodb', 'Express', 'MongoDB', 'Mongoose', 'tsyringe'],
                 ['express-postgres', 'Express', 'PostgreSQL', 'raw pg', 'Manual'],
                 ['express-prisma', 'Express', 'PostgreSQL', 'Prisma', 'tsyringe'],
+                ['express-drizzle', 'Express', 'PostgreSQL / MySQL / SQLite', 'Drizzle', 'Manual'],
+                ['fastify-mongodb', 'Fastify', 'MongoDB', 'Mongoose', 'Manual'],
                 ['fastify-postgres', 'Fastify', 'PostgreSQL', 'Prisma', 'Manual'],
-                ['nestjs-prisma', 'NestJS', 'PostgreSQL', 'Prisma', 'NestJS DI'],
+                ['fastify-prisma', 'Fastify', 'Cualquier RDBMS', 'Prisma', 'Manual'],
+                ['nestjs-mongodb', 'NestJS', 'MongoDB', 'Mongoose', 'NestJS DI'],
+                ['nestjs-postgres', 'NestJS', 'PostgreSQL', 'TypeORM', 'NestJS DI'],
+                ['nestjs-prisma', 'NestJS', 'Cualquier RDBMS', 'Prisma', 'NestJS DI'],
               ].map(([name, fw, db, orm, di]) => (
                 <tr key={name} className="border-b border-white/5">
                   <td className="py-2 px-3 font-mono text-accent">{name}</td>
