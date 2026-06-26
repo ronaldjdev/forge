@@ -36,6 +36,34 @@ function detect(cwd) {
   });
 
   agents.push({
+    id: "cursor-project",
+    label: "Cursor",
+    scope: "Proyecto",
+    detected: existsSync(join(cwd, ".cursor")) || existsSync(join(cwd, ".cursorrules")),
+  });
+
+  agents.push({
+    id: "codex-project",
+    label: "Codex CLI",
+    scope: "Proyecto",
+    detected: existsSync(join(cwd, ".codex")),
+  });
+
+  agents.push({
+    id: "gemini-project",
+    label: "Gemini Code Assist",
+    scope: "Proyecto",
+    detected: existsSync(join(cwd, ".gemini")),
+  });
+
+  agents.push({
+    id: "agents-project",
+    label: "Agentes Genéricos",
+    scope: "Proyecto",
+    detected: existsSync(join(cwd, ".agents")),
+  });
+
+  agents.push({
     id: "copilot-project",
     label: "GitHub Copilot",
     scope: "Proyecto",
@@ -43,7 +71,7 @@ function detect(cwd) {
   });
 
   agents.push({
-    id: "codex",
+    id: "codex-global",
     label: "Codex CLI",
     scope: "Global",
     detected: existsSync(join(HOME, ".codex")),
@@ -52,4 +80,9 @@ function detect(cwd) {
   return agents;
 }
 
-export { detect as detectForWizard };
+function detectAll(cwd) {
+  const all = detect(cwd);
+  return all.filter(a => a.detected).map(a => a.id);
+}
+
+export { detect as detectForWizard, detectAll };

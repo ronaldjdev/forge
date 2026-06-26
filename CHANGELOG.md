@@ -1,5 +1,27 @@
 # CHANGELOG
 
+## v1.3.0-beta — Multi-Agent Hooks & npx Install (2026-06-26)
+
+### Added
+- **forgeSentinel** (PostToolUse): hook que analiza arquitectura automáticamente tras cada escritura en Claude Code, Codex CLI y agentes genéricos
+- **forgeSmith** (preToolUse, Cursor): gate que puede DENEGAR escrituras con violaciones CRITICAL/ERROR antes de que ocurran
+- **forgeSmith-admin**: gestión de hooks (on/off/status) para Cursor
+- **forgeSentinel-lib**: lógica compartida entre hooks
+- **posttool.mjs**: wrapper deprecated para compatibilidad hacia atrás
+- **SKILL.md.template**: parametrización con `{{AGENT_PATH}}` — SKILL.md renderizado por agente sin duplicación
+- **Templates por agente**: CLAUDE.md, .cursorrules, hooks.json, SKILL.md para Claude, Cursor, Codex, Gemini y agentes genéricos
+- **Soporte npx probado**: `npx @ronaldjdevfs/forge install` funciona desde tarball (validado en temp dir)
+- **Scripts de test**: `pnpm test:forgeSentinel`, `pnpm test:forgeSmith`, `pnpm test:pin`, `pnpm test:all`
+
+### Changed
+- Eliminada self-reference dependency (`@ronaldjdevfs/forge: link:`) para permitir publicación limpia en npm
+- `install --all` despliega hooks funcionales en los 5 agentes simultáneamente
+
+### Removed
+- Dependencia `"@ronaldjdevfs/forge": "link:..."` para publish
+
+---
+
 ## v1.2.0 — Interactive Installer & Multi-Agent (2026-06-26)
 
 ### Added

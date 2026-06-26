@@ -93,6 +93,56 @@ function copyAgentTemplate(name, dest) {
   }
 }
 
+const AGENT_SKILL_PATHS = {
+  claude: ".claude/skills/forge",
+  cursor: ".cursor/skills/forge",
+  codex:  ".agents/skills/forge",
+  gemini: ".gemini/skills/forge",
+  agents: ".agents/skills/forge",
+};
+
+function installAgentTemplates(agentDir, agentName) {
+  const templateDir = join(AGENTS_TEMPLATES, agentName);
+  if (!existsSync(templateDir)) {
+    return { ok: false, error: `Template ${agentName} no encontrado` };
+  }
+  mkdirSync(agentDir, { recursive: true });
+  // Copy skill into <agentDir>/skills/forge/
+  const skillDest = join(agentDir, "skills", "forge");
+  cpSync(SKILL_SRC, skillDest, { recursive: true, force: true });
+  // Copy template files (hooks, CLAUDE.md, .cursorrules, etc.)
+  copyAgentTemplate(agentName, agentDir);
+
+  // Render SKILL.md with agent-specific path
+  const templatePath = join(AGENTS_TEMPLATES, "SKILL.md.template");
+  if (existsSync(templatePath)) {
+    const template = readFileSync(templatePath, "utf-8");
+    const skillPath = AGENT_SKILL_PATHS[agentName] || agentName;
+    const rendered = template.replace(/\{\{AGENT_PATH\}\}/g, skillPath);
+    writeFileSync(join(skillDest, "SKILL.md"), rendered, "utf-8");
+  }
+
+  // Codex special case: also copy hooks.json to .codex/
+  if (agentName === "codex") {
+    const codexDir = join(process.cwd(), ".codex");
+    mkdirSync(codexDir, { recursive: true });
+    const hooksSrc = join(templateDir, "hooks.json");
+    if (existsSync(hooksSrc)) {
+      cpSync(hooksSrc, join(codexDir, "hooks.json"), { force: true });
+    }
+  }
+
+  return { ok: true, dest: agentDir };
+}
+
+const HOOK_LABELS = {
+  claude: "forgeSentinel (PostToolUse)",
+  cursor: "forgeSmith (preToolUse)",
+  codex:  "forgeSentinel (PostToolUse)",
+  gemini: "—",
+  agents: "forgeSentinel (PostToolUse)",
+};
+
 // --- Welcome ---
 
 async function welcomePhase() {
@@ -235,6 +285,10 @@ async function summaryPhase(agentSelection) {
     console.log(`  ${pc.bold("Componentes")}`);
     console.log();
 
+    const hasHooks = agentSelection.selectedIds.some(id =>
+      ["claude-project", "claude-global", "cursor-project", "codex-project", "codex-global", "agents-project"].includes(id)
+    );
+
     const components = [
       "Forge Skill",
       "Reglas",
@@ -242,7 +296,8 @@ async function summaryPhase(agentSelection) {
       "Comandos",
       "Plantillas",
       "Agentes",
-    ];
+      hasHooks ? "forgeSentinel (PostToolUse) / forgeSmith (preToolUse)" : null,
+    ].filter(Boolean);
     for (const comp of components) {
       console.log(`  ${pc.green("\u2714")} ${comp}`);
     }
@@ -275,102 +330,97 @@ async function summaryPhase(agentSelection) {
 
 // --- Installation ---
 
+const AGENT_MAP = {
+  "claude-global":    { name: "claude", dir: () => join(HOME, ".claude"), verify: "CLAUDE.md" },
+  "claude-project":   { name: "claude", dir: () => join(process.cwd(), ".claude"), verify: "CLAUDE.md" },
+  "cursor-project":   { name: "cursor", dir: () => join(process.cwd(), ".cursor"), verify: ".cursorrules" },
+  "codex-project":    { name: "codex",  dir: () => join(process.cwd(), ".agents"),  verify: "hooks.json" },
+  "codex-global":     { name: "codex",  dir: () => join(HOME, ".codex"),            verify: "hooks.json" },
+  "gemini-project":   { name: "gemini", dir: () => join(process.cwd(), ".gemini"), verify: "SKILL.md" },
+  "agents-project":   { name: "agents", dir: () => join(process.cwd(), ".agents"), verify: "hooks.json" },
+  "opencode-global":  null,
+  "opencode-project": null,
+  "copilot-project":  null,
+};
+
 function buildAgentSteps(agent, cwd) {
   const label = `${agent.label} (${agent.scope})`;
   const s = (title, fn) => ({ title: `${pc.dim("\u2502")} ${title}`, task: fn });
 
-  switch (agent.id) {
-    case "claude-global":
-    case "claude-project": {
-      const dest = agent.id === "claude-global" ? join(HOME, ".claude") : join(cwd, ".claude");
-      const steps = [];
-      steps.push(s("Copiando Forge en .claude/", async () => {
-        mkdirSync(dest, { recursive: true });
-        copyAgentTemplate("claude", dest);
-        cpSync(SKILL_SRC, join(dest, "forge"), { recursive: true, force: true });
-        return "Forge instalado en .claude/";
-      }));
-      steps.push(s("Verificando instalaci\u00f3n", async () => {
-        const ok = existsSync(join(dest, "CLAUDE.md"));
-        return ok ? "\u2714 Instalaci\u00f3n verificada" : "ERROR: CLAUDE.md no encontrado";
-      }));
-      return { label, dest, steps };
-    }
-
-    case "opencode-global": {
-      const dest = join(HOME, ".config", "opencode", "skills", "forge");
-      const configDir = join(HOME, ".config", "opencode");
-      const steps = [];
-      steps.push(s("Copiando Skill en opencode/", async () => {
-        mkdirSync(dest, { recursive: true });
-        cpSync(SKILL_SRC, dest, { recursive: true, force: true });
-        return "Skill copiada";
-      }));
-      steps.push(s("Registrando comandos + dependencias", async () => {
-        generateCommands(configDir);
-        ensureDependencies(configDir);
-        return "Comandos y dependencias listos";
-      }));
-      steps.push(s("Verificando instalaci\u00f3n", async () => {
-        const ok = existsSync(join(dest, "scripts", "context.mjs"));
-        return ok ? "\u2714 Instalaci\u00f3n verificada" : "ERROR: Skill no encontrada";
-      }));
-      return { label, dest, steps };
-    }
-
-    case "opencode-project": {
-      const dest = join(cwd, ".opencode", "skills", "forge");
-      const configDir = join(cwd, ".opencode");
-      const steps = [];
-      steps.push(s("Copiando Skill en .opencode/", async () => {
-        mkdirSync(dest, { recursive: true });
-        cpSync(SKILL_SRC, dest, { recursive: true, force: true });
-        return "Skill copiada";
-      }));
-      steps.push(s("Registrando comandos + dependencias", async () => {
-        generateCommands(configDir);
-        ensureDependencies(configDir);
-        return "Comandos y dependencias listos";
-      }));
-      steps.push(s("Verificando instalaci\u00f3n", async () => {
-        const ok = existsSync(join(dest, "scripts", "context.mjs"));
-        return ok ? "\u2714 Instalaci\u00f3n verificada" : "ERROR: Skill no encontrada";
-      }));
-      return { label, dest, steps };
-    }
-
-    case "copilot-project": {
-      const ghDir = join(cwd, ".github");
-      const dest = join(ghDir, "copilot-instructions.md");
-      const steps = [];
-      steps.push(s("Instalando reglas en .github/", async () => {
-        mkdirSync(ghDir, { recursive: true });
-        const src = join(AGENTS_TEMPLATES, "cursor", ".cursorrules");
-        if (existsSync(src)) copyFileSync(src, dest);
-        const ok = existsSync(dest);
-        return ok ? "Reglas instaladas" : "ERROR";
-      }));
-      return { label, dest, steps };
-    }
-
-    case "codex": {
-      const dest = join(HOME, ".codex");
-      const steps = [];
-      steps.push(s("Instalando Forge en .codex/", async () => {
-        mkdirSync(dest, { recursive: true });
-        copyAgentTemplate("cursor", dest);
-        cpSync(SKILL_SRC, join(dest, "forge"), { recursive: true, force: true });
-        return "Forge instalado";
-      }));
-      steps.push(s("Verificando instalaci\u00f3n", async () => {
-        return existsSync(dest) ? "\u2714 Instalaci\u00f3n verificada" : "ERROR";
-      }));
-      return { label, dest, steps };
-    }
-
-    default:
-      return null;
+  // Handle special cases (opencode, copilot) separately
+  if (agent.id === "opencode-global") {
+    const dest = join(HOME, ".config", "opencode", "skills", "forge");
+    const configDir = join(HOME, ".config", "opencode");
+    const steps = [];
+    steps.push(s("Copiando Skill en opencode/", async () => {
+      mkdirSync(dest, { recursive: true });
+      cpSync(SKILL_SRC, dest, { recursive: true, force: true });
+      return "Skill copiada";
+    }));
+    steps.push(s("Registrando comandos + dependencias", async () => {
+      generateCommands(configDir);
+      ensureDependencies(configDir);
+      return "Comandos y dependencias listos";
+    }));
+    steps.push(s("Verificando instalaci\u00f3n", async () => {
+      const ok = existsSync(join(dest, "scripts", "context.mjs"));
+      return ok ? "\u2714 Instalaci\u00f3n verificada" : "ERROR: Skill no encontrada";
+    }));
+    return { label, dest, steps };
   }
+
+  if (agent.id === "opencode-project") {
+    const dest = join(cwd, ".opencode", "skills", "forge");
+    const configDir = join(cwd, ".opencode");
+    const steps = [];
+    steps.push(s("Copiando Skill en .opencode/", async () => {
+      mkdirSync(dest, { recursive: true });
+      cpSync(SKILL_SRC, dest, { recursive: true, force: true });
+      return "Skill copiada";
+    }));
+    steps.push(s("Registrando comandos + dependencias", async () => {
+      generateCommands(configDir);
+      ensureDependencies(configDir);
+      return "Comandos y dependencias listos";
+    }));
+    steps.push(s("Verificando instalaci\u00f3n", async () => {
+      const ok = existsSync(join(dest, "scripts", "context.mjs"));
+      return ok ? "\u2714 Instalaci\u00f3n verificada" : "ERROR: Skill no encontrada";
+    }));
+    return { label, dest, steps };
+  }
+
+  if (agent.id === "copilot-project") {
+    const ghDir = join(cwd, ".github");
+    const dest = join(ghDir, "copilot-instructions.md");
+    const steps = [];
+    steps.push(s("Instalando reglas en .github/", async () => {
+      mkdirSync(ghDir, { recursive: true });
+      const src = join(AGENTS_TEMPLATES, "cursor", ".cursorrules");
+      if (existsSync(src)) copyFileSync(src, dest);
+      const ok = existsSync(dest);
+      return ok ? "Reglas instaladas" : "ERROR";
+    }));
+    return { label, dest, steps };
+  }
+
+  // Generic agent types via AGENT_MAP
+  const map = AGENT_MAP[agent.id];
+  if (!map) return null;
+
+  const dest = map.dir();
+  const agentName = map.name;
+  const steps = [];
+  steps.push(s(`Instalando Forge + hooks en ${dest}/`, async () => {
+    const r = installAgentTemplates(dest, agentName);
+    return r.ok ? `Forge + ${HOOK_LABELS[agentName] || "templates"} instalados` : `ERROR: ${r.error}`;
+  }));
+  steps.push(s("Verificando instalaci\u00f3n", async () => {
+    const ok = existsSync(join(dest, "skills", "forge", "scripts", "context.mjs")) &&
+               existsSync(join(dest, map.verify));
+    return ok ? "\u2714 Instalaci\u00f3n verificada" : "ERROR: archivos no encontrados";
+  }));
+  return { label, dest, steps };
 }
 
 async function installPhase(result, cwd) {
@@ -465,7 +515,9 @@ export async function runWizard() {
   console.log();
   console.log(`  \u2022 Reinicia tu agente si est\u00e1 abierto.`);
   console.log(`  \u2022 Ejecut\u00e1 el comando "forge" dentro del agente.`);
-  console.log(`  \u2022 Consult\u00e1 la documentaci\u00f3n para comenzar.`);
+  console.log(`  \u2022 forgeSentinel se activa autom\u00e1ticamente tras cada escritura.`);
+  console.log(`  \u2022 forgeSmith (Cursor) previene escrituras con violaciones CRITICAL.`);
+  console.log(`  \u2022 Gesti\u00f3n de hooks: node .<agent>/skills/forge/scripts/forgeSmith-admin.mjs`);
   console.log();
   console.log("  " + SEP);
   console.log();

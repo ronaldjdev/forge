@@ -4,17 +4,18 @@ Forge es un sistema operativo arquitectónico para backend. Diseña, construye, 
 
 ## Boot Sequence
 
-Ejecutar en orden antes de cualquier acción:
+Ejecutar en orden antes de cualquier acción. Todos los paths son relativos a `.claude/skills/forge/`:
 
-1. `node .opencode/skills/forge/scripts/context.mjs` — stack + layers detection
-2. `node .opencode/skills/forge/scripts/armorer.mjs` — ownership, orphans, duplicates
-3. `node .opencode/skills/forge/scripts/profile.mjs --extended` — tech profile
-4. `node .opencode/skills/forge/scripts/graph.mjs --json` — 4-layer graph
-5. `node .opencode/skills/forge/scripts/chain.mjs --json` — dependency analysis
-6. `node .opencode/skills/forge/scripts/inspect.mjs --json` — full audit
-7. `node .opencode/skills/forge/scripts/architecture.mjs` — update ARCHITECTURE.md
+1. `node .claude/skills/forge/scripts/context.mjs` — stack + layers detection
+2. `node .claude/skills/forge/scripts/armorer.mjs` — ownership, orphans, duplicates
+3. `node .claude/skills/forge/scripts/profile.mjs --extended` — tech profile
+4. `node .claude/skills/forge/scripts/graph.mjs --json` — 4-layer graph
+5. `node .claude/skills/forge/scripts/chain.mjs --json` — dependency analysis
+6. `node .claude/skills/forge/scripts/inspect.mjs --json` — full audit
+7. `node .claude/skills/forge/scripts/architecture.mjs` — update ARCHITECTURE.md
 8. Execute user command (cast, quench, relocate, etc.)
-9. Run architecture.mjs again
+9. Run `node .claude/skills/forge/scripts/forgeSentinel.mjs --reminder` — check changes
+10. Run `architecture.mjs` again
 
 ## Architecture Model
 
@@ -88,11 +89,11 @@ Cuatro capas obligatorias:
 
 ## Key Files
 
-- `skills/forge/SKILL.md` — orchestrator principal
-- `skills/forge/reference/principles.md` — manifiesto y 15 principios
-- `skills/forge/reference/patterns.md` — naming conventions
-- `skills/forge/scripts/` — context, detect, inspect, chain, profile, graph, architecture, armorer, bootstrap
-- `skills/forge/profiles/` — 10 tech profiles (express, fastify, nestjs × mongodb, postgres, prisma, drizzle)
-- `skills/forge/templates/` — templates para feature, platform, shared, infra
+- `.claude/skills/forge/SKILL.md` — orchestrator principal
+- `.claude/skills/forge/reference/principles.md` — manifiesto y 15 principios
+- `.claude/skills/forge/reference/patterns.md` — naming conventions
+- `.claude/skills/forge/scripts/` — context, detect, inspect, chain, profile, graph, architecture, armorer, bootstrap, forgeSentinel, forgeSmith
+- `.claude/skills/forge/profiles/` — 10 tech profiles (express, fastify, nestjs × mongodb, postgres, prisma, drizzle)
+- `.claude/skills/forge/templates/` — templates para feature, platform, shared, infra
 - `AGENTS.md` — guía para agentes de IA
 - `ARCHITECTURE.md` — estado actual de la arquitectura

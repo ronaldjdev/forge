@@ -7,24 +7,54 @@ Siempre responder en español. Toda interacción, mensaje, explicación y salida
 ## Repo structure
 
 - `skills/forge/` — actual skill (scripts, templates, profiles, references)
-- `src/cli.js` — installer only, copies `skills/forge/` into `.opencode/skills/forge/`
+- `src/cli.js` — installer, copies `skills/forge/` into agent harnesses
 - `.opencode/skills/forge/` — symlink to `skills/forge/` (live dev)
-- `.opencode/` — OpenCode runtime (`@opencode-ai/plugin`), gitignored except the symlink
+- `templates/agents/` — per-agent templates (hooks, CLAUDE.md, .cursorrules, etc.)
 - All scripts are pure ESM `.mjs`, Node >= 18 required
+
+## Multi-Agent Architecture
+
+Forge se despliega como skill en múltiples agentes de IA simultáneamente:
+
+| Agente | Directorio | Hook | Path skill |
+|--------|-----------|------|------------|
+| **OpenCode** | `.opencode/skills/forge/` | — (vía sistema de skills) | `.opencode/skills/forge/` |
+| **Claude Code** | `.claude/` | forgeSentinel (PostToolUse) | `.claude/skills/forge/` |
+| **Cursor** | `.cursor/` | forgeSmith (preToolUse) | `.cursor/skills/forge/` |
+| **Codex CLI** | `.agents/` + `.codex/` | forgeSentinel (PostToolUse) | `.agents/skills/forge/` |
+| **Gemini** | `.gemini/` | — | `.gemini/skills/forge/` |
+| **Genéricos** | `.agents/` | forgeSentinel (PostToolUse) | `.agents/skills/forge/` |
+
+### Hooks
+
+- **forgeSentinel** (PostToolUse): se ejecuta DESPUÉS de cada escritura. Analiza archivos modificados y reporta violaciones arquitectónicas como recordatorio. No bloquea.
+- **forgeSmith** (preToolUse, solo Cursor): se ejecuta ANTES de cada escritura. Puede DENEGAR escrituras que introduzcan violaciones CRITICAL o ERROR.
 
 ## Boot sequence (mandatory before any action)
 
-Run these 9 steps in order for every interaction:
+Run these 10 steps in order for every interaction. Use the agent-specific path prefix:
 
-1. `node .opencode/skills/forge/scripts/context.mjs` — stack + platform/features/shared/infra detection
-2. `node .opencode/skills/forge/scripts/armorer.mjs` — ownership, orphans, duplicates, misplaced
-3. `node .opencode/skills/forge/scripts/profile.mjs --extended` — tech profile
-4. `node .opencode/skills/forge/scripts/graph.mjs --json` — 4-layer graph (platform, feature, shared, infra)
-5. `node .opencode/skills/forge/scripts/chain.mjs --json` — multi-layer dependency analysis
-6. `node .opencode/skills/forge/scripts/inspect.mjs --json` — full audit (110pts → 0-100)
-7. `node .opencode/skills/forge/scripts/architecture.mjs` — generate/update ARCHITECTURE.md
-8. Execute user's command (cast, quench, relocate, etc.)
-9. Update ARCHITECTURE.md again
+| Agente | Path prefix |
+|--------|-------------|
+| OpenCode | `.opencode/skills/forge` |
+| Claude | `.claude/skills/forge` |
+| Cursor | `.cursor/skills/forge` |
+| Codex | `.agents/skills/forge` |
+| Gemini | `.gemini/skills/forge` |
+
+```bash
+# Template — reemplazar <AGENT> por el directorio del agente correspondiente
+node <AGENT>/scripts/context.mjs
+node <AGENT>/scripts/armorer.mjs
+node <AGENT>/scripts/profile.mjs --extended
+node <AGENT>/scripts/graph.mjs --json
+node <AGENT>/scripts/chain.mjs --json
+node <AGENT>/scripts/inspect.mjs --json
+node <AGENT>/scripts/architecture.mjs
+# Execute user's command
+node <AGENT>/scripts/forgeSentinel.mjs --reminder
+node <AGENT>/scripts/architecture.mjs
+```
 
 ## Commands
 
@@ -61,14 +91,32 @@ Dependency rules (violations = CRITICAL/ERROR):
 - `scripts/context.mjs` — main entrypoint, returns complete project context
 - `scripts/graph.mjs` — node/edge builder, rule engine (9 rules)
 - `scripts/armorer.mjs` — ownership detection
-- `scripts/bootstrap.mjs` — platform/shared/infra creation (internal, no public command)
+- `scripts/forgeSentinel.mjs` — PostToolUse hook adapter
+- `scripts/forgeSmith.mjs` — preToolUse gate (Cursor)
+- `scripts/forgeSentinel-lib.mjs` — shared hook logic
+- `scripts/forgeSmith-admin.mjs` — hook management
+- `scripts/bootstrap.mjs` — platform/shared/infra creation
 - `templates/feature/` — 8 `.ts.md` templates for feature scaffolding
-- `profiles/` — 5 tech profiles (express-mongodb, express-prisma, express-postgres, fastify-postgres, nestjs-prisma)
+- `profiles/` — 10 tech profiles (express, fastify, nestjs × mongodb, postgres, prisma, drizzle)
+
+## Installation
+
+```bash
+forge install                    # Wizard interactivo
+forge install --all              # Todos los agentes detectados
+forge install --claude           # Solo Claude Code
+forge install --cursor           # Solo Cursor
+forge install --codex            # Solo Codex CLI
+forge install --gemini           # Solo Gemini
+forge install --opencode         # Solo OpenCode
+```
 
 ## Development workflow
 
 - No tests, linter, formatter, or typechecker configured
 - `pnpm install:local` — re-installs the skill locally after changes
 - `.opencode/skills/forge/` is a symlink to `skills/forge/`, so edits take effect immediately
+- Agent templates in `templates/agents/<agent>/` — modify and reinstall
+- SKILL.md per agent is rendered from `templates/agents/SKILL.md.template` with `{{AGENT_PATH}}` replaced
 - All scripts are self-contained `.mjs` modules with `if (process.argv[1]...)` CLI guards
-- Imports between scripts are via ESM named exports (context.mjs → graph.mjs, detect.mjs, armorer.mjs)
+- Imports between scripts are via ESM named exports

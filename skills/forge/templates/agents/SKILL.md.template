@@ -82,17 +82,17 @@ ANTES de cualquier acción, Forge DEBE ejecutar esta secuencia. Si no lo haces, 
 6. **inspect.mjs** — Auditoría completa con ownership + platform
 7. **architecture.mjs** — Generar/actualizar ARCHITECTURE.md
 8. **Ejecutar comando solicitado** — cast, quench, temper, etc.
-9. **forgeSentinel** — Verificar cambios tras escritura (`scripts/forgeSentinel.mjs --reminder`)
+9. **forgeSentinel** — Verificar cambios tras escritura
 10. **Actualizar ARCHITECTURE.md** — Reflejar nuevo estado
 
 ```bash
 # Template de setup que debes ejecutar:
-ctx=$(node .opencode/skills/forge/scripts/context.mjs --json 2>/dev/null)
-armorer=$(node .opencode/skills/forge/scripts/armorer.mjs --json 2>/dev/null)
-profile=$(node .opencode/skills/forge/scripts/profile.mjs --extended 2>/dev/null)
-graph=$(node .opencode/skills/forge/scripts/graph.mjs --json 2>/dev/null)
-deps=$(node .opencode/skills/forge/scripts/chain.mjs --json 2>/dev/null)
-inspect=$(node .opencode/skills/forge/scripts/inspect.mjs --json 2>/dev/null)
+ctx=$(node {{AGENT_PATH}}/scripts/context.mjs --json 2>/dev/null)
+armorer=$(node {{AGENT_PATH}}/scripts/armorer.mjs --json 2>/dev/null)
+profile=$(node {{AGENT_PATH}}/scripts/profile.mjs --extended 2>/dev/null)
+graph=$(node {{AGENT_PATH}}/scripts/graph.mjs --json 2>/dev/null)
+deps=$(node {{AGENT_PATH}}/scripts/chain.mjs --json 2>/dev/null)
+inspect=$(node {{AGENT_PATH}}/scripts/inspect.mjs --json 2>/dev/null)
 ```
 
 ---
@@ -134,7 +134,7 @@ Para cada comando, Forge sigue este flujo:
 4. **Referencia**: Cargar `reference/<command>.md`
 5. **Ejecutar**: Aplicar el flujo definido en la referencia, usando los scripts según corresponda
 6. **Verificar**: Ejecutar `scripts/detect.mjs` para verificar que no se introdujeron violaciones
-7. **forgeSentinel**: Ejecutar `scripts/forgeSentinel.mjs --reminder` para reportar cambios
+7. **forgeSentinel**: Ejecutar `scripts/forgeSentinel.mjs --reminder`
 8. **Actualizar ARCHITECTURE.md**: Reflejar el nuevo estado (`architecture.mjs`)
 9. **Reportar**: Mostrar resultado al usuario con severidades
 
@@ -237,7 +237,7 @@ El agente DEBE leer este archivo al inicio de cada interacción y actualizarlo a
 | `reference/help.md` | Lista completa de comandos y flags de Forge |
 | `reference/assay.md` | Ensayo arquitectónico multi-persona — interpretación cualitativa del audit |
 | `profiles/` | Perfiles tecnológicos detallados (Express, Fastify, NestJS, etc.) |
-| `scripts/` | Scripts: context, detect, inspect, chain, profile, graph, architecture, armorer, bootstrap, forge-config, forge-signals, forge-state, forge-api, pin, update, rollback, hook, forgeSentinel, forgeSentinel-lib, forgeSmith, forgeSmith-admin, formatter, assay, registry/rules |
+| `scripts/` | Scripts: context, detect, inspect, chain, profile, graph, architecture, armorer, bootstrap, forge-config, forge-signals, forge-state, forge-api, pin, update, rollback, hook, forgeSentinel, forgeSmith, forgeSentinel-lib, forgeSmith-admin, formatter, assay, registry/rules |
 | `scripts/registry/rules.mjs` | Anti-pattern rule registry (R1-R9 + custom rules desacopladas de detect.mjs) |
 | `scripts/formatter.mjs` | Output formatter unificado (JSON, tabla, severidad coloreada, scoreBar, formatCheck, formatViolation) |
 | `scripts/forgeSentinel.mjs` | PostToolUse hook — analiza archivos modificados tras escritura y reporta violaciones |
@@ -256,7 +256,7 @@ El agente DEBE leer este archivo al inicio de cada interacción y actualizarlo a
 Forge incluye tests unitarios con `node:test` (sin dependencias externas).
 
 ```bash
-node --test .opencode/skills/forge/tests/core.test.mjs
+node --test {{AGENT_PATH}}/tests/core.test.mjs
 ```
 
 | Módulo | Tests | Descripción |
@@ -275,7 +275,7 @@ node --test .opencode/skills/forge/tests/core.test.mjs
 ### Flags adicionales
 
 | Flag | Comando | Descripción |
-|------|---------|-------------|
+|---|---|---|
 | `--fix` | `quench` | Auto-corrige violaciones WARNING/INFO (missing @injectable(), tsconfig, naming, container.resolve) |
 | `--show-ignores` | `quench` | Muestra los inline ignores encontrados en el código |
 | `--persona=<id>` | `assay` | Filtra ensayo por una persona (bezos, fowler, hacker, pm, senior) |

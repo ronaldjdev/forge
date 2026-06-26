@@ -318,10 +318,10 @@ describe("detect.mjs — inline ignores", () => {
   });
 });
 
-describe("posttool.mjs", () => {
-  it("postToolCheck returns empty for no files", async () => {
-    const { postToolCheck } = await import("../scripts/posttool.mjs");
-    const result = await postToolCheck([], {});
+describe("forgeSentinel.mjs", () => {
+  it("runSentinelCheck returns empty for no files", async () => {
+    const { runSentinelCheck } = await import("../scripts/forgeSentinel-lib.mjs");
+    const result = await runSentinelCheck([], {});
     assert.equal(result.total, 0);
     assert.ok(result.summary);
   });

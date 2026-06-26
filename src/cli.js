@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { copyFileSync, mkdirSync, existsSync, writeFileSync, readFileSync, cpSync } from "fs";
+import { copyFileSync, mkdirSync, existsSync, writeFileSync, readFileSync, cpSync, readdirSync } from "fs";
 import { join, dirname, relative } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
@@ -10,6 +10,14 @@ import { runWizard } from "./wizard.mjs";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_SRC = join(__dirname, "..", "skills", "forge");
 const AGENTS_TEMPLATES = join(SKILL_SRC, "templates", "agents");
+
+const AGENT_CONFIGS = {
+  claude:  { dir: ".claude",  template: "claude",  skillPath: ".claude/skills/forge",  need: ["CLAUDE.md", "settings.local.json"], postInstall: "forgeSentinel" },
+  cursor:  { dir: ".cursor",  template: "cursor",  skillPath: ".cursor/skills/forge",  need: [".cursorrules", "hooks.json"],         postInstall: "forgeSmith" },
+  codex:   { dir: ".agents",  template: "codex",   skillPath: ".agents/skills/forge",  need: ["hooks.json"],                          postInstall: "forgeSentinel" },
+  gemini:  { dir: ".gemini",  template: "gemini",  skillPath: ".gemini/skills/forge",  need: ["SKILL.md"],                            postInstall: null },
+  agents:  { dir: ".agents",  template: "agents",  skillPath: ".agents/skills/forge",  need: ["hooks.json"],                          postInstall: "forgeSentinel" },
+};
 
 function getTargetDir(global) {
   if (global) {
@@ -137,40 +145,70 @@ async function installOpenCode(isGlobal = false) {
   log.success("OpenCode configurado correctamente");
 }
 
-async function installCursor() {
-  const src = join(AGENTS_TEMPLATES, "cursor", ".cursorrules");
-  const dest = join(process.cwd(), ".cursorrules");
+async function installAgentTemplates(agentDir, agentName) {
+  const config = AGENT_CONFIGS[agentName];
+  if (!config) return;
 
-  if (!existsSync(src)) {
-    log.error("Template .cursorrules no encontrado");
-    process.exit(1);
+  const templateDir = join(AGENTS_TEMPLATES, config.template);
+  if (!existsSync(templateDir)) {
+    log.error(`Template para ${agentName} no encontrado en ${templateDir}`);
+    return;
   }
 
   const s = spinner();
-  s.start("Creando .cursorrules");
-  copyFileSync(src, dest);
-  s.stop(".cursorrules creado");
+  s.start(`Copiando templates para ${agentName} en ${agentDir}/`);
 
-  log.success("Cursor configurado correctamente");
+  mkdirSync(agentDir, { recursive: true });
+
+  // Copy skill into <agentDir>/skills/forge/
+  const skillDest = join(agentDir, "skills", "forge");
+  cpSync(SKILL_SRC, skillDest, { recursive: true, force: true });
+
+  // Copy template files (hooks, CLAUDE.md, .cursorrules, etc.)
+  for (const entry of readdirSync(templateDir)) {
+    const srcFile = join(templateDir, entry);
+    const destFile = join(agentDir, entry);
+    cpSync(srcFile, destFile, { recursive: true, force: true });
+  }
+
+  // Render SKILL.md with agent-specific path
+  const templatePath = join(AGENTS_TEMPLATES, "SKILL.md.template");
+  if (existsSync(templatePath)) {
+    const template = readFileSync(templatePath, "utf-8");
+    const rendered = template.replace(/\{\{AGENT_PATH\}\}/g, config.skillPath);
+    writeFileSync(join(skillDest, "SKILL.md"), rendered, "utf-8");
+  }
+
+  s.stop(`${agentName} configurado en ${agentDir}/`);
+  log.success(`${agentName} listo (skill + ${config.postInstall || "templates"})`);
+}
+
+async function installCursor() {
+  await installAgentTemplates(join(process.cwd(), ".cursor"), "cursor");
 }
 
 async function installClaude() {
-  const claudeDir = join(process.cwd(), ".claude");
-  const src = join(AGENTS_TEMPLATES, "claude", "CLAUDE.md");
-  const dest = join(claudeDir, "CLAUDE.md");
+  await installAgentTemplates(join(process.cwd(), ".claude"), "claude");
+}
 
-  if (!existsSync(src)) {
-    log.error("Template CLAUDE.md no encontrado");
-    process.exit(1);
+async function installCodex() {
+  // Codex hooks point to .agents/skills/forge/ via git root
+  await installAgentTemplates(join(process.cwd(), ".agents"), "codex");
+  // Also copy hooks.json into .codex/ so Codex CLI picks it up
+  const codexDir = join(process.cwd(), ".codex");
+  mkdirSync(codexDir, { recursive: true });
+  const hooksSrc = join(AGENTS_TEMPLATES, "codex", "hooks.json");
+  if (existsSync(hooksSrc)) {
+    cpSync(hooksSrc, join(codexDir, "hooks.json"), { force: true });
   }
+}
 
-  const s = spinner();
-  s.start("Creando .claude/CLAUDE.md");
-  mkdirSync(claudeDir, { recursive: true });
-  copyFileSync(src, dest);
-  s.stop(".claude/CLAUDE.md creado");
+async function installGemini() {
+  await installAgentTemplates(join(process.cwd(), ".gemini"), "gemini");
+}
 
-  log.success("Claude Code configurado correctamente");
+async function installAgentsGeneric() {
+  await installAgentTemplates(join(process.cwd(), ".agents"), "agents");
 }
 
 async function installAgents(selected, isGlobal = false) {
@@ -184,6 +222,15 @@ async function installAgents(selected, isGlobal = false) {
         break;
       case "claude":
         await installClaude();
+        break;
+      case "codex":
+        await installCodex();
+        break;
+      case "gemini":
+        await installGemini();
+        break;
+      case "agents":
+        await installAgentsGeneric();
         break;
     }
   }
@@ -200,9 +247,18 @@ USO
   forge install --opencode         Instalar solo para OpenCode
   forge install --cursor           Instalar solo para Cursor
   forge install --claude           Instalar solo para Claude Code
-  forge install --all              Instalar para todos los agentes
+  forge install --codex            Instalar solo para Codex CLI
+  forge install --gemini           Instalar solo para Gemini Code Assist
+  forge install --all              Instalar para todos los agentes detectados
   forge install --global           Instalar OpenCode globalmente (~/.config/opencode/)
   forge install --help             Mostrar esta ayuda
+
+AGENTES SOPORTADOS
+  OpenCode, Claude Code, Cursor, Codex CLI, Gemini Code Assist, Agentes Genéricos
+
+HOOKS
+  forgeSentinel (PostToolUse) — guardia arquitectónico post-escritura
+  forgeSmith    (preToolUse)  — guardia arquitectónico pre-escritura (Cursor)
 
 OPCIONES
   -g, --global                     Instalar OpenCode en ~/.config/opencode/skills/forge/
@@ -223,6 +279,8 @@ async function main() {
   const hasOpenCode = args.includes("--opencode");
   const hasCursor   = args.includes("--cursor");
   const hasClaude   = args.includes("--claude");
+  const hasCodex    = args.includes("--codex");
+  const hasGemini   = args.includes("--gemini");
   const hasAll      = args.includes("--all");
 
   const subcommandIndex = args.indexOf("skills");
@@ -230,12 +288,14 @@ async function main() {
 
   if (command === "install") {
     if (hasAll) {
-      await installAgents(["opencode", "cursor", "claude"], isGlobal);
-    } else if (hasOpenCode || hasCursor || hasClaude) {
+      await installAgents(["opencode", "cursor", "claude", "codex", "gemini", "agents"], isGlobal);
+    } else if (hasOpenCode || hasCursor || hasClaude || hasCodex || hasGemini) {
       const selected = [];
       if (hasOpenCode) selected.push("opencode");
       if (hasCursor) selected.push("cursor");
       if (hasClaude) selected.push("claude");
+      if (hasCodex) selected.push("codex");
+      if (hasGemini) selected.push("gemini");
       await installAgents(selected, isGlobal);
     } else {
       await runWizard();

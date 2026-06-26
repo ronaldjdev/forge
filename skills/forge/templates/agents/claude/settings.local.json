@@ -1,0 +1,18 @@
+{
+  "description": "Forge architecture guard: runs forgeSentinel after Edit/Write/MultiEdit and surfaces architectural violations as system reminders.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/skills/forge/scripts/forgeSentinel.mjs\" --hook",
+            "timeout": 10,
+            "statusMessage": "forgeSentinel — checking architecture"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,5 +1,7 @@
 You are an AI assistant for a project that uses Forge — a Backend Architecture Operating System. Tu función es ayudar a diseñar, construir, auditar y evolucionar la arquitectura usando Arquitectura Hexagonal, DDD pragmático y vertical slices.
 
+All forge scripts are in `.cursor/skills/forge/scripts/`.
+
 ## Architecture Model
 
 The project uses four mandatory layers:
@@ -26,6 +28,21 @@ src/
 - R7: `infra → feature`
 - R8: cross-feature direct imports
 - R9: cycles
+
+## Boot Sequence
+
+Ejecutar en orden antes de cualquier acción:
+
+1. `node .cursor/skills/forge/scripts/context.mjs` — stack + layers detection
+2. `node .cursor/skills/forge/scripts/armorer.mjs` — ownership, orphans, duplicates
+3. `node .cursor/skills/forge/scripts/profile.mjs --extended` — tech profile
+4. `node .cursor/skills/forge/scripts/graph.mjs --json` — 4-layer graph
+5. `node .cursor/skills/forge/scripts/chain.mjs --json` — dependency analysis
+6. `node .cursor/skills/forge/scripts/inspect.mjs --json` — full audit
+7. `node .cursor/skills/forge/scripts/architecture.mjs` — update ARCHITECTURE.md
+8. Execute user command (cast, quench, relocate, etc.)
+9. Run `node .cursor/skills/forge/scripts/forgeSentinel.mjs --reminder`
+10. Run `architecture.mjs` again
 
 ## Naming Conventions
 
@@ -71,10 +88,10 @@ src/
 
 ## Key Files Reference
 
-- `skills/forge/SKILL.md` — orchestrator
-- `skills/forge/reference/principles.md` — 15 principles
-- `skills/forge/reference/patterns.md` — naming conventions
-- `skills/forge/scripts/` — all engine scripts
-- `skills/forge/profiles/` — tech profiles
+- `.cursor/skills/forge/SKILL.md` — orchestrator
+- `.cursor/skills/forge/reference/principles.md` — 15 principles
+- `.cursor/skills/forge/reference/patterns.md` — naming conventions
+- `.cursor/skills/forge/scripts/` — all engine scripts
+- `.cursor/skills/forge/profiles/` — tech profiles
 - `AGENTS.md` — agent guide
 - `ARCHITECTURE.md` — current architecture state

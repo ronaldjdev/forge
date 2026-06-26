@@ -18,9 +18,16 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-const HARNESS_DIRS = ['.claude', '.cursor', '.gemini', '.codex', '.agents', '.opencode', '.kiro'];
+const HARNESS_DIRS = [
+  '.claude', '.cursor', '.gemini', '.codex', '.agents',
+  '.opencode', '.kiro', '.rovodev', '.trae', '.trae-cn', '.pi',
+];
 
-const VALID_COMMANDS = ['forge', 'cast', 'inspect', 'quench', 'temper', 'chain', 'graph', 'relocate', 'reforge', 'smelt', 'inscribe'];
+const VALID_COMMANDS = [
+  'forge', 'cast', 'inspect', 'quench', 'temper', 'chain', 'graph',
+  'relocate', 'reforge', 'smelt', 'inscribe', 'armorer',
+  'assay', 'nail', 'unnail', 'hook', 'api', 'rollback', 'state',
+];
 
 const PIN_MARKER = '<!-- forge-pinned-skill -->';
 

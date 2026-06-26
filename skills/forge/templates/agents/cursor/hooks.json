@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "node \".cursor/skills/forge/scripts/forgeSmith.mjs\"",
+        "timeout": 10
+      }
+    ]
+  }
+}

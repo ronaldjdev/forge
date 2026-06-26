@@ -1,6 +1,8 @@
-<img src="logo.png" alt="Forge Logo" width="300" height="300">
+<img src="favicon.svg" alt="Forge Logo" width="100" height="100">
 
-# Forge — Backend Architecture Operating System
+> **v1.3.0-beta** — Multi-Agent: OpenCode · Claude Code · Cursor · Codex CLI · Gemini
+
+## Forge — Backend Architecture Operating System
 
 **Forge** es un **sistema operativo arquitectónico** para backend. Modela, construye, audita, protege y evoluciona sistemas completos en cuatro dominios arquitectónicos: **Platform**, **Features**, **Shared** e **Infrastructure**.
 
@@ -356,7 +358,11 @@ Donde vive toda la inteligencia arquitectónica:
 | `scripts/formatter.mjs` | Output unificado: colores, JSON, scoreBar, formatCheck |
 | `scripts/registry/rules.mjs` | Registry de reglas R1-R9 + custom rules desacoplado |
 | `scripts/assay.mjs` | Ensayo multi-persona (Bezos, Fowler, Hacker, PM, Arquitecta) |
-| `scripts/posttool.mjs` | PostToolUse hook con `--reminder` y `--strict` |
+| `scripts/forgeSentinel.mjs` | PostToolUse hook adapter para Claude/Codex/agents |
+| `scripts/forgeSentinel-lib.mjs` | Lógica compartida del hook PostToolUse |
+| `scripts/forgeSmith.mjs` | preToolUse gate para Cursor (deniega escrituras con violaciones CRITICAL/ERROR) |
+| `scripts/forgeSmith-admin.mjs` | Gestión de hooks (on/off/status) para Cursor |
+| `scripts/posttool.mjs` | PostToolUse hook (deprecated — usar forgeSentinel) |
 | `scripts/forge-config.mjs` | Persistencia de config, estado e histórico |
 | `scripts/forge-state.mjs` | CLI wrapper de estado post-auditoría |
 | `scripts/forge-signals.mjs` | Manejo de señales (SIGINT, SIGTERM) |
@@ -381,29 +387,22 @@ Donde vive toda la inteligencia arquitectónica:
 
 ## Instalación
 
-### En un proyecto
-
 ```bash
-npx @ronaldjdev/forge install
+npx @ronaldjdevfs/forge install          # Wizard interactivo
+npx @ronaldjdevfs/forge install --all    # Todos los agentes detectados
+npx @ronaldjdevfs/forge install --cursor # Solo Cursor
+npx @ronaldjdevfs/forge install --claude # Solo Claude Code
 ```
 
-Esto copia la skill en `.opencode/skills/forge/` del proyecto actual.
-
-### Global (disponible en todos los proyectos)
-
-```bash
-npx @ronaldjdev/forge install --global
-```
-
-Esto copia la skill en `~/.config/opencode/skills/forge/`.
-
-### Con instalación global del CLI
-
-```bash
-npm install -g @ronaldjdev/forge
-forge install      # proyecto actual
-forge install -g   # global
-```
+| Flag | Agente | Hook activo |
+|------|--------|-------------|
+| `--opencode` | OpenCode | forgeSentinel (vía SKILL.md) |
+| `--cursor` | Cursor | forgeSmith (preToolUse) |
+| `--claude` | Claude Code | forgeSentinel (PostToolUse) |
+| `--codex` | Codex CLI | forgeSentinel (PostToolUse) |
+| `--gemini` | Gemini Code Assist | — |
+| `--all` | Todos los anteriores | — |
+| `--global` | `~/.config/opencode/` | forgeSentinel |
 
 **Requisitos**: Node.js ≥ 18
 
@@ -433,6 +432,22 @@ Una vez instalada, OpenCode carga automáticamente la skill `forge` al trabajar 
 | "api", "contrato", "openapi", "swagger" | `forge api` |
 | "rollback", "restaurar", "deshacer" | `forge rollback` |
 | "actualizar", "update", "nueva versión" | `forge update` |
+
+---
+
+### Sistema de Hooks Multi-Agent
+
+Forge se despliega como **skill** en múltiples agentes de IA simultáneamente, con hooks adaptados a cada plataforma:
+
+| Agente | Hook | Cuándo se ejecuta | Efecto |
+|--------|------|-------------------|--------|
+| **OpenCode** | forgeSentinel | PostToolUse tras Edit/Write | Reporta violaciones como reminder |
+| **Claude Code** | forgeSentinel | PostToolUse tras Edit/Write/MultiEdit | Reporta violaciones como reminder |
+| **Cursor** | forgeSmith | preToolUse antes de cada escritura | Puede DENEGAR la escritura |
+| **Codex CLI** | forgeSentinel | PostToolUse tras Edit/Write/apply_patch | Reporta violaciones como reminder |
+| **Gemini** | SKILL.md | Al cargar el agente | Instrucciones arquitectónicas |
+
+Todos los hooks comparten la misma lógica de detección de violaciones R1-R9 a través de `forgeSentinel-lib.mjs`.
 
 ---
 

@@ -1,0 +1,18 @@
+{
+  "description": "Forge architecture guard: runs forgeSentinel after Edit/Write/apply_patch and surfaces architectural violations as system reminders.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.agents/skills/forge/scripts/forgeSentinel.mjs\" --hook",
+            "timeout": 10,
+            "statusMessage": "forgeSentinel — checking architecture"
+          }
+        ]
+      }
+    ]
+  }
+}
