@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## v1.2.0 — Interactive Installer & Multi-Agent (2026-06-26)
+
+### Added
+- **Wizard interactivo de instalación** con @clack/prompts (7 fases: bienvenida, detección, selección, resumen, instalación)
+- **Soporte multi-agente (beta)**: OpenCode, Cursor, Claude Code, GitHub Copilot, Codex CLI
+- **Instalación directa** con flags: `--opencode`, `--cursor`, `--claude`, `--all`, `--global`
+- **Detección automática** de agentes compatibles en el sistema
+- **Archivos compatibility**: `CLAUDE.md`, `.cursorrules`, `.github/copilot-instructions.md`
+
+### Changed
+- Optimización de velocidad de instalación: `fs.cpSync` nativo, eliminación de delays artificiales
+- Pasos de instalación consolidados (de 5–7 a 2–3 por agente)
+- Flujo del wizard simplificado: eliminadas fases de scope y versión (código muerto)
+- Limpieza de imports no utilizados
+
+### Removed
+- Soporte de symlink (obsoleto)
+
+---
+
 ## v1.1.0 — AOS Evolution (2026-06-25)
 
 ### Nuevos módulos (11 scripts)

@@ -1,0 +1,80 @@
+You are an AI assistant for a project that uses Forge — a Backend Architecture Operating System. Tu función es ayudar a diseñar, construir, auditar y evolucionar la arquitectura usando Arquitectura Hexagonal, DDD pragmático y vertical slices.
+
+## Architecture Model
+
+The project uses four mandatory layers:
+
+```
+src/
+├── platform/          # Config, database, http, server, logger, cache, security, events, di
+├── features/<name>/   # domain/, application/use-cases/, application/mappers/, adapters/in/http/, adapters/out/persistence/
+├── shared/            # errors/, contracts/, types/, utils/ (pure code, no business logic)
+└── infra/             # prisma/, mongodb/, redis/, mail/ (implementations, no business rules)
+```
+
+## Dependency Rules (CRITICAL — never violate)
+
+**Allowed:** `feature → platform`, `feature → shared`, `platform → infra`, `adapter → infra`, `feature → domain`
+
+**Prohibited:**
+- R1: `feature → infra`
+- R2: `platform → feature`
+- R3: `shared → feature`
+- R4: `shared → infra`
+- R5: `domain → infra`
+- R6: `domain → platform`
+- R7: `infra → feature`
+- R8: cross-feature direct imports
+- R9: cycles
+
+## Naming Conventions
+
+| Element | Convention | Example |
+|---------|-----------|---------|
+| Directories | `kebab-case/` | `credit-card/` |
+| Files | `<PascalCase>.<artifact>.ts` | `User.entity.ts` |
+| Interfaces | `I<PascalCase>.<artifact>.ts` | `IUser.repository.ts` |
+| Use cases | `<Action>.uc.ts` | `CreateUser.uc.ts` |
+| Classes | `PascalCase` | `UserController` |
+| Functions/vars | `camelCase` | `formatDate` |
+| Constants | `UPPER_SNAKE_CASE` | `MAX_RETRY_COUNT` |
+| Barrels | `index.ts` | named exports only, no `export default` |
+| ESM imports | with `.js` extension | `import { X } from "./foo.js"` |
+
+## Code Principles
+
+1. **Zero business logic in controllers** — parse, delegate, respond
+2. **Zero DB access outside repositories** — only repositories touch the database
+3. **Constructor injection only** — no service locators, no `container.resolve()` in business logic
+4. **Typed domain errors** — explicit error classes, never generic `throw Error()`
+5. **Unidirectional dependencies** — `adapters → application → domain → (nothing)`
+6. **Domain knows nothing about infrastructure** — no framework, database, or external service imports in domain/
+7. **Features are autonomous** — no direct imports between features, only via injected interfaces
+8. **Explicit over magic** — prefer explicit imports and declared types over hidden decorators
+
+## Available Commands
+
+| Command | Action |
+|---------|--------|
+| `forge` | Initialize project |
+| `cast` | Create new feature |
+| `inspect` | Full architecture audit |
+| `quench` | Validate dependency rules |
+| `chain` | Dependency graph (topological) |
+| `graph` | Architecture graph with rules |
+| `armorer` | Ownership report |
+| `smelt` | Extract to shared/ |
+| `relocate` | Migrate legacy code |
+| `reforge` | Refactor architecture |
+| `temper` | Harden dependency injection |
+| `inscribe` | Generate ARCHITECTURE.md |
+
+## Key Files Reference
+
+- `skills/forge/SKILL.md` — orchestrator
+- `skills/forge/reference/principles.md` — 15 principles
+- `skills/forge/reference/patterns.md` — naming conventions
+- `skills/forge/scripts/` — all engine scripts
+- `skills/forge/profiles/` — tech profiles
+- `AGENTS.md` — agent guide
+- `ARCHITECTURE.md` — current architecture state

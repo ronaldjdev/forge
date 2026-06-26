@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 
-import { copyFileSync, mkdirSync, existsSync, readdirSync, statSync, writeFileSync, readFileSync } from "fs";
+import { copyFileSync, mkdirSync, existsSync, writeFileSync, readFileSync, cpSync } from "fs";
 import { join, dirname, relative } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
+import { spinner, log } from "@clack/prompts";
+import { runWizard } from "./wizard.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PKG_DIR = join(__dirname, "..");
-const SKILL_SRC = join(PKG_DIR, "skills", "forge");
+const SKILL_SRC = join(__dirname, "..", "skills", "forge");
+const AGENTS_TEMPLATES = join(SKILL_SRC, "templates", "agents");
 
 function getTargetDir(global) {
   if (global) {
@@ -30,16 +32,7 @@ function getConfigDir(global) {
 }
 
 function copyRecursive(src, dest) {
-  mkdirSync(dest, { recursive: true });
-  for (const entry of readdirSync(src)) {
-    const srcPath = join(src, entry);
-    const destPath = join(dest, entry);
-    if (statSync(srcPath).isDirectory()) {
-      copyRecursive(srcPath, destPath);
-    } else {
-      copyFileSync(srcPath, destPath);
-    }
-  }
+  cpSync(src, dest, { recursive: true, force: true });
 }
 
 function detectPM(configDir) {
@@ -62,7 +55,6 @@ function ensureDependencies(configDir) {
   if (!pkg.dependencies["@opencode-ai/plugin"]) {
     pkg.dependencies["@opencode-ai/plugin"] = "1.17.9";
     writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
-    console.log(`  ✓ Actualizado ${relative(process.cwd(), pkgPath)}`);
   }
 
   const pm = detectPM(configDir);
@@ -74,30 +66,28 @@ function ensureDependencies(configDir) {
 
   try {
     runPM(pm);
-    console.log(`  ✓ Dependencias instaladas (${pm})`);
   } catch {
     for (const fallback of order[pm]) {
       try {
         runPM(fallback);
-        console.log(`  ✓ Dependencias instaladas (${fallback})`);
         return;
-      } catch {}
+      } catch { }
     }
-    console.warn("  ⚠ No se pudieron instalar dependencias. Ejecuta 'pnpm install' | 'npm install' manualmente en " + configDir);
+    log.warn("No se pudieron instalar dependencias. Ejecutá 'pnpm install' | 'npm install' manualmente en " + configDir);
   }
 }
 
 const COMMANDS = [
-  { name: "forge-forge",   desc: "Forge — inicializar proyecto arquitectónicamente" },
-  { name: "forge-cast",    desc: "Cast — crear un nuevo feature hexagonal desde cero" },
+  { name: "forge-forge", desc: "Forge — inicializar proyecto arquitectónicamente" },
+  { name: "forge-cast", desc: "Cast — crear un nuevo feature hexagonal desde cero" },
   { name: "forge-inspect", desc: "Inspect — inspeccionar la conformidad arquitectónica" },
-  { name: "forge-relocate",desc: "Relocate — migrar feature legacy a la nueva estructura" },
+  { name: "forge-relocate", desc: "Relocate — migrar feature legacy a la nueva estructura" },
   { name: "forge-reforge", desc: "Reforge — refactorizar la arquitectura de un feature" },
-  { name: "forge-quench",  desc: "Quench — verificar reglas arquitectónicas del proyecto" },
-  { name: "forge-temper",  desc: "Temper — endurecer la arquitectura (DI, seguridad)" },
-  { name: "forge-chain",   desc: "Chain — analizar cadena de dependencias entre features" },
-  { name: "forge-inscribe",desc: "Inscribe — generar y mantener ARCHITECTURE.md" },
-  { name: "forge-smelt",   desc: "Smelt — extraer código reutilizable a shared/" },
+  { name: "forge-quench", desc: "Quench — verificar reglas arquitectónicas del proyecto" },
+  { name: "forge-temper", desc: "Temper — endurecer la arquitectura (DI, seguridad)" },
+  { name: "forge-chain", desc: "Chain — analizar cadena de dependencias entre features" },
+  { name: "forge-inscribe", desc: "Inscribe — generar y mantener ARCHITECTURE.md" },
+  { name: "forge-smelt", desc: "Smelt — extraer código reutilizable a shared/" },
 ];
 
 function generateCommands(configDir) {
@@ -116,46 +106,111 @@ function generateCommands(configDir) {
     ].join("\n");
     writeFileSync(join(cmdsDir, `${cmd.name}.md`), content);
   }
-  console.log(`  ✓ Comandos /forge-* generados en .opencode/commands/`);
 }
+
+// --- Direct installers ---
+
+async function installOpenCode(isGlobal = false) {
+  if (!existsSync(SKILL_SRC)) {
+    log.error("No se encuentra skills/forge/ en el paquete. ¿Corrupto?");
+    process.exit(1);
+  }
+
+  const target = getTargetDir(isGlobal);
+  const configDir = getConfigDir(isGlobal);
+  const rel = relative(process.cwd(), target);
+
+  const s = spinner();
+
+  s.start("Copiando skill a " + rel);
+  copyRecursive(SKILL_SRC, target);
+  s.stop("Skill copiada a " + rel);
+
+  s.start("Generando comandos /forge-*");
+  generateCommands(configDir);
+  s.stop("Comandos generados en " + relative(process.cwd(), join(configDir, "commands")));
+
+  s.start("Instalando dependencias");
+  ensureDependencies(configDir);
+  s.stop("Dependencias instaladas");
+
+  log.success("OpenCode configurado correctamente");
+}
+
+async function installCursor() {
+  const src = join(AGENTS_TEMPLATES, "cursor", ".cursorrules");
+  const dest = join(process.cwd(), ".cursorrules");
+
+  if (!existsSync(src)) {
+    log.error("Template .cursorrules no encontrado");
+    process.exit(1);
+  }
+
+  const s = spinner();
+  s.start("Creando .cursorrules");
+  copyFileSync(src, dest);
+  s.stop(".cursorrules creado");
+
+  log.success("Cursor configurado correctamente");
+}
+
+async function installClaude() {
+  const claudeDir = join(process.cwd(), ".claude");
+  const src = join(AGENTS_TEMPLATES, "claude", "CLAUDE.md");
+  const dest = join(claudeDir, "CLAUDE.md");
+
+  if (!existsSync(src)) {
+    log.error("Template CLAUDE.md no encontrado");
+    process.exit(1);
+  }
+
+  const s = spinner();
+  s.start("Creando .claude/CLAUDE.md");
+  mkdirSync(claudeDir, { recursive: true });
+  copyFileSync(src, dest);
+  s.stop(".claude/CLAUDE.md creado");
+
+  log.success("Claude Code configurado correctamente");
+}
+
+async function installAgents(selected, isGlobal = false) {
+  for (const agent of selected) {
+    switch (agent) {
+      case "opencode":
+        await installOpenCode(isGlobal);
+        break;
+      case "cursor":
+        await installCursor();
+        break;
+      case "claude":
+        await installClaude();
+        break;
+    }
+  }
+}
+
+// --- CLI ---
 
 function printHelp() {
   console.log(`
-Forge — Architecture OS
+⚔️ Forge — Architecture OS
 
 USO
-  forge install                    Instalar skill en el proyecto actual
-  forge install --global           Instalar globalmente (~/.config/opencode/)
-  forge skills install             (alias del comando install)
+  forge install                    Mostrar wizard interactivo de instalación
+  forge install --opencode         Instalar solo para OpenCode
+  forge install --cursor           Instalar solo para Cursor
+  forge install --claude           Instalar solo para Claude Code
+  forge install --all              Instalar para todos los agentes
+  forge install --global           Instalar OpenCode globalmente (~/.config/opencode/)
+  forge install --help             Mostrar esta ayuda
 
 OPCIONES
-  -g, --global                     Instalar en ~/.config/opencode/skills/forge/
+  -g, --global                     Instalar OpenCode en ~/.config/opencode/skills/forge/
   -h, --help                       Mostrar esta ayuda
 `);
 }
 
-function install(global) {
-  if (!existsSync(SKILL_SRC)) {
-    console.error("[ERROR] No se encuentra skills/forge/ en el paquete. ¿Corrupto?");
-    process.exit(1);
-  }
-
-  const target = getTargetDir(global);
-  const configDir = getConfigDir(global);
-
-  console.log(`\n  Forge — Architecture OS`);
-  console.log(`  ${"=".repeat(40)}`);
-  console.log(`  Destino: ${target}\n`);
-
-  copyRecursive(SKILL_SRC, target);
-  console.log(`  ✓ Skill copiada a ${relative(process.cwd(), target)}`);
-  generateCommands(configDir);
-  ensureDependencies(configDir);
-  console.log(`\n  ✓ Forge instalado correctamente`);
-  console.log(`  ${"=".repeat(40)}\n`);
-}
-
-function main() {
+async function main() {
   const args = process.argv.slice(2);
   const isHelp = args.includes("-h") || args.includes("--help");
   const isGlobal = args.includes("-g") || args.includes("--global");
@@ -165,15 +220,33 @@ function main() {
     return;
   }
 
+  const hasOpenCode = args.includes("--opencode");
+  const hasCursor   = args.includes("--cursor");
+  const hasClaude   = args.includes("--claude");
+  const hasAll      = args.includes("--all");
+
   const subcommandIndex = args.indexOf("skills");
   const command = subcommandIndex !== -1 ? args[subcommandIndex + 1] : args[0];
 
   if (command === "install") {
-    install(isGlobal);
+    if (hasAll) {
+      await installAgents(["opencode", "cursor", "claude"], isGlobal);
+    } else if (hasOpenCode || hasCursor || hasClaude) {
+      const selected = [];
+      if (hasOpenCode) selected.push("opencode");
+      if (hasCursor) selected.push("cursor");
+      if (hasClaude) selected.push("claude");
+      await installAgents(selected, isGlobal);
+    } else {
+      await runWizard();
+    }
   } else {
     printHelp();
     process.exit(1);
   }
 }
 
-main();
+main().catch((err) => {
+  console.error("[ERROR]", err.message);
+  process.exit(1);
+});
