@@ -2,11 +2,12 @@
 
 import { join, relative, basename } from "path";
 import { readFileSync, existsSync, readdirSync, statSync, writeFileSync, renameSync, mkdirSync } from "fs";
-import { buildGraph } from "./graph.mjs";
+import { getGraph } from "./graph.mjs";
 import { buildOwnershipReport } from "./armorer.mjs";
 import { parseImportsWithLines } from "./parse-imports.mjs";
 import { detectNamingViolations, computeExpectedName } from "./rename.mjs";
 import { formatViolation, formatCheck, GREEN, RED, YELLOW, CYAN, BOLD, RESET, DIM, GRAY } from "./formatter.mjs";
+import { buildPipeline, printPipeline } from "./recommendation-engine.mjs";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
@@ -728,11 +729,11 @@ export function checkGraph(graph) {
       label: `[${v.rule}] ${v.description}`,
       pass: false,
       detail: `${v.from} → ${v.to}${v.file ? ` (${v.file})` : ""}`,
-      fix: v.rule === "R1" ? "Core no debe importar de features. Mover la lógica a shared."
-        : v.rule === "R2" ? "Domain no puede importar infraestructura. Extraer interfaz y usar adapter."
-        : v.rule === "R3" ? "Feature no accede infraestructura directamente. Crear adapter en el feature."
-        : v.rule === "R4" ? "Feature no importa otro feature directamente. Inyectar interfaz."
-        : v.rule === "R5" ? "Romper el ciclo de dependencias extrayendo interfaz común a shared/."
+      fix: v.rule === "R1" ? "Feature no debe importar infraestructura directamente. Extraer interfaz al dominio y usar adapter en infra."
+        : v.rule === "R2" ? "Platform no debe depender de features. Extraer la interfaz a shared/ o mover la lógica."
+        : v.rule === "R3" ? "Shared no debe importar de features. Shared debe ser puro, sin dependencias de negocio."
+        : v.rule === "R4" ? "Shared no debe importar infraestructura. Shared debe ser puro, sin dependencias técnicas."
+        : v.rule === "R5" ? "Domain no puede importar infraestructura. El dominio debe estar aislado de la infra."
         : "Revisar la dirección de la dependencia",
     });
     score += penalty;
@@ -838,7 +839,7 @@ export function checkPlatform(ctx) {
 export function checkDependencies(ctx) {
   const checks = [];
   let score = 0;
-  const graph = ctx.graph || buildGraph();
+  const graph = ctx.graph || getGraph();
 
   if (!graph || graph.nodes.length === 0) {
     checks.push({ ...severity("No hay nodos en el grafo para analizar dependencias", SEVERITY.WARNING), pass: false });
@@ -917,26 +918,29 @@ export function checkCustomRules(features) {
       continue;
     }
 
+    const featureFiles = [];
     for (const feat of features) {
-      if (!feat.files) continue;
-      for (const f of feat.files) {
-        if (fileRe && !fileRe.test(f)) continue;
-        const content = read(f);
-        if (!content) continue;
+      const featDir = join(FEATURES, feat);
+      if (isDir(featDir)) featureFiles.push(...findFiles(featDir));
+    }
+    const targetFiles = featureFiles.length > 0 ? featureFiles : findFiles(SRC);
+    for (const f of targetFiles) {
+      if (fileRe && !fileRe.test(f)) continue;
+      const content = read(f);
+      if (!content) continue;
 
-        contentRe.lastIndex = 0;
-        let match;
-        while ((match = contentRe.exec(content)) !== null) {
-          violations++;
-          const line = content.slice(0, match.index).split("\n").length;
-          checks.push({
-            severity: rule.severity || SEVERITY.ERROR,
-            label: `[${rule.id}] ${rule.message || "Violación de regla custom"} en ${relative(ROOT, f)}:${line}`,
-            pass: false,
-            detail: `Match: "${match[0].slice(0, 80)}"`,
-            fix: rule.fix || null,
-          });
-        }
+      contentRe.lastIndex = 0;
+      let match;
+      while ((match = contentRe.exec(content)) !== null) {
+        violations++;
+        const line = content.slice(0, match.index).split("\n").length;
+        checks.push({
+          severity: rule.severity || SEVERITY.ERROR,
+          label: `[${rule.id}] ${rule.message || "Violación de regla custom"} en ${relative(ROOT, f)}:${line}`,
+          pass: false,
+          detail: `Match: "${match[0].slice(0, 80)}"`,
+          fix: rule.fix || null,
+        });
       }
     }
   }
@@ -982,7 +986,7 @@ export function checkNaming(projectRoot = ROOT) {
 }
 
 export function allChecks(features, graph, ctx) {
-  const g = graph || buildGraph(process.cwd());
+  const g = graph || getGraph();
   const c = ctx || {};
   return {
     structure: checkStructure(features),
@@ -1116,7 +1120,7 @@ async function main() {
   const { buildContext } = await import("./context.mjs");
   const ctx = await buildContext();
   const features = detectFeaturesOnSrc();
-  const graph = buildGraph(ROOT);
+  const graph = ctx.graph || getGraph();
   const results = allChecks(features, graph, ctx);
 
   // Load inline ignores
@@ -1128,13 +1132,13 @@ async function main() {
   }
 
   // Filter out ignored violations
-  const filtered = all.filter(c => {
+  let filtered = all.filter(c => {
     if (c.pass) return true;
     if (isIgnored(c, allIgnores)) return false;
     return true;
   });
 
-  if (filterSeverity) all = all.filter((c) => c.severity === filterSeverity);
+  if (filterSeverity) filtered = filtered.filter((c) => c.severity === filterSeverity);
 
   if (doFix) {
     const result = applyFixes(filtered);
@@ -1184,6 +1188,11 @@ async function main() {
       console.log(formatCheck(c));
     }
     console.log(`\nTotal: ${filtered.length} checks${ignoredCount > 0 ? ` (${ignoredCount} ignorados inline)` : ""}`);
+
+    if (filtered.some(c => !c.pass)) {
+      const pipeline = buildPipeline(filtered, ctx.graph, ctx.ownership, null, ctx);
+      printPipeline(pipeline);
+    }
   }
 }
 

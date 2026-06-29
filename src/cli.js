@@ -86,16 +86,20 @@ function ensureDependencies(configDir) {
 }
 
 const COMMANDS = [
-  { name: "forge-forge", desc: "Forge — inicializar proyecto arquitectónicamente" },
-  { name: "forge-cast", desc: "Cast — crear un nuevo feature hexagonal desde cero" },
-  { name: "forge-inspect", desc: "Inspect — inspeccionar la conformidad arquitectónica" },
-  { name: "forge-relocate", desc: "Relocate — migrar feature legacy a la nueva estructura" },
-  { name: "forge-reforge", desc: "Reforge — refactorizar la arquitectura de un feature" },
-  { name: "forge-quench", desc: "Quench — verificar reglas arquitectónicas del proyecto" },
-  { name: "forge-temper", desc: "Temper — endurecer la arquitectura (DI, seguridad)" },
-  { name: "forge-chain", desc: "Chain — analizar cadena de dependencias entre features" },
-  { name: "forge-inscribe", desc: "Inscribe — generar y mantener ARCHITECTURE.md" },
-  { name: "forge-smelt", desc: "Smelt — extraer código reutilizable a shared/" },
+  { name: "forge-forge", desc: "Forge — inicializar proyecto arquitectónicamente", flags: "" },
+  { name: "forge-cast", desc: "Cast — crear un nuevo feature hexagonal desde cero", flags: "" },
+  { name: "forge-inspect", desc: "Inspect — inspeccionar la conformidad arquitectónica", flags: "--json | --diff | --full | --summary | --severity=<nivel> | --force" },
+  { name: "forge-assay", desc: "Assay — ensayo arquitectónico multi-persona", flags: "--persona=<id> | --json | --save | history" },
+  { name: "forge-graph", desc: "Graph — construir el grafo arquitectónico del proyecto", flags: "--json" },
+  { name: "forge-armorer", desc: "Armorer — reporte de ownership, huérfanos y duplicados", flags: "" },
+  { name: "forge-bootstrap", desc: "Bootstrap — inicializar platform, shared e infra layers", flags: "" },
+  { name: "forge-relocate", desc: "Relocate — migrar feature legacy a la nueva estructura", flags: "" },
+  { name: "forge-reforge", desc: "Reforge — refactorizar la arquitectura de un feature", flags: "--cycles" },
+  { name: "forge-quench", desc: "Quench — verificar reglas arquitectónicas del proyecto", flags: "--fix | --show-ignores | --severity=<nivel> | --json" },
+  { name: "forge-temper", desc: "Temper — endurecer la arquitectura (DI, seguridad)", flags: "" },
+  { name: "forge-chain", desc: "Chain — analizar cadena de dependencias entre features", flags: "--json" },
+  { name: "forge-inscribe", desc: "Inscribe — generar y mantener ARCHITECTURE.md", flags: "--output=<path>" },
+  { name: "forge-smelt", desc: "Smelt — extraer código reutilizable a shared/", flags: "" },
 ];
 
 function generateCommands(configDir) {
@@ -103,7 +107,8 @@ function generateCommands(configDir) {
   mkdirSync(cmdsDir, { recursive: true });
   for (const cmd of COMMANDS) {
     const sub = cmd.name.replace("forge-", "");
-    const content = [
+    const hasFlags = cmd.flags && cmd.flags.length > 0;
+    const lines = [
       "---",
       `description: ${cmd.desc}`,
       "agent: build",
@@ -111,8 +116,16 @@ function generateCommands(configDir) {
       "",
       `Ejecuta el subcomando ${sub} de Forge con los argumentos: $ARGUMENTS`,
       "",
-    ].join("\n");
-    writeFileSync(join(cmdsDir, `${cmd.name}.md`), content);
+    ];
+    if (hasFlags) {
+      lines.push(
+        `Flags disponibles: ${cmd.flags}`,
+        "",
+        `Si $ARGUMENTS está vacío, pregunta al usuario qué flags quiere usar con la tool question (checkboxes múltiples). Si no selecciona ninguna, ejecuta sin flags.`,
+        "",
+      );
+    }
+    writeFileSync(join(cmdsDir, `${cmd.name}.md`), lines.join("\n"));
   }
 }
 

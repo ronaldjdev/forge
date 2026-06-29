@@ -29,3 +29,9 @@ Extrae código reutilizable desde features hacia `shared/`.
 - El código extraído NO debe importar de infraestructura
 - El código extraído debe ser puro o depender solo de otros componentes shared
 - Si el código depende de platform, considerar moverlo a platform en lugar de shared
+
+## Ver también
+
+- `reference/relocate.md` — operación similar de extracción
+- `reference/data-patterns.md` — identificación de qué extraer a shared
+- `reference/errors.md` — errores tipados como candidatos a smelt

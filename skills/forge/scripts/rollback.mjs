@@ -18,6 +18,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, cpSync, rmSync, statSync } from "fs";
 import { join, relative, resolve, basename } from "path";
+import { fileURLToPath } from "url";
 import { execFileSync } from "child_process";
 
 const ROOT = process.cwd();
@@ -157,7 +158,8 @@ export function listBackups(target) {
 
 export function verifyAfterChange() {
   try {
-    const out = shell("node", [join(import.meta.url, "..", "inspect.mjs"), "--diff", "--json"]);
+    const __dirname = fileURLToPath(new URL(".", import.meta.url));
+    const out = shell("node", [join(__dirname, "inspect.mjs"), "--diff", "--json"]);
     if (!out) return { score: 0, improved: false, error: "inspect falló" };
 
     const result = JSON.parse(out);
@@ -167,7 +169,7 @@ export function verifyAfterChange() {
     let suggestedCommit = null;
     if (improved && score > 0) {
       const branch = shell("git", ["rev-parse", "--abbrev-ref", "HEAD"]);
-      suggestedCommit = `git add -A && git commit -m "forge: relocate/reforge (score: ${score}/110)"`;
+      suggestedCommit = `git add -A && git commit -m "forge: relocate/reforge (score: ${score})"`;
     }
 
     return { score, improved, suggestedCommit };
@@ -205,7 +207,7 @@ if (action === "backup" && arg) {
     console.error(`rollback: ${result.error}`);
     process.exit(1);
   }
-  console.log(`Score: ${result.score}/110 | ${result.improved ? "✓ Mejoró/igual" : "✘ Empeoró"}${result.suggestedCommit ? `\nSugerencia: ${result.suggestedCommit}` : ""}`);
+  console.log(`Score: ${result.score} | ${result.improved ? "✓ Mejoró/igual" : "✘ Empeoró"}${result.suggestedCommit ? `\nSugerencia: ${result.suggestedCommit}` : ""}`);
   process.exit(result.improved ? 0 : 1);
 } else {
   console.log("Uso: node rollback.mjs <backup|restore|list|verify> [target|id]");

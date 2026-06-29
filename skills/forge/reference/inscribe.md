@@ -127,3 +127,8 @@ Genera y mantiene el archivo `ARCHITECTURE.md` del proyecto.
 - Se actualiza automáticamente después de cada comando
 - No editar manualmente los campos auto-detectados
 - Forge preserva cualquier sección adicional que el usuario agregue
+
+## Ver también
+
+- `reference/adr.md` — Architecture Decision Records como insumo para ARCHITECTURE.md
+- `reference/principles.md` — principios arquitectónicos documentados en ARCHITECTURE.md

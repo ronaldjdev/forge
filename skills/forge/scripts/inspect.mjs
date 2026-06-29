@@ -7,6 +7,7 @@ import { detectProfile, detectProfileExtended } from "./profile.mjs";
 import { buildDependencyGraph } from "./chain.mjs";
 import { allChecks, checkStructure, checkLayers, checkDecorators } from "./detect.mjs";
 import { saveHistory, updateStateFromAudit } from "./forge-config.mjs";
+import { buildPipeline, printPipeline } from "./recommendation-engine.mjs";
 
 const ROOT = process.cwd();
 
@@ -22,12 +23,15 @@ const CAT_NAMES = {
 };
 
 const CAT_MAX = {
-  structure: 20,
-  layers: 20,
+  structure: 30,
+  layers: 25,
+  decorators: 20,
   ownership: 20,
   platform: 15,
   dependencies: 15,
   graph: 20,
+  customRules: 5,
+  naming: 10,
 };
 
 function countBySeverity(checks) {
@@ -64,8 +68,8 @@ function printReport(report, ctx, profile, graph, archGraph, profileExtended) {
   const barLen = 40;
   const pct = report.max > 0 ? Math.round((report.total / report.max) * 100) : 0;
 
-  function scoreBar(score, max) {
-    const p = max > 0 ? Math.round((score / max) * barLen) : 0;
+  function renderScoreBar(score, max) {
+    const p = Math.min(max > 0 ? Math.round((score / max) * barLen) : 0, barLen);
     const filled = "█".repeat(p);
     const empty = "░".repeat(barLen - p);
     const color = score >= max * 0.8 ? GREEN : score >= max * 0.5 ? YELLOW : RED;
@@ -128,7 +132,7 @@ function printReport(report, ctx, profile, graph, archGraph, profileExtended) {
     const name = CAT_NAMES[key] || key;
     const cmax = CAT_MAX[key] || cat.max || 10;
     console.log(`  ${BOLD}${name} (${cat.score}/${cmax})${RESET}`);
-    console.log(`  ${scoreBar(cat.score, cmax)}`);
+    console.log(`  ${renderScoreBar(cat.score, cmax)}`);
 
     for (const check of cat.checks) {
       const icon = check.pass ? `${GREEN}✔${RESET}` : `${RED}✘${RESET}`;
@@ -142,41 +146,16 @@ function printReport(report, ctx, profile, graph, archGraph, profileExtended) {
     console.log();
   }
 
-  if (report.recommendations.length > 0) {
-    console.log(`  ${BOLD}${YELLOW}Recomendaciones${RESET}`);
-    const unique = [...new Set(report.recommendations)];
-    unique.forEach((r, i) => console.log(`   ${i + 1}. ${r}`));
-    console.log();
-  }
-
-  /* Contextual suggestions */
-  const suggestions = [];
-  const v = report.severityCounts;
-  if ((v.CRITICAL || 0) > 0) suggestions.push("forge quench — revisar reglas CRITICAL en detalle");
-  if ((v.ERROR || 0) > 0) suggestions.push("forge quench — corregir violaciones ERROR antes de avanzar");
-  if (graph.hasCycles) suggestions.push("forge reforge — eliminar ciclos del grafo de dependencias");
-  if (ctx.platform.exists && ctx.platform.components.length < 3) suggestions.push("forge forge — bootstrap de componentes platform faltantes");
-  if (!ctx.platform.exists) suggestions.push("forge forge — iniciar bootstrap de platform");
-  if (ctx.features.legacy.length > 0) suggestions.push(`forge relocate — migrar ${ctx.features.legacy.length} feature(s) legacy a estructura hexagonal`);
-  if (archGraph && archGraph.stats.dependencyHealth < 70) suggestions.push("forge temper — endurecer inyección de dependencias");
-  if (archGraph && archGraph.stats.riskScore > 50) suggestions.push("forge reforge — reducir riesgo arquitectónico");
-  if (pct >= 80) suggestions.push("forge inspect — mantener auditoría periódica");
-  if (pct < 50) suggestions.push("forge inspect — auditoría focalizada tras correcciones");
-
-  // Profile-derived suggestions
-  if (profileExtended) {
-    for (const dep of profileExtended.depIssues || []) {
-      suggestions.push(`profiler: ${dep}`);
-    }
-    for (const s of profileExtended.suggestions || []) {
-      suggestions.push(`profiler: ${s}`);
+  /* Unified pipeline recommendation */
+  const allViolations = [];
+  for (const [, cat] of Object.entries(report.categories)) {
+    for (const c of cat.checks) {
+      if (!c.pass) allViolations.push(c);
     }
   }
-
-  if (suggestions.length > 0) {
-    console.log(`  ${BOLD}${CYAN}Siguientes pasos sugeridos${RESET}`);
-    suggestions.forEach((s, i) => console.log(`   ${i + 1}. ${s}`));
-    console.log();
+  const pipeline = buildPipeline(allViolations, graph, ctx.ownership, profileExtended, ctx);
+  if (pipeline.length > 0) {
+    printPipeline(pipeline);
   }
 
   console.log("═".repeat(58) + "\n");
@@ -234,15 +213,37 @@ function getChangedFeatures(changedFiles, allFeatures) {
 async function main() {
   const args = process.argv.slice(2);
   const isJson = args.includes("--json");
-  const isDiff = args.includes("--diff");
+  const isDiff = args.includes("--diff") || !args.includes("--full");
+  const isSummary = args.includes("--summary");
+  const force = args.includes("--force");
   const filterSeverity = args.includes("--severity") ? args[args.indexOf("--severity") + 1] : null;
 
-  const ctx = await buildContext();
+  const ctx = await buildContext(ROOT, null, { force });
   const profileExtended = detectProfileExtended(ctx);
   const profile = profileExtended.profile;
-  const chainGraph = buildDependencyGraph();
   const archGraph = ctx.graph;
+  const chainGraph = buildDependencyGraph(process.cwd(), archGraph);
   const features = ctx.features.migrated;
+
+  if (isSummary) {
+    const result = allChecks(features, archGraph, ctx);
+    const report = buildReport({ categories: result });
+    const pct = report.max > 0 ? Math.round((report.total / report.max) * 100) : 0;
+    if (isJson) {
+      console.log(JSON.stringify({
+        score: report.total,
+        max: report.max,
+        pct,
+        grade: pct >= 90 ? "A" : pct >= 80 ? "B" : pct >= 65 ? "C" : pct >= 50 ? "D" : "F",
+        severityCounts: report.severityCounts,
+        violations: report.violations.length,
+        health: pct >= 80 ? "healthy" : pct >= 50 ? "fair" : "poor",
+      }, null, 2));
+    } else {
+      console.log(`Score: ${report.total}/${report.max} (${pct}%) | Violations: ${report.violations.length} | Health: ${pct >= 80 ? "healthy" : pct >= 50 ? "fair" : "poor"}`);
+    }
+    return;
+  }
 
   if (isDiff) {
     const changedFiles = getChangedFiles();
@@ -282,8 +283,12 @@ async function main() {
     };
 
     // Provide a simpler report
-    let totalScore = result.structure.score + result.layers.score + (result.decorators?.score || 0);
-    const maxScore = 60; // structure 20 + layers 20 + decorators 20
+    let totalScore = 0;
+    let maxScore = 0;
+    for (const [key, cat] of Object.entries(result)) {
+      totalScore += cat.score;
+      maxScore += CAT_MAX[key] || 20;
+    }
     const pct = Math.round((totalScore / maxScore) * 100);
 
     if (!isJson) {
@@ -291,7 +296,8 @@ async function main() {
 
       for (const [key, cat] of Object.entries(result)) {
         const name = key.charAt(0).toUpperCase() + key.slice(1);
-        console.log(`  ${BOLD}${name} (${cat.score}/${cat.score === 0 && cat.checks.length > 0 ? "—" : maxScore})${RESET}`);
+        const cmax = CAT_MAX[key] || cat.max || 20;
+        console.log(`  ${BOLD}${name} (${cat.score}/${cat.score === 0 && cat.checks.length > 0 ? "—" : cmax})${RESET}`);
         for (const check of cat.checks) {
           const icon = check.pass ? `${GREEN}✔${RESET}` : `${RED}✘${RESET}`;
           const sev = check.pass ? "" : ` ${SEVERITY_COLORS[check.severity]}[${check.severity}]${RESET}`;
@@ -309,24 +315,26 @@ async function main() {
         categories: result,
       }, null, 2));
     }
-    updateStateFromAudit({ total: totalScore, grade: `${pct}%`, violations: [], health: "diff", context: { features: { total: features.length, migrated: features, legacy: [] } } });
+    updateStateFromAudit({ total: totalScore, max: maxScore, grade: `${pct}%`, violations: [], health: "diff", context: { features: { total: features.length, migrated: features, legacy: [] } } });
     saveHistory({ score: totalScore, grade: `${pct}%`, violationCount: 0, totalFeatures: features.length, migratedFeatures: features.length });
     process.exit(0);
   }
 
   const result = allChecks(features, archGraph, ctx);
   const report = buildReport({ categories: result });
+  const pct = report.max > 0 ? Math.round((report.total / report.max) * 100) : 0;
 
   updateStateFromAudit({
     total: report.total,
-    grade: report.grade,
+    max: report.max,
+    grade: pct >= 90 ? "A" : pct >= 80 ? "B" : pct >= 65 ? "C" : pct >= 50 ? "D" : "F",
     violations: report.violations || [],
-    health: report.total >= 80 ? "healthy" : report.total >= 50 ? "fair" : "poor",
+    health: pct >= 80 ? "healthy" : pct >= 50 ? "fair" : "poor",
     context: { features: { total: features.length, migrated: features, legacy: ctx.features?.legacy || [] } },
   });
   saveHistory({
     score: report.total,
-    grade: report.grade,
+    grade: pct >= 90 ? "A" : pct >= 80 ? "B" : pct >= 65 ? "C" : pct >= 50 ? "D" : "F",
     violationCount: (report.violations || []).length,
     totalFeatures: features.length,
     migratedFeatures: features.length,

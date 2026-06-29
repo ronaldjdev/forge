@@ -49,3 +49,9 @@ El backup se almacena en `.forge/backups/<target>--<timestamp>/` y preserva la e
 | Feature | `src/application/use-cases/<name>/` | `src/features/<name>/` |
 | Shared | `src/utils/`, `src/helpers/`, `src/lib/` | `src/shared/<name>/` |
 | Infra | `src/database/`, `src/providers/` | `src/infra/<name>/` |
+
+## Ver también
+
+- `reference/anti-corruption-layer.md` — aislamiento de legacy durante migración
+- `reference/modular-monolith.md` — decisión de estructura al migrar features
+- `reference/reforge.md` — refactor post-migración

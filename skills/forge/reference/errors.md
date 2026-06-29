@@ -63,3 +63,8 @@ async getUser(req, res, next) {
 - Error handler centralizado en platform/http/ para errores no capturados
 - Loggear errores en el adapter, no en el dominio
 - Códigos de error consistentes: `DOMAIN_ENTITY_NOT_FOUND`, `VALIDATION_INVALID_EMAIL`
+
+## Ver también
+
+- `reference/api-design.md` — errores normalizados en respuestas HTTP
+- `reference/testing-patterns.md` — tests de errores y mappers

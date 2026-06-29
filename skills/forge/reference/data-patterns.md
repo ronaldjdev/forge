@@ -84,3 +84,9 @@ features/<name>/
 - Transacciones en el Unit of Work, no en el use case ni en el repositorio individual
 - CQRS no significa event sourcing; son patrones independientes
 - Event sourcing sin snapshotting es inviable a escala
+
+## Ver también
+
+- `reference/cqrs.md` — command/query separation, read models, proyecciones
+- `reference/events.md` — eventos de dominio, emisión, event bus
+- `reference/anti-corruption-layer.md` — mapeo entre modelos de datos

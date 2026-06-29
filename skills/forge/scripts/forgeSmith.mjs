@@ -2,7 +2,7 @@
 
 import { existsSync } from "fs";
 import { join } from "path";
-import { buildGraph } from "./graph.mjs";
+import { getGraph } from "./graph.mjs";
 import { buildContext } from "./context.mjs";
 import { detectFeaturesOnSrc, allChecks } from "./detect.mjs";
 import { evaluateRules } from "./registry/rules.mjs";
@@ -67,7 +67,7 @@ async function checkProposedFile(filePath, content) {
 
   const ctx = await buildContext();
   const features = detectFeaturesOnSrc();
-  const graph = buildGraph(ROOT);
+  const graph = ctx.graph || getGraph();
   const results = allChecks(features, graph, ctx);
 
   const violations = [];

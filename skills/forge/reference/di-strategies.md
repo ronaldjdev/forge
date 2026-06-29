@@ -48,3 +48,9 @@ container.registerSingleton<IUserRepository>("IUserRepository", PostgresUserRepo
 - Evitar `container.resolve()` fuera del Composition Root
 - Usar tokens (strings o símbolos) para identificar dependencias
 - Testear use cases con mocks manuales sin necesidad del contenedor
+
+## Ver también
+
+- `reference/temper.md` — endurecimiento de DI (complemento directo)
+- `reference/patterns.md` — naming y convenciones de contenedor DI
+- `reference/testing-patterns.md` — mocks y DI testing

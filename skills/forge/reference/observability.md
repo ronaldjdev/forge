@@ -64,3 +64,8 @@ export interface IHealthCheck {
 - Tracing distribuido con baggage contextual
 - Health checks sin autenticación (solo para orquestadores)
 - Alertas basadas en métricas, no en logs
+
+## Ver también
+
+- `reference/security-patterns.md` — audit logging como práctica de seguridad
+- `reference/testing-patterns.md` — tests de instrumentación y health checks

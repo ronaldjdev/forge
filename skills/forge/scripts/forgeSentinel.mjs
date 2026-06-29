@@ -3,7 +3,7 @@
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { execFileSync } from "child_process";
-import { buildGraph } from "./graph.mjs";
+import { getGraph } from "./graph.mjs";
 import { buildContext } from "./context.mjs";
 import { detectFeaturesOnSrc, allChecks, loadAllInlineIgnores, isIgnored } from "./detect.mjs";
 import { evaluateRules } from "./registry/rules.mjs";
@@ -76,7 +76,7 @@ function printResult(result, opts = {}) {
   if (reminder || hook) {
     if (!hook) {
       console.log(`  ${YELLOW}Recordatorio:${RESET} ${result.total} violación(es) arquitectónica(s).`);
-      console.log(`  Ejecuta ${CYAN}forge quench${RESET} para ver el detalle completo.\n`);
+      console.log(`  Ejecuta ${CYAN}forge quench${RESET} para ver el detalle completo y pipeline de corrección.\n`);
     }
 
     if (result.hasCritical) {

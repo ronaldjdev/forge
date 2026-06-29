@@ -85,3 +85,9 @@ export const createUserSchema = z.object({
 - Helmet para headers de seguridad (CSP, X-Frame-Options, etc.)
 - Secretos en variables de entorno, nunca en código
 - Auditoría de acciones sensibles: login, delete, role change, export
+
+## Ver también
+
+- `reference/api-design.md` — middleware de seguridad, validación de entrada
+- `reference/observability.md` — audit logging como práctica de observabilidad
+- `reference/testing-patterns.md` — tests de middleware y seguridad

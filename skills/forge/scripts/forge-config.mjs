@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "fs";
-import { join, dirname } from "path";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from "fs";
+import { join, dirname, relative } from "path";
+import { createHash } from "crypto";
 
 const ROOT = process.cwd();
 const CONFIG_DIR = join(ROOT, ".forge");
 const CONFIG_PATH = join(CONFIG_DIR, "config.json");
 const STATE_PATH = join(CONFIG_DIR, "state.json");
 const HISTORY_DIR = join(CONFIG_DIR, "history");
+const CACHE_DIR = join(CONFIG_DIR, "cache");
+
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 const DEFAULT_CONFIG = {
   profile: null,
@@ -23,6 +27,7 @@ const DEFAULT_CONFIG = {
 const DEFAULT_STATE = {
   lastAudit: null,
   lastScore: null,
+  lastMax: null,
   lastGrade: null,
   violationCount: 0,
   totalFeatures: 0,
@@ -78,6 +83,7 @@ export function updateStateFromAudit(auditResult) {
   const state = loadState();
   state.lastAudit = new Date().toISOString();
   state.lastScore = auditResult.total || 0;
+  state.lastMax = auditResult.max || null;
   state.lastGrade = auditResult.grade || "F";
   state.violationCount = (auditResult.violations || []).length;
   state.health = auditResult.health || "unknown";
@@ -116,7 +122,7 @@ export function displayTrend(entries) {
   console.log("─".repeat(60));
   for (const e of entries) {
     const date = (e.timestamp || "").slice(0, 19).replace("T", " ");
-    const score = e.score !== undefined ? `${e.score}/110` : "—";
+    const score = e.score !== undefined ? `${e.score}${e.max ? "/".concat(e.max) : ""}` : "—";
     const grade = e.grade || "—";
     const violations = e.violationCount !== undefined ? String(e.violationCount) : "—";
     const features = e.totalFeatures !== undefined ? `${e.migratedFeatures || 0}/${e.totalFeatures}` : "—";
@@ -171,6 +177,179 @@ export function configNeedsRefresh(config) {
   if (!config.lastContextUpdate) return true;
   const daysSinceUpdate = (Date.now() - new Date(config.lastContextUpdate).getTime()) / 86400000;
   return daysSinceUpdate > 7;
+}
+
+/* ── Cache Layer ── */
+
+const CACHE_KEYS = ["context", "graph", "profile", "ownership", "chain"];
+
+function cachePath(key) {
+  mkdirSync(CACHE_DIR, { recursive: true });
+  return join(CACHE_DIR, `${key}.json`);
+}
+
+function cacheMetaPath() {
+  mkdirSync(CACHE_DIR, { recursive: true });
+  return join(CACHE_DIR, "meta.json");
+}
+
+function loadCacheMeta() {
+  try {
+    return JSON.parse(readFileSync(cacheMetaPath(), "utf-8"));
+  } catch {
+    return {};
+  }
+}
+
+function saveCacheMeta(meta) {
+  const existing = loadCacheMeta();
+  writeFileSync(cacheMetaPath(), JSON.stringify({ ...existing, ...meta }, null, 2) + "\n");
+}
+
+/**
+ * Compute a hash of the src/ directory tree (file paths + mtimes).
+ * Used to detect if the project changed since last cache.
+ */
+export function hashSrcDir(projectRoot = ROOT) {
+  const src = join(projectRoot, "src");
+  if (!existsSync(src)) return null;
+  const hash = createHash("sha256");
+  const entries = [];
+  function walk(dir) {
+    let dirEntries;
+    try { dirEntries = readdirSync(dir); } catch { return; }
+    for (const entry of dirEntries.sort()) {
+      const full = join(dir, entry);
+      let st;
+      try { st = statSync(full); } catch { continue; }
+      if (st.isDirectory()) {
+        walk(full);
+      } else if (entry.endsWith(".ts") || entry.endsWith(".js") || entry.endsWith(".tsx") || entry.endsWith(".json")) {
+        entries.push(relative(projectRoot, full) + ":" + st.mtimeMs);
+      }
+    }
+  }
+  walk(src);
+  hash.update(entries.join("\n"));
+  return hash.digest("hex").slice(0, 16);
+}
+
+/**
+ * Save a value to the cache with a src hash for invalidation.
+ */
+export function saveCache(key, data, projectRoot = ROOT) {
+  if (!CACHE_KEYS.includes(key)) return false;
+  const srcHash = hashSrcDir(projectRoot);
+  const payload = {
+    key,
+    srcHash,
+    cachedAt: Date.now(),
+    data,
+  };
+  const ok = writeJson(cachePath(key), payload);
+  if (ok) {
+    saveCacheMeta({ [key]: { srcHash, cachedAt: Date.now() } });
+  }
+  return ok;
+}
+
+/**
+ * Load a value from cache if valid (same src hash and not expired).
+ * Returns { data, valid } where valid is false if cache is stale.
+ */
+export function loadCache(key, projectRoot = ROOT) {
+  if (!CACHE_KEYS.includes(key)) return { data: null, valid: false };
+  const path = cachePath(key);
+  const cached = readJson(path);
+  if (!cached) return { data: null, valid: false };
+
+  // Check TTL
+  if (Date.now() - cached.cachedAt > CACHE_TTL_MS) {
+    return { data: null, valid: false };
+  }
+
+  // Check src hash match
+  const currentHash = hashSrcDir(projectRoot);
+  if (currentHash && currentHash !== cached.srcHash) {
+    return { data: null, valid: false };
+  }
+
+  return { data: cached.data, valid: true };
+}
+
+/**
+ * Invalidate a specific cache key or all keys.
+ */
+export function invalidateCache(key = null) {
+  if (key) {
+    const path = cachePath(key);
+    try { writeFileSync(path, JSON.stringify({}), "utf-8"); } catch {}
+  } else {
+    for (const k of CACHE_KEYS) {
+      try { writeFileSync(cachePath(k), JSON.stringify({}), "utf-8"); } catch {}
+    }
+  }
+}
+
+/**
+ * Determine required boot depth based on command.
+ * Returns 'minimal' | 'standard' | 'full'
+ * - minimal: context + profile (cast, temper, smelt, relocate, reforge, inscribe)
+ * - standard: minimal + graph + chain (chain, graph)
+ * - full: standard + armorer + inspect + detect + architecture (inspect, quench, default)
+ */
+export function getBootDepth(command) {
+  const minimal = ["cast", "temper", "smelt", "relocate", "reforge", "inscribe", "nail", "unnail", "forge-api", "forge state", "forge rollback"];
+  const standard = ["chain", "graph", "forge hook"];
+  if (minimal.includes(command)) return "minimal";
+  if (standard.includes(command)) return "standard";
+  return "full";
+}
+
+/**
+ * Try to load cached boot data up to a given depth.
+ * Returns { context, profile, graph, chain, ownership } with valid fields populated.
+ */
+export function loadCachedBoot(depth = "full", projectRoot = ROOT) {
+  const result = { context: null, profile: null, graph: null, chain: null, ownership: null };
+
+  // Always try context
+  const ctxCache = loadCache("context", projectRoot);
+  if (ctxCache.valid) result.context = ctxCache.data;
+
+  // Always try profile
+  const profCache = loadCache("profile", projectRoot);
+  if (profCache.valid) result.profile = profCache.data;
+
+  if (depth === "minimal") return result;
+
+  // Standard: add graph + chain
+  const graphCache = loadCache("graph", projectRoot);
+  if (graphCache.valid) result.graph = graphCache.data;
+
+  const chainCache = loadCache("chain", projectRoot);
+  if (chainCache.valid) result.chain = chainCache.data;
+
+  if (depth === "standard") return result;
+
+  // Full: add ownership
+  const ownCache = loadCache("ownership", projectRoot);
+  if (ownCache.valid) result.ownership = ownCache.data;
+
+  return result;
+}
+
+/**
+ * Check if cached boot is valid for a given depth.
+ */
+export function hasValidCache(depth = "full", projectRoot = ROOT) {
+  const cached = loadCachedBoot(depth, projectRoot);
+  if (!cached.context) return false;
+  if (depth === "minimal") return true;
+  if (!cached.graph) return false;
+  if (depth === "standard") return true;
+  if (!cached.ownership) return false;
+  return true;
 }
 
 async function main() {

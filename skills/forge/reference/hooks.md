@@ -60,3 +60,9 @@ Las reglas ignoradas se almacenan en `.forge/hooks-ignore.json`:
 
 Cuando una regla está ignorada, el hook no bloquea el commit por
 violaciones de esa regla, aunque el detector sigue reportándolas.
+
+## Ver también
+
+- `reference/quench.md` — validación que el hook ejecuta en pre-commit
+- `reference/evolutionary-architecture.md` — fitness functions como hook
+- `reference/adr.md` — ADRs como insumo para validación en hook

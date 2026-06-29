@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import { buildGraph } from "./graph.mjs";
+import { getGraph } from "./graph.mjs";
 
-export function buildDependencyGraph(projectRoot) {
-  const graph = buildGraph(projectRoot);
+export function buildDependencyGraph(projectRoot, existingGraph = null) {
+  const graph = existingGraph || getGraph(projectRoot);
 
   const layers = {
     platform: [],
@@ -194,9 +194,35 @@ export function buildDependencyGraph(projectRoot) {
 }
 
 async function main() {
-  const depGraph = buildDependencyGraph();
   const args = process.argv.slice(2);
-  if (args.includes("--json")) {
+  const isJson = args.includes("--json");
+  const summary = args.includes("--summary");
+
+  const depGraph = buildDependencyGraph();
+
+  if (summary) {
+    const out = {
+      features: depGraph.features.length,
+      hasCycles: depGraph.hasCycles,
+      globalCycles: depGraph.globalCycles,
+      illegalChains: depGraph.illegalChains.length,
+      isolated: depGraph.isolated.length,
+      layers: {
+        platform: depGraph.layers.platform.nodes.length,
+        features: depGraph.layers.features.nodes.length,
+        shared: depGraph.layers.shared.nodes.length,
+        infra: depGraph.layers.infra.nodes.length,
+      },
+    };
+    if (isJson) {
+      console.log(JSON.stringify(out, null, 2));
+    } else {
+      console.log(`Chain: ${out.features} features, cycles: ${out.hasCycles}, illegal chains: ${out.illegalChains}, isolated: ${out.isolated}`);
+    }
+    return;
+  }
+
+  if (isJson) {
     console.log(JSON.stringify(depGraph, null, 2));
   } else {
     console.log("## Chain — Multi-layer Dependency Analysis\n");

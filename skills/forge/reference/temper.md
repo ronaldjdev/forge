@@ -47,3 +47,9 @@ Templa la arquitectura aplicando reglas de inyección de dependencias, seguridad
 - ❌ Importar tsyringe en archivos de dominio
 - ❌ Mezclar DI manual y contenedor en el mismo feature
 - ❌ Proxies automáticos o decoradores ocultos que dificulten el rastreo
+
+## Ver también
+
+- `reference/di-strategies.md` — selección de estrategia DI antes de temperar
+- `reference/patterns.md` — convenciones de naming en DI
+- `reference/testing-patterns.md` — testabilidad que DI disciplinada habilita

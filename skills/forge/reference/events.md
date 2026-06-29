@@ -93,3 +93,11 @@ Para flujos multi-paso que abarcan múltiples features.
 - Eventos sin lógica: son datos, no comportamiento.
 - Para integración entre features: el feature A emite evento, el feature B lo escucha. Nunca import directo.
 - Outbox para garantía de entrega; in-memory event bus solo para tests o monolitos pequeños.
+
+## Ver también
+
+- `reference/sagas.md` — coreografía, orquestación, compensaciones
+- `reference/transactional-outbox.md` — entrega confiable de eventos, relayer, DLQ
+- `reference/idempotency.md` — deduplicación y retry seguro en handlers
+- `reference/cqrs.md` — command/query separation y proyecciones
+- `reference/anti-corruption-layer.md` — traducción de eventos entre contexts

@@ -150,11 +150,11 @@ async function cmdCheck() {
 
   // Run detect only over the staged source files
   const { allChecks, detectFeaturesOnSrc } = await import("./detect.mjs");
-  const { buildGraph } = await import("./graph.mjs");
+  const { getGraph } = await import("./graph.mjs");
   const { buildContext } = await import("./context.mjs");
 
   const ctx = await buildContext();
-  const graph = buildGraph(ROOT);
+  const graph = ctx.graph || getGraph();
   const features = detectFeaturesOnSrc();
   const results = allChecks(features, graph, ctx);
 

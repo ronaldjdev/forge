@@ -2,8 +2,9 @@
 
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
 import { join, basename, resolve } from "path";
-import { buildGraph } from "./graph.mjs";
+import { getGraph } from "./graph.mjs";
 import { buildOwnershipReport } from "./armorer.mjs";
+import { saveCache, loadCache } from "./forge-config.mjs";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
@@ -256,9 +257,23 @@ export function detectWorkspaces(projectRoot = ROOT) {
   }));
 }
 
-export async function buildContext(projectRoot = ROOT, workspaceScope = null) {
+export async function buildContext(projectRoot = ROOT, workspaceScope = null, opts = {}) {
+  const { force = false } = opts;
   const root = workspaceScope || projectRoot;
   const src = join(root, "src");
+
+  // Try cache first
+  if (!force) {
+    const cached = loadCache("context", root);
+    if (cached.valid && cached.data) {
+      // Ensure graph is loaded (it may be separate cache entry)
+      if (!cached.data.graph) {
+        const graphCached = getGraph(root, { force: false });
+        cached.data.graph = graphCached;
+      }
+      return cached.data;
+    }
+  }
 
   const pkg = readJson(join(root, "package.json")) || {};
   const tsconfig = readJson(join(root, "tsconfig.json"));
@@ -280,7 +295,7 @@ export async function buildContext(projectRoot = ROOT, workspaceScope = null) {
   const shared = classifyComponents(ownership.ownership.shared, SHARED_KNOWN);
   const infra = classifyComponents(ownership.ownership.infra, INFRA_KNOWN);
   const orphans = ownership.orphans;
-  const graph = buildGraph(root);
+  const graph = getGraph(root, { force });
 
   const hasFeatures = migratedFeatures.length > 0;
   const hasLegacy = legacyFeatures.length > 0;
@@ -290,7 +305,7 @@ export async function buildContext(projectRoot = ROOT, workspaceScope = null) {
   const monorepo = isRoot ? detectMonorepo(projectRoot) : null;
   const workspaces = isRoot ? detectWorkspaces(projectRoot) : [];
 
-  return {
+  const ctx = {
     projectName: basename(root),
     isWorkspace: !isRoot,
     workspaceScope: isRoot ? null : basename(root),
@@ -329,6 +344,11 @@ export async function buildContext(projectRoot = ROOT, workspaceScope = null) {
     graph,
     dependencies: {},
   };
+
+  // Save to cache
+  saveCache("context", ctx, root);
+
+  return ctx;
 }
 
 async function main() {

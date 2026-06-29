@@ -1,5 +1,37 @@
 # CHANGELOG
 
+## v1.3.1 — Bugfixes, New Templates & Interactive Flags (2026-06-29)
+
+### Fixed (16 issues)
+- **R1-R5 fix suggestions**: Mensajes de fix ahora mapean correctamente a cada regla arquitectónica
+- **checkCustomRules**: Ahora itera archivos reales de features en vez de strings vacías
+- **rollback.mjs**: `import.meta.url` convertido con `fileURLToPath` — `forge rollback` ya no falla en verify
+- **`--severity` filter**: Ahora filtra correctamente la salida en lugar de ser ignorado
+- **graph.mjs**: `hasCycles` incluido en stats — ciclo de dependencias ahora se reporta vía `graph.stats.hasCycles`
+- **inspect.mjs diff mode**: `maxScore` ahora es dinámico desde `CAT_MAX` en vez de hardcodeado a 60
+- **forge-state / forge-config**: Score dinámico en vez de `/110` hardcodeado
+- **architecture.mjs**: `maxScore` incluye todas las categorías (decorators, customRules, naming)
+- **forge-boot.mjs**: `category` guarda el nombre string en vez del objeto entero
+- **inspect.mjs**: `renderScoreBar` renombrado para evitar shadowing de import
+- **architecture.mjs**: Agregado `process.argv[1]` guard
+- **parse-imports.mjs**: Código muerto eliminado (segundo `parseWithAST` inalcanzable)
+- **rollback.mjs + forge-config.mjs**: `/110` hardcodeado reemplazado por valor dinámico
+
+### Added
+- **forge-boot.mjs**: Boot orchestrator con profundidades minimal/standard/full y caché en `.forge/cache/`
+- **recommendation-engine.mjs**: Pipeline automático post-auditoría con comandos sugeridos por severidad
+- **14 reference docs**: ADR, Anti-Corruption Layer, API Versioning, Architectural Depth, Bounded Contexts, Cohesion Checklist, CQRS, Evolutionary Architecture, Idempotency, Modular Monolith, Sagas, Transactional Outbox, Architecture Template
+- **6 feature templates**: acl-gateway, acl-repository, acl-translator, cqrs-query, outbox-repository, saga-orchestrator
+- **1 platform template**: outbox-relayer
+- **Flags interactivos**: Cada comando con flags (inspect, assay, graph, chain, quench, reforge, inscribe) ahora pregunta al usuario qué flags usar si no se pasan explícitamente
+
+### Changed
+- **CLI commands**: 14 comandos generados (antes 10) — se agregaron assay, graph, armorer, bootstrap
+- **Todas las reference docs**: Frontmatter unificado con description y agent type
+- **Tests**: 46 tests (antes 31), todos pasando
+
+---
+
 ## v1.3.0-beta — Multi-Agent Hooks & npx Install (2026-06-26)
 
 ### Added

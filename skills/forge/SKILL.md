@@ -70,57 +70,55 @@ En esencia:
 
 ---
 
-## Boot Sequence (OBLIGATORIO — ejecutar siempre antes de responder)
+## Boot Sequence
 
-ANTES de cualquier acción, Forge DEBE ejecutar esta secuencia. Si no lo haces, puedes dar respuestas incorrectas:
-
-1. **context.mjs** — Detectar stack, platform, features, shared, infra, grafo, estado
-2. **armorer.mjs** — Detectar ownership, huérfanos, duplicados, mal ubicados
-3. **profile.mjs** — Determinar perfil tecnológico
-4. **graph.mjs** — Construir grafo arquitectónico global (4 capas + 9 reglas)
-5. **chain.mjs** — Analizar dependencias multi-capa
-6. **inspect.mjs** — Auditoría completa con ownership + platform
-7. **architecture.mjs** — Generar/actualizar ARCHITECTURE.md
-8. **Ejecutar comando solicitado** — cast, quench, temper, etc.
-9. **forgeSentinel** — Verificar cambios tras escritura (`scripts/forgeSentinel.mjs --reminder`)
-10. **Actualizar ARCHITECTURE.md** — Reflejar nuevo estado
+ANTES de cualquier acción, Forge DEBE ejecutar `forge-boot.mjs` con la profundidad adecuada al comando:
 
 ```bash
-# Template de setup que debes ejecutar:
-ctx=$(node .opencode/skills/forge/scripts/context.mjs --json 2>/dev/null)
-armorer=$(node .opencode/skills/forge/scripts/armorer.mjs --json 2>/dev/null)
-profile=$(node .opencode/skills/forge/scripts/profile.mjs --extended 2>/dev/null)
-graph=$(node .opencode/skills/forge/scripts/graph.mjs --json 2>/dev/null)
-deps=$(node .opencode/skills/forge/scripts/chain.mjs --json 2>/dev/null)
-inspect=$(node .opencode/skills/forge/scripts/inspect.mjs --json 2>/dev/null)
+boot=$(node .opencode/skills/forge/scripts/forge-boot.mjs --depth <depth> --json 2>/dev/null)
 ```
+
+La profundidad (`--depth`) depende del comando (ver Execution Flow):
+- **minimal** → context + profile (cast, temper, smelt, relocate, reforge, inscribe)
+- **standard** → minimal + graph + chain (chain, graph, forge hook)
+- **full** → standard + ownership + inspect (inspect, quench, default)
+
+Si `$boot` contiene datos cacheados en `.forge/cache/` se reusan automáticamente. Pasa `--force` para regenerar.
 
 ---
 
 ## Command Routing
 
-| Lenguaje natural | Comando | Archivo |
+| Intención | Comando | Referencia |
 |---|---|---|
-| "ayuda", "help", "comandos", "lista", "--help" | `forge --help` | `reference/help.md` |
-| "inicializar", "setup", "empezar" | `forge` | `reference/forge.md` |
-| "crear feature", "nuevo dominio" | `cast` | `reference/cast.md` |
-| "inspeccionar", "diagnóstico", "evaluar" | `inspect` | `reference/inspect.md` |
-| "trasladar", "mover", "reestructurar feature" | `relocate` | `reference/relocate.md` |
-| "refactorizar", "rediseñar", "cambiar estructura" | `reforge` | `reference/reforge.md` |
-| "verificar", "quench", "checklist" | `quench` | `reference/quench.md` |
-| "templar", "endurecer", "mejorar" | `temper` | `reference/temper.md` |
-| "cadena", "grafo", "acoplamiento" | `chain` | `scripts/chain.mjs` |
-| "inscribir", "grabar", "ARCHITECTURE.md" | `inscribe` | `reference/inscribe.md` |
-| "grafo", "graph", "nodo", "violaciones", "risk score" | `graph` | `scripts/graph.mjs` |
-| "fundir", "compartir", "mover a shared" | `smelt` | `reference/smelt.md` |
-| "ownership", "huérfanos", "armorer" | `inspect` | (incluido en auditoría) |
-| "fijar", "pinar", "atajo", "shortcut" | `nail` | `scripts/pin.mjs` |
-| "desfijar", "despinar", "remover atajo" | `unnail` | `scripts/pin.mjs` |
-| "hook", "pre-commit", "githook", "validar commit" | `forge hook` | `reference/hooks.md` |
-| "api", "contrato", "openapi", "swagger", "graphql" | `forge api` | `scripts/forge-api.mjs` |
-| "rollback", "restaurar", "deshacer", "backup" | `forge rollback` | `scripts/rollback.mjs` |
-| "estado", "state", "último audit" | `forge state --show` | `scripts/forge-state.mjs` |
-| "examinar","calidad", "assay", "opinión", "personas", "critique", "evaluación cualitativa" | `assay` | `reference/assay.md` |
+| Ayuda | `forge --help` | `reference/help.md` |
+| Setup inicial | `forge` | `reference/forge.md` |
+| Crear feature | `cast` | `reference/cast.md` |
+| Auditar | `inspect` | `reference/inspect.md` |
+| Relocalizar feature | `relocate` | `reference/relocate.md` |
+| Refactorizar | `reforge` | `reference/reforge.md` |
+| Verificar violaciones | `quench` | `reference/quench.md` |
+| Endurecer | `temper` | `reference/temper.md` |
+| Dependencias | `chain` | `scripts/chain.mjs` |
+| Inscribir ARCHITECTURE.md | `inscribe` | `reference/inscribe.md` |
+| Grafo arquitectónico | `graph` | `scripts/graph.mjs` |
+| Fundir a shared | `smelt` | `reference/smelt.md` |
+| Atajo / pin | `nail` / `unnail` | `scripts/pin.mjs` |
+| Git hook | `forge hook` | `reference/hooks.md` |
+| API design | `forge api` | `scripts/forge-api.mjs` |
+| Rollback | `forge rollback` | `scripts/rollback.mjs` |
+| Estado | `forge state` | `scripts/forge-state.mjs` |
+| Ensayo cualitativo | `assay` | `reference/assay.md` |
+| Bounded context | `forge` | `reference/bounded-contexts.md` |
+| Modular monolith | `forge` | `reference/modular-monolith.md` |
+| ADR | `inscribe` | `reference/adr.md` |
+| Anti-corruption layer | `relocate` | `reference/anti-corruption-layer.md` |
+| Evolutionary arch | `reforge` | `reference/evolutionary-architecture.md` |
+| CQRS | `cast` | `reference/cqrs.md` |
+| Sagas | `cast` | `reference/sagas.md` |
+| Outbox | `cast` | `reference/transactional-outbox.md` |
+| Idempotencia | `forge` | `reference/idempotency.md` |
+| API versioning | `forge api` | `reference/api-versioning.md` |
 
 ---
 
@@ -128,15 +126,17 @@ inspect=$(node .opencode/skills/forge/scripts/inspect.mjs --json 2>/dev/null)
 
 Para cada comando, Forge sigue este flujo:
 
-1. **Contexto**: Ejecutar `context.mjs` + `armorer.mjs` + `profile.mjs`
-2. **Grafo**: Ejecutar `graph.mjs` + `chain.mjs`
-3. **Auditoría**: Ejecutar `inspect.mjs`
-4. **Referencia**: Cargar `reference/<command>.md`
-5. **Ejecutar**: Aplicar el flujo definido en la referencia, usando los scripts según corresponda
-6. **Verificar**: Ejecutar `scripts/detect.mjs` para verificar que no se introdujeron violaciones
-7. **forgeSentinel**: Ejecutar `scripts/forgeSentinel.mjs --reminder` para reportar cambios
-8. **Actualizar ARCHITECTURE.md**: Reflejar el nuevo estado (`architecture.mjs`)
-9. **Reportar**: Mostrar resultado al usuario con severidades
+1. **Boot condicional**: Ejecutar `forge-boot.mjs --depth <depth>` donde depth es:
+   - `minimal` para cast, temper, smelt, relocate, reforge, inscribe
+   - `standard` para chain, graph, forge hook
+   - `full` para inspect, quench, o cualquier otro comando
+2. **Referencia**: Cargar `reference/<command>.md`
+3. **Ejecutar**: Aplicar el flujo definido en la referencia
+4. **Verificar**: Ejecutar `detect.mjs --summary` (resumen compacto)
+5. **Actualizar ARCHITECTURE.md**: `architecture.mjs` (solo en full)
+6. **Reportar**: Mostrar resultado al usuario con severidades
+
+El boot usa caché de `.forge/cache/`. Si los archivos `src/` no cambiaron, los datos se reusan. Usa `forge-boot.mjs --force` para regenerar todo.
 
 ---
 
@@ -169,87 +169,13 @@ import { crossFeature } from "../other-feature/domain/Entity"; // ← R1 y R8 ig
 
 ## ARCHITECTURE.md
 
-Forge mantiene un archivo `ARCHITECTURE.md` en la raíz del proyecto con el contexto persistente. Contiene:
+Forge mantiene `ARCHITECTURE.md` en la raíz con el estado persistente del proyecto (framework, DB, features, ownership, graph). Se genera y actualiza con `architecture.mjs`.
 
-```md
-# Architecture State
-
-- Project Name: <name>
-- Framework: <detectado>
-- Runtime: <detectado>
-- Database: <detectado>
-- ORM: <detectado>
-- DI Strategy: <detectado>
-- Profile: <detectado>
-- Architecture: hexagonal-feature (Platform + Features + Shared + Infra)
-- Last Audit: <fecha> (score: <puntaje>)
-
-## Platform
-- platform/config/
-- platform/server/
-...
-
-## Features
-- features/users/
-...
-
-## Shared
-- shared/errors/
-...
-
-## Infrastructure
-- infra/prisma/
-...
-
-## Ownership
-- Health: healthy | degraded | critical
-- Score: 0-100
-- Orphans: 0
-- Duplicates: 0
-- Misplaced: 0
-
-## Architecture Graph
-...
-
-## Dependency Health
-...
-```
-
-El agente DEBE leer este archivo al inicio de cada interacción y actualizarlo al finalizar cada comando.
+El agente DEBE leer este archivo al inicio de cada interacción y actualizarlo al finalizar cada comando. Ver `scripts/architecture.mjs` para el formato completo.
 
 ---
 
-## Module Index
-
-| Módulo | Propósito |
-|---|---|
-| `reference/principles.md` | Manifiesto y 12 principios inquebrantables |
-| `reference/patterns.md` | Convenciones de nomenclatura globales (PascalCase.artifact, kebab dirs, etc.) |
-| `reference/errors.md` | Manejo de errores tipados en dominio y aplicación |
-| `reference/di-strategies.md` | Estrategias de inyección de dependencias según tamaño |
-| `reference/testing-patterns.md` | Pirámide de tests, unit mocks, integration tests |
-| `reference/api-design.md` | REST / GraphQL, paginación, validación, contratos |
-| `reference/observability.md` | Logging, tracing, métricas, health checks |
-| `reference/data-patterns.md` | Repository, Unit of Work, CQRS, Event Sourcing |
-| `reference/security-patterns.md` | AuthN, AuthZ, RBAC, rate limiting, validación |
-| `reference/events.md` | Eventos de dominio, outbox pattern, sagas |
-| `reference/hooks.md` | Git pre-commit hook para validación arquitectónica |
-| `reference/help.md` | Lista completa de comandos y flags de Forge |
-| `reference/assay.md` | Ensayo arquitectónico multi-persona — interpretación cualitativa del audit |
-| `profiles/` | Perfiles tecnológicos detallados (Express, Fastify, NestJS, etc.) |
-| `scripts/` | Scripts: context, detect, inspect, chain, profile, graph, architecture, armorer, bootstrap, forge-config, forge-signals, forge-state, forge-api, pin, update, rollback, hook, forgeSentinel, forgeSentinel-lib, forgeSmith, forgeSmith-admin, formatter, assay, registry/rules |
-| `scripts/registry/rules.mjs` | Anti-pattern rule registry (R1-R9 + custom rules desacopladas de detect.mjs) |
-| `scripts/formatter.mjs` | Output formatter unificado (JSON, tabla, severidad coloreada, scoreBar, formatCheck, formatViolation) |
-| `scripts/forgeSentinel.mjs` | PostToolUse hook — analiza archivos modificados tras escritura y reporta violaciones |
-| `scripts/forgeSentinel-lib.mjs` | Lógica compartida para hooks forgeSentinel y forgeSmith |
-| `scripts/forgeSmith.mjs` | preToolUse gate — previene escrituras con violaciones CRITICAL/ERROR (Cursor) |
-| `scripts/forgeSmith-admin.mjs` | Gestión de hooks (on/off/status) |
-| `scripts/assay.mjs` | Motor de ensayo arquitectónico multi-persona (Bezos, Fowler, Hacker, PM, Arquitecta Senior) |
-| `templates/feature/` | Templates de feature (entity, repository, uc, controller, routes, schema, mapper) |
-| `templates/platform/` | Templates de platform (config, server, database, logger, http, di) |
-| `templates/shared/` | Templates de shared (errors, contracts, types, utils) |
-| `templates/infra/` | Templates de infra (prisma, mongodb, redis, mail) |
-| `command/forge.md` | Definición del comando `/forge` para opencode |
+> 📚 Todas las referencias están en `reference/`. La tabla de routing arriba mapea cada comando a su referencia. Ver `reference/help.md` para la lista completa de flags.
 
 ### Tests
 
@@ -269,8 +195,11 @@ node --test .opencode/skills/forge/tests/core.test.mjs
 | `formatter.mjs` | 4 | Output format, colores, JSON |
 | `registry/rules.mjs` | 4 | R1-R9, evaluación, custom rules |
 | `detect.mjs` (inline ignores) | 5 | parseInlineIgnores, isIgnored |
-| `forgeSentinel.mjs` | 1 | PostToolUse hook |
+| `posttool.mjs` | 1 | PostToolUse hook |
 | `assay.mjs` | 4 | Personas, generateAssay, opiniones |
+| transactional-outbox | 5 | Entry lifecycle, retry, DLQ, required fields, pending |
+| idempotency | 5 | UUID validation, cached response, different keys, TTL, method filter |
+| anti-corruption-layer | 5 | DTO mapping (2 dirs), null handling, 404, delegation order |
 
 ### Flags adicionales
 

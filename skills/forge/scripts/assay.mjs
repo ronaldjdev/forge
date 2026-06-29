@@ -19,7 +19,7 @@
 import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync } from "fs";
 import { join, basename } from "path";
 import { loadState, loadHistory } from "./forge-config.mjs";
-import { buildGraph } from "./graph.mjs";
+import { getGraph } from "./graph.mjs";
 import {
   CYAN, GREEN, RED, YELLOW, BOLD, RESET, DIM, GRAY,
   formatJson, formatViolation,
@@ -327,7 +327,7 @@ function getLastInspectReport() {
 
 function rebuildGraph() {
   try {
-    return buildGraph(ROOT);
+    return getGraph(ROOT);
   } catch {
     return { nodes: [], edges: [], stats: { hasCycles: false, dependencyHealth: 100, totalNodes: 0, totalEdges: 0, violations: 0, riskScore: 0, health: "unknown" } };
   }

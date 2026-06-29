@@ -42,3 +42,10 @@ Inicializa un proyecto para trabajar con Forge como Backend Architecture Operati
 | Platform layer ausente | SUGGESTION |
 | Dependencias faltantes | WARNING |
 | Ownership con huérfanos | WARNING |
+
+## Ver también
+
+- `reference/bounded-contexts.md` — identificación de contexts al inicializar
+- `reference/modular-monolith.md` — decisión de estructura al iniciar proyecto
+- `reference/principles.md` — principios que guían la inicialización
+- `reference/evolutionary-architecture.md` — bootstrap como primer paso evolutivo

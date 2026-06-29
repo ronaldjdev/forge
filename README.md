@@ -1,6 +1,6 @@
 <img src="favicon.svg" alt="Forge Logo" width="100" height="100">
 
-> **v1.3.0-beta** — Multi-Agent: OpenCode · Claude Code · Cursor · Codex CLI · Gemini
+> **v1.3.1** — Bugfixes, New Templates & Interactive Flags
 
 ## Forge — Backend Architecture Operating System
 

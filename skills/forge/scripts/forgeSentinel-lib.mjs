@@ -2,7 +2,7 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
-import { buildGraph } from "./graph.mjs";
+import { getGraph } from "./graph.mjs";
 import { buildContext } from "./context.mjs";
 import { detectFeaturesOnSrc, allChecks, loadAllInlineIgnores, isIgnored } from "./detect.mjs";
 import { evaluateRules } from "./registry/rules.mjs";
@@ -18,7 +18,7 @@ export async function runSentinelCheck(files, opts = {}) {
 
   const ctx = await buildContext();
   const features = detectFeaturesOnSrc();
-  const graph = buildGraph(ROOT);
+  const graph = ctx.graph || getGraph();
   const results = allChecks(features, graph, ctx);
 
   const allIgnores = loadAllInlineIgnores(join(ROOT, "src"));

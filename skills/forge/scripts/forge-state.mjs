@@ -85,7 +85,7 @@ async function main() {
   if (isJson) {
     console.log(JSON.stringify({ state, recentHistory: history }, null, 2));
   } else {
-    const lastScore = state.lastScore !== null ? `${state.lastScore}/110` : "—";
+    const lastScore = state.lastScore !== null ? `${state.lastScore}/${state.lastMax || "?"}` : "—";
     const lastGrade = state.lastGrade || "—";
     console.log(`Forge State | Score: ${lastScore} | Grade: ${lastGrade} | Violaciones: ${state.violationCount} | Features: ${state.migratedFeatures}/${state.totalFeatures}`);
   }

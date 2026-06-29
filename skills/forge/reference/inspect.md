@@ -55,4 +55,10 @@ Inspecciona la conformidad arquitectónica del proyecto.
 node .opencode/skills/forge/scripts/inspect.mjs
 node .opencode/skills/forge/scripts/inspect.mjs --json
 node .opencode/skills/forge/scripts/detect.mjs --severity ERROR
+
+## Ver también
+
+- `reference/evolutionary-architecture.md` — fitness functions como complemento al inspect
+- `reference/assay.md` — interpretación cualitativa multi-persona del reporte de inspect
+- `reference/principles.md` — principios contra los que inspect evalúa el proyecto
 ```

@@ -214,8 +214,6 @@ function parseWithRegexLines(content, filePath) {
 export function parseImportPaths(content, filePath) {
   const astResult = filePath ? parseWithAST(content, filePath) : null;
   if (astResult) return astResult;
-  const regexResult = parseWithAST(content); // second try without filePath hint
-  if (regexResult) return regexResult;
   return parseWithRegex(content);
 }
 

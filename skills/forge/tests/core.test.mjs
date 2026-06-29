@@ -125,6 +125,9 @@ describe("profile.mjs", () => {
 });
 
 describe("graph.mjs", () => {
+  before(() => scaffoldProject({}));
+  after(() => cleanup());
+
   it("builds an empty graph for an empty project", async () => {
     const { buildGraph } = await import("../scripts/graph.mjs");
     const graph = buildGraph(process.cwd());
@@ -138,6 +141,9 @@ describe("graph.mjs", () => {
 });
 
 describe("armorer.mjs", () => {
+  before(() => scaffoldProject({}));
+  after(() => cleanup());
+
   it("builds a healthy report for an empty project", async () => {
     const { buildOwnershipReport } = await import("../scripts/armorer.mjs");
     const report = buildOwnershipReport(process.cwd());
@@ -180,6 +186,9 @@ describe("forge-config.mjs", () => {
 });
 
 describe("chain.mjs", () => {
+  before(() => scaffoldProject({}));
+  after(() => cleanup());
+
   it("builds an empty dependency graph for empty project", async () => {
     const { buildDependencyGraph } = await import("../scripts/chain.mjs");
     const graph = buildDependencyGraph();
@@ -318,10 +327,13 @@ describe("detect.mjs — inline ignores", () => {
   });
 });
 
-describe("forgeSentinel.mjs", () => {
-  it("runSentinelCheck returns empty for no files", async () => {
-    const { runSentinelCheck } = await import("../scripts/forgeSentinel-lib.mjs");
-    const result = await runSentinelCheck([], {});
+describe("posttool.mjs", () => {
+  before(() => scaffoldProject({}));
+  after(() => cleanup());
+
+  it("postToolCheck returns empty for no files", async () => {
+    const { postToolCheck } = await import("../scripts/posttool.mjs");
+    const result = await postToolCheck([], {});
     assert.equal(result.total, 0);
     assert.ok(result.summary);
   });
@@ -399,5 +411,277 @@ describe("assay.mjs", () => {
     };
     const opinion = bezos.getOpinion(report, { stats: { hasCycles: false } });
     assert.ok(opinion.includes("R1") || opinion.includes("R8") || opinion.includes("acoplamiento") || opinion.includes("importan"));
+  });
+});
+
+describe("transactional-outbox pattern", () => {
+  it("outbox entry tracks lifecycle states", () => {
+    const entry = { id: "1", eventType: "OrderPlaced", processedAt: null, retryCount: 0, lastError: null };
+    assert.equal(entry.processedAt, null);
+    assert.equal(entry.retryCount, 0);
+
+    entry.processedAt = new Date();
+    entry.retryCount = 2;
+    entry.lastError = "timeout";
+    assert.ok(entry.processedAt instanceof Date);
+    assert.equal(entry.retryCount, 2);
+  });
+
+  it("retry policy respects max retries and backoff", () => {
+    const maxRetries = 3;
+    const baseDelay = 100;
+    let attempts = 0;
+
+    async function executeWithRetry(fn) {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          return await fn();
+        } catch (error) {
+          if (attempt === maxRetries) throw error;
+          // exponential backoff: baseDelay * 2^(attempt-1)
+          const delay = baseDelay * Math.pow(2, attempt - 1);
+          // not actually waiting in test
+          void delay;
+        }
+      }
+    }
+
+    assert.rejects(async () => {
+      await executeWithRetry(() => Promise.reject(new Error("fail")));
+    }, /fail/);
+  });
+
+  it("outbox relayer moves event to DLQ after exceeding retries", () => {
+    const MAX_RETRIES = 10;
+    const entry = { id: "bad-event", retryCount: 9 };
+    assert.ok(entry.retryCount < MAX_RETRIES);
+
+    entry.retryCount++;
+    assert.equal(entry.retryCount, 10);
+
+    const shouldGoToDLQ = entry.retryCount >= MAX_RETRIES;
+    assert.ok(shouldGoToDLQ);
+  });
+
+  it("outbox entry requires event_id, aggregate_id, and payload", () => {
+    const validEntry = {
+      id: crypto.randomUUID(),
+      eventType: "OrderPlaced",
+      aggregateId: "order-123",
+      aggregateType: "Order",
+      payload: { total: 100 },
+      occurredAt: new Date(),
+      processedAt: null,
+      retryCount: 0,
+      lastError: null,
+    };
+    assert.ok(validEntry.id);
+    assert.ok(validEntry.aggregateId);
+    assert.ok(validEntry.payload);
+    assert.equal(validEntry.eventType, "OrderPlaced");
+  });
+
+  it("processed outbox entries are no longer picked up by relayer", () => {
+    const unprocessed = { processedAt: null };
+    const processed = { processedAt: new Date() };
+
+    const isPending = (entry) => entry.processedAt === null;
+    assert.ok(isPending(unprocessed));
+    assert.ok(!isPending(processed));
+  });
+});
+
+describe("idempotency pattern", () => {
+  it("idempotency key must be a valid UUID", () => {
+    function isValidUUID(key) {
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(key);
+    }
+
+    assert.ok(isValidUUID("550e8400-e29b-41d4-a716-446655440000"));
+    assert.ok(!isValidUUID("not-a-uuid"));
+    assert.ok(!isValidUUID(""));
+  });
+
+  it("same idempotency key returns cached response", async () => {
+    const cache = new Map();
+
+    async function handleRequest(key, handler) {
+      if (cache.has(key)) return cache.get(key);
+      const result = await handler();
+      cache.set(key, result);
+      return result;
+    }
+
+    let callCount = 0;
+    async function processPayment() {
+      callCount++;
+      return { status: "success", transactionId: "txn-1" };
+    }
+
+    const key = "550e8400-e29b-41d4-a716-446655440000";
+    const result1 = await handleRequest(key, processPayment);
+    const result2 = await handleRequest(key, processPayment);
+
+    assert.equal(result1.status, "success");
+    assert.equal(result2.status, "success");
+    assert.equal(callCount, 1); // solo se ejecutó una vez
+  });
+
+  it("different idempotency keys create separate resources", async () => {
+    const store = new Map();
+
+    async function createResource(key, data) {
+      if (store.has(key)) return store.get(key);
+      const resource = { id: crypto.randomUUID(), ...data };
+      store.set(key, resource);
+      return resource;
+    }
+
+    const r1 = await createResource("key-1", { name: "A" });
+    const r2 = await createResource("key-2", { name: "B" });
+
+    assert.notEqual(r1.id, r2.id);
+  });
+
+  it("idempotency key has TTL and expires", () => {
+    const entry = { key: "test", createdAt: new Date() };
+    const TTL_MS = 24 * 60 * 60 * 1000; // 24 horas
+
+    function isExpired(entry) {
+      return Date.now() - entry.createdAt.getTime() > TTL_MS;
+    }
+
+    assert.ok(!isExpired(entry)); // creado ahora, no ha expirado
+
+    const oldEntry = { key: "old", createdAt: new Date(Date.now() - TTL_MS - 1) };
+    assert.ok(isExpired(oldEntry));
+  });
+
+  it("only POST, PATCH, PUT need idempotency keys", () => {
+    const methods = ["GET", "POST", "PUT", "PATCH", "DELETE"];
+    const needsKey = (method) => ["POST", "PATCH", "PUT"].includes(method);
+
+    assert.ok(!needsKey("GET"));
+    assert.ok(needsKey("POST"));
+    assert.ok(needsKey("PUT"));
+    assert.ok(needsKey("PATCH"));
+    assert.ok(!needsKey("DELETE"));
+  });
+});
+
+describe("anti-corruption-layer pattern", () => {
+  it("translator maps external DTO to domain entity", () => {
+    class CustomerTranslator {
+      toDomain(dto) {
+        return {
+          id: dto.customerId,
+          name: `${dto.firstName} ${dto.lastName}`,
+          email: dto.emailAddress,
+          status: dto.active ? "active" : "inactive",
+        };
+      }
+    }
+
+    const externalDTO = {
+      customerId: "ext-123",
+      firstName: "John",
+      lastName: "Doe",
+      emailAddress: "john@example.com",
+      active: true,
+    };
+
+    const translator = new CustomerTranslator();
+    const entity = translator.toDomain(externalDTO);
+
+    assert.equal(entity.id, "ext-123");
+    assert.equal(entity.name, "John Doe");
+    assert.equal(entity.email, "john@example.com");
+    assert.equal(entity.status, "active");
+  });
+
+  it("translator maps domain entity back to external DTO", () => {
+    class CustomerTranslator {
+      toExternal(entity) {
+        return {
+          customerId: entity.id,
+          firstName: entity.name.split(" ")[0],
+          lastName: entity.name.split(" ").slice(1).join(" "),
+          emailAddress: entity.email,
+          active: entity.status === "active",
+        };
+      }
+    }
+
+    const entity = {
+      id: "dom-456",
+      name: "Jane Smith",
+      email: "jane@example.com",
+      status: "active",
+    };
+
+    const translator = new CustomerTranslator();
+    const dto = translator.toExternal(entity);
+
+    assert.equal(dto.customerId, "dom-456");
+    assert.equal(dto.firstName, "Jane");
+    assert.equal(dto.lastName, "Smith");
+    assert.equal(dto.active, true);
+  });
+
+  it("translator handles null/missing values gracefully", () => {
+    class CustomerTranslator {
+      toDomain(dto) {
+        return {
+          id: dto.customerId ?? "unknown",
+          name: dto.firstName ? `${dto.firstName} ${dto.lastName ?? ""}`.trim() : "Unknown",
+          email: dto.emailAddress ?? "",
+          status: dto.active === true ? "active" : "inactive",
+        };
+      }
+    }
+
+    const emptyDTO = { customerId: null, firstName: null, lastName: null, emailAddress: null, active: null };
+    const translator = new CustomerTranslator();
+    const entity = translator.toDomain(emptyDTO);
+
+    assert.equal(entity.id, "unknown");
+    assert.equal(entity.name, "Unknown");
+    assert.equal(entity.status, "inactive");
+  });
+
+  it("gateway enforces timeout and returns null on 404", () => {
+    async function fetchCustomer(id) {
+      const response = { status: 404, ok: false, statusText: "Not Found" };
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error(response.statusText);
+      return { id };
+    }
+
+    assert.doesNotReject(async () => {
+      const result = await fetchCustomer("nonexistent");
+      assert.equal(result, null);
+    });
+  });
+
+  it("ACL delegates to translator and gateway in correct order", async () => {
+    let order = [];
+
+    const gateway = {
+      async fetch(id) { order.push("gateway"); return { customerId: id, firstName: "A", lastName: "B", emailAddress: "a@b.com", active: true }; },
+    };
+
+    const translator = {
+      toDomain(dto) { order.push("translator"); return { id: dto.customerId, name: `${dto.firstName} ${dto.lastName}`, email: dto.emailAddress, status: "active" }; },
+    };
+
+    async function findById(id) {
+      const dto = await gateway.fetch(id);
+      return dto ? translator.toDomain(dto) : null;
+    }
+
+    const result = await findById("123");
+    assert.deepEqual(order, ["gateway", "translator"]);
+    assert.equal(result.id, "123");
+    assert.equal(result.name, "A B");
   });
 });

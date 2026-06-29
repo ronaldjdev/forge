@@ -67,3 +67,9 @@ it("POST /users returns 201", async () => {
 - Nombrar tests como unidades de comportamiento, no métodos
 - Coverage mínimo sugerido: 85% use cases, 75% adapters
 - Los mappers se testean con fixtures: entrada conocida → salida esperada
+
+## Ver también
+
+- `reference/anti-corruption-layer.md` — tests de ACL y traducción entre contexts
+- `reference/di-strategies.md` — DI testing con mocks manuales
+- `reference/temper.md` — DI disciplinada que habilita testabilidad

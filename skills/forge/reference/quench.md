@@ -71,4 +71,9 @@ node .opencode/skills/forge/scripts/detect.mjs --severity ERROR
 
 # Solo un tipo específico
 node .opencode/skills/forge/scripts/detect.mjs --type layers
+
+## Ver también
+
+- `reference/evolutionary-architecture.md` — fitness functions como validación continua
+- `reference/hooks.md` — integración de quench en pre-commit hook
 ```

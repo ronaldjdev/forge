@@ -80,3 +80,9 @@ Se recomienda:
 3. Priorizar acciones basado en las recomendaciones
 4. Refactorizar con `reforge`, `temper`, o `smelt`
 5. Repetir el ciclo
+
+## Ver también
+
+- `reference/inspect.md` — el reporte que alimenta el ensayo
+- `reference/adr.md` — ADRs como insumo para las opiniones de cada persona
+- `reference/principles.md` — principios contra los que assay contrasta las decisiones

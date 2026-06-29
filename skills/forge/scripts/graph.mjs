@@ -3,6 +3,7 @@
 import { join, relative, dirname, basename } from "path";
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
 import { parseImportPaths } from "./parse-imports.mjs";
+import { saveCache, loadCache } from "./forge-config.mjs";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
@@ -308,7 +309,7 @@ export function buildGraph(projectRoot = ROOT) {
     const gImports = parseImportPaths(content, filePath);
     const seenTargets = new Set();
 
-    for (const imp of imports) {
+    for (const imp of gImports) {
       let targetId = resolveNodeId(imp, featureMap);
 
       if (!targetId) {
@@ -421,7 +422,7 @@ export function buildGraph(projectRoot = ROOT) {
     if (directedEdges[e.from]) directedEdges[e.from].push(e.to);
   }
 
-  let hasCycle = false;
+  let hasCycles = false;
   function dfs(node, visited, stack) {
     if (stack.has(node)) return true;
     if (visited.has(node)) return false;
@@ -436,20 +437,28 @@ export function buildGraph(projectRoot = ROOT) {
 
   const visited = new Set();
   for (const n of allNodeIds) {
-    if (hasCycle) break;
+    if (hasCycles) break;
     if (!visited.has(n)) {
       if (dfs(n, visited, new Set())) {
-        hasCycle = true;
+        hasCycles = true;
       }
     }
   }
 
-  if (hasCycle) {
+  if (hasCycles) {
     addViolation("(cycle)", "(cycle)", SEVERITY.ERROR, "R9",
       "Ciclo de dependencia detectado en el grafo global");
   }
 
-  /* ── 8. Stats ── */
+  /* ── 7a. Summary output (compact) ── */
+function buildSummary(graph) {
+  return {
+    stats: graph.stats,
+    violations: graph.violations.map(v => ({ rule: v.rule, severity: v.severity, from: v.from, to: v.to, description: v.description })),
+  };
+}
+
+/* ── 8. Stats ── */
   const bySeverity = { CRITICAL: 0, ERROR: 0, WARNING: 0 };
   for (const v of violations) {
     bySeverity[v.severity] = (bySeverity[v.severity] || 0) + 1;
@@ -488,6 +497,7 @@ export function buildGraph(projectRoot = ROOT) {
       criticalViolations: bySeverity.CRITICAL || 0,
       errorViolations: bySeverity.ERROR || 0,
       warningViolations: bySeverity.WARNING || 0,
+      hasCycles,
       riskScore,
       health,
       dependencyHealth,
@@ -502,6 +512,42 @@ export function validateGraph(graph) {
     stats: graph.stats,
     score: Math.max(0, 100 - graph.stats.riskScore),
   };
+}
+
+/**
+ * getGraph — Cache-aware graph builder.
+ * Uses cached graph if src/ hasn't changed, builds fresh otherwise.
+ * Call with { force: true } to always rebuild.
+ */
+let _graphCache = null;
+
+export function getGraph(projectRoot = ROOT, opts = {}) {
+  const { force = false } = opts;
+
+  // Return memoized in-memory graph (same process)
+  if (_graphCache && !force) return _graphCache;
+
+  // Try disk cache
+  if (!force) {
+    const cached = loadCache("graph", projectRoot);
+    if (cached.valid && cached.data) {
+      _graphCache = cached.data;
+      return _graphCache;
+    }
+  }
+
+  // Build fresh and cache
+  const graph = buildGraph(projectRoot);
+  saveCache("graph", graph, projectRoot);
+  _graphCache = graph;
+  return graph;
+}
+
+/**
+ * Reset in-memory cache (for testing or forced refresh).
+ */
+export function resetGraphCache() {
+  _graphCache = null;
 }
 
 export function exportGraph(graph) {
@@ -565,11 +611,21 @@ export function exportGraph(graph) {
 async function main() {
   const args = process.argv.slice(2);
   const format = args.includes("--json") ? "json" : "text";
-  const graph = buildGraph();
+  const summary = args.includes("--summary");
+  const force = args.includes("--force");
+  const graph = getGraph(ROOT, { force });
   if (format === "json") {
-    console.log(JSON.stringify(graph, null, 2));
+    if (summary) {
+      console.log(JSON.stringify(buildSummary(graph), null, 2));
+    } else {
+      console.log(JSON.stringify(graph, null, 2));
+    }
   } else {
-    console.log(exportGraph(graph));
+    if (summary) {
+      console.log(`Graph: ${graph.stats.totalNodes} nodes, ${graph.stats.totalEdges} edges, ${graph.stats.violations} violations, risk ${graph.stats.riskScore}/100, health: ${graph.stats.health}`);
+    } else {
+      console.log(exportGraph(graph));
+    }
   }
 }
 

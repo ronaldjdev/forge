@@ -4,7 +4,7 @@ import { join, basename } from "path";
 import { writeFileSync, existsSync } from "fs";
 import { buildContext } from "./context.mjs";
 import { detectProfile, detectProfileExtended } from "./profile.mjs";
-import { buildGraph, exportGraph } from "./graph.mjs";
+import { getGraph, exportGraph } from "./graph.mjs";
 import { buildOwnershipReport } from "./armorer.mjs";
 import { allChecks } from "./detect.mjs";
 
@@ -154,15 +154,18 @@ async function main() {
 
   const ctx = await buildContext();
   const profile = detectProfile(ctx);
-  const graph = buildGraph();
+  const graph = ctx.graph || getGraph();
   const ownership = buildOwnershipReport();
   const features = ctx.features.migrated;
   const result = allChecks(features, graph, ctx);
 
+  const CAT_MAX = { structure: 30, layers: 25, decorators: 20, ownership: 20, platform: 15, dependencies: 15, graph: 20, customRules: 5, naming: 10 };
   const totalScore = (result.structure?.score || 0) + (result.layers?.score || 0)
     + (result.ownership?.score || 0) + (result.platform?.score || 0)
-    + (result.dependencies?.score || 0) + (result.graph?.score || 0);
-  const maxScore = 20 + 20 + 20 + 15 + 15 + 20;
+    + (result.dependencies?.score || 0) + (result.graph?.score || 0)
+    + (result.decorators?.score || 0) + (result.customRules?.score || 0)
+    + (result.naming?.score || 0);
+  const maxScore = Object.values(CAT_MAX).reduce((a, b) => a + b, 0);
   const auditScore = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
 
   const md = generateMd(ctx, profile, graph, ownership, auditScore);
@@ -173,4 +176,6 @@ async function main() {
   console.log(`  Platform: ${ctx.platform.components.length} | Features: ${ctx.features.migrated.length} | Shared: ${ctx.shared.components.length} | Infra: ${ctx.infra.components.length}`);
 }
 
-main().catch(console.error);
+if (process.argv[1] && (process.argv[1].endsWith("architecture.mjs") || process.argv[1].endsWith("architecture.js"))) {
+  main().catch(console.error);
+}

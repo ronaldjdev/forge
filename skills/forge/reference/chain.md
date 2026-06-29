@@ -71,3 +71,9 @@ node .opencode/skills/forge/scripts/architecture.mjs
 - Si hay ciclo, extraer la interfaz común a shared/
 - Documentar dependencias en ARCHITECTURE.md
 - Revisar dependencias después de cada migración
+
+## Ver también
+
+- `scripts/graph.mjs` — el grafo que chain analiza topológicamente
+- `reference/evolutionary-architecture.md` — fitness functions de dependencias
+- `reference/modular-monolith.md` — ciclo de dependencias como señal de split

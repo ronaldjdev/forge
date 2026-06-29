@@ -60,3 +60,10 @@ export interface IPaginatedResponse<T> {
 - Errores normalizados: `{ error: { code, message, details? } }`
 - Idempotencia en POST con `Idempotency-Key` header
 - HATEOAS opcional, solo para APIs hipermedia
+
+## Ver también
+
+- `reference/api-versioning.md` — versionado de APIs y deprecación
+- `reference/idempotency.md` — idempotency keys en POST
+- `reference/security-patterns.md` — AuthN/AuthZ, rate limiting, validación
+- `reference/testing-patterns.md` — tests de controllers y endpoints
