@@ -57,6 +57,26 @@ const commands = [
     category: "audit",
   },
   { name: "inscribe", desc: "Generar ARCHITECTURE.md", category: "docs" },
+  {
+    name: "nail / unnail",
+    desc: "Shortcuts de navegación",
+    category: "ops",
+  },
+  {
+    name: "forge api",
+    desc: "Validar contratos API",
+    category: "audit",
+  },
+  {
+    name: "forge rollback",
+    desc: "Restaurar puntos de guardado",
+    category: "ops",
+  },
+  {
+    name: "forge update",
+    desc: "Verificar actualizaciones",
+    category: "ops",
+  },
 ];
 
 const categories = [
@@ -83,7 +103,7 @@ export function Commands() {
     >
       <div className="max-w-6xl mx-auto px-6">
         <SectionHeader
-          title="+10 comandos CLI"
+          title="+14 comandos CLI"
           description="Comandos directos que imponen disciplina arquitectónica sin negociar"
         >
           <div className="flex flex-wrap justify-center gap-2 mt-8">

@@ -57,6 +57,40 @@ export function Install() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.3 }}
+          className="p-8 bg-dark border border-accent/20"
+        >
+          <h3 className="text-lg font-semibold mb-4 text-ink font-display tracking-wider">
+            Instalación multi-agente
+          </h3>
+          <p className="text-sm text-light/70 mb-4">
+            Forge se despliega como skill en múltiples agentes de IA simultáneamente:
+          </p>
+          <div className="grid md:grid-cols-2 gap-3 mb-4">
+            {[
+              { flag: '--opencode', agent: 'OpenCode', hook: 'forgeSentinel' },
+              { flag: '--cursor', agent: 'Cursor', hook: 'forgeSmith' },
+              { flag: '--claude', agent: 'Claude Code', hook: 'forgeSentinel' },
+              { flag: '--codex', agent: 'Codex CLI', hook: 'forgeSentinel' },
+              { flag: '--gemini', agent: 'Gemini', hook: 'SKILL.md' },
+              { flag: '--all', agent: 'Todos', hook: '—' },
+            ].map((a) => (
+              <div key={a.flag} className="flex items-center gap-3 p-3 bg-surface border border-accent/15">
+                <code className="text-xs text-accent font-mono">{a.flag}</code>
+                <span className="text-sm text-light flex-1">{a.agent}</span>
+                <span className="text-xs text-light/50 font-mono">{a.hook}</span>
+              </div>
+            ))}
+          </div>
+          <code className="block p-4 text-sm leading-relaxed bg-surface text-light font-display tracking-wider">
+            npx @ronaldjdev/forge install --all
+          </code>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.3 }}
           className="text-center"
         >
           <p className="text-sm mb-4 text-light/50">

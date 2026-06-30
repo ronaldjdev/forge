@@ -61,7 +61,7 @@ const profiles = [
       'shared/', 'infrastructure/prisma.ts', 'app.ts', 'server.ts',
     ],
     diDetail: 'DI manual. Dependencias inyectadas por constructor y registradas en bootstrap. Sin contenedor externo.',
-    features: ['Routes: Fastify plugin pattern', 'Controller: constructor injection con FastifyRequest/FastifyReply', 'Persistence: Prisma + repository pattern', 'Testing: app.inject() de Fastify'],
+    features: ['Routes: Fastify plugin pattern', 'Controller: constructor injection con FastifyRequest/FastifyReply', 'Persistence: Prisma + repository pattern', 'Transactions: prisma.$transaction()', 'Testing: app.inject() de Fastify'],
   },
   {
     name: 'NestJS + Prisma',
@@ -87,14 +87,14 @@ const profiles = [
     runtime: 'Node 20+',
     database: 'PostgreSQL / MySQL / SQLite',
     orm: 'Drizzle',
-    di: 'Manual',
+    di: 'tsyringe',
     structure: [
       'db/schema.ts',
       'features/<domain>/domain/', 'features/<domain>/application/', 'features/<domain>/adapters/',
       'shared/', 'app.ts', 'server.ts',
     ],
-    diDetail: 'DI manual sin contenedor externo. Dependencias inyectadas por constructor y cableadas en app.ts.',
-    features: ['DI: manual, cableado en app.ts', 'Persistence: Drizzle ORM con esquemas type-safe', 'Migrations: npx drizzle-kit generate / migrate', 'Testing: mocks de DrizzleClient'],
+    diDetail: 'Usa tsyringe con @injectable() y @inject() con tokens de clase. Container wiring en app.ts.',
+    features: ['DI: tsyringe con @injectable() y @inject()', 'Persistence: Drizzle ORM con esquemas type-safe', 'Migrations: npx drizzle-kit generate / migrate', 'Testing: mocks de DrizzleClient'],
   },
   {
     name: 'Fastify + MongoDB + Mongoose',
@@ -145,20 +145,21 @@ const profiles = [
     features: ['DI: @Injectable() de NestJS + MongooseModule', 'Persistence: @nestjs/mongoose con @Schema() decorators', 'Cross-feature: módulos exportan providers', 'Testing: MongoMemoryServer + Test.createTestingModule()'],
   },
   {
-    name: 'NestJS + PostgreSQL + TypeORM',
+    name: 'NestJS + PostgreSQL + Prisma',
     key: 'nestjs-postgres',
     framework: 'NestJS',
     runtime: 'Node 20+',
     database: 'PostgreSQL',
-    orm: 'TypeORM',
+    orm: 'Prisma',
     di: 'NestJS DI',
     structure: [
+      'prisma/schema.prisma',
       'features/<domain>/domain/', 'features/<domain>/application/', 'features/<domain>/adapters/',
       'features/<domain>/adapters/in/http/<domain>.module.ts',
       'shared/', 'app.module.ts', 'main.ts',
     ],
-    diDetail: 'NestJS DI nativo con @Module(), @Injectable() y TypeOrmModule.forFeature().',
-    features: ['DI: @Injectable() de NestJS + TypeOrmModule', 'Persistence: TypeORM entities con @Entity() y @Column()', 'Cross-feature: módulos exportan providers', 'Testing: Test.createTestingModule() con mocks'],
+    diDetail: 'NestJS DI nativo con @Injectable() y módulos. PrismaService que extiende PrismaClient como provider global.',
+    features: ['DI: @Injectable() de NestJS + módulos con providers/exports', 'Persistence: PrismaService + repository pattern', 'Transactions: prisma.$transaction()', 'Cross-feature: módulos exportan providers', 'Testing: Test.createTestingModule() con mocks'],
   },
 ]
 

@@ -219,8 +219,8 @@ export function CommandsPage() {
     <article className="space-y-12">
       <h1 className="font-display text-4xl text-ink">Comandos</h1>
       <p className="text-light/80 leading-relaxed">
-        Forge expone +10 comandos para modelar, construir, auditar, evaluar y evolucionar la arquitectura de tu backend.
-        Se invocan por lenguaje natural dentro de OpenCode.
+        Forge expone 14 comandos para modelar, construir, auditar, evaluar y evolucionar la arquitectura de tu backend.
+        Se invocan por lenguaje natural dentro de cualquier agente compatible.
       </p>
 
       {commands.map((cmd) => (
@@ -530,6 +530,20 @@ export function CommandsPage() {
           )}
         </section>
       ))}
+      <section className="space-y-4">
+        <h2 className="font-display text-2xl text-ink pt-8 border-t border-accent/10">Flags interactivos</h2>
+        <p className="text-light/80 text-sm">
+          Cuando ejecutas un comando sin pasar sus flags explícitamente, Forge te preguntará de forma interactiva qué opciones usar. Esto aplica a: <code className="text-accent text-xs">inspect</code>, <code className="text-accent text-xs">assay</code>, <code className="text-accent text-xs">graph</code>, <code className="text-accent text-xs">chain</code>, <code className="text-accent text-xs">quench</code>, <code className="text-accent text-xs">reforge</code> e <code className="text-accent text-xs">inscribe</code>.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-display text-2xl text-ink pt-8 border-t border-accent/10">Recommendation Engine</h2>
+        <p className="text-light/80 text-sm">
+          Tras cada auditoría, el <code className="text-accent text-xs">recommendation-engine.mjs</code> analiza los resultados y sugiere comandos específicos ordenados por severidad. Por ejemplo, si detecta violaciones CRITICAL, recomendará <code className="text-accent text-xs">forge quench --fix</code> antes que <code className="text-accent text-xs">forge assay</code>.
+        </p>
+      </section>
+
       <section className="space-y-6">
         <h2 className="font-display text-2xl text-ink pt-8 border-t border-accent/10">Flags globales</h2>
         <p className="text-light/80 text-sm">

@@ -81,7 +81,7 @@ export function Hero() {
             className="text-lg leading-relaxed max-w-xl text-light/80"
           >
             Modela, construye, audita y evoluciona sistemas backend con reglas
-            de arquitectura automatizadas. Cuatro capas, diez comandos, nueve
+            de arquitectura automatizadas. Cuatro capas, catorce comandos, nueve
             reglas. Sin configuración, sin fricción.
           </motion.p>
 

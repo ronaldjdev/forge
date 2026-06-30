@@ -26,10 +26,10 @@ export function Overview() {
       <section className="space-y-4">
         <h2 className="font-display text-2xl text-ink">¿Cómo funciona?</h2>
         <p className="text-light/80 leading-relaxed">
-          Forge se instala como skill en OpenCode. Cuando trabajas en un proyecto, Forge ejecuta una boot sequence de 9 pasos que analiza tu stack, detecta la estructura actual, construye un grafo arquitectónico, audita violaciones y genera documentación viva. Luego ejecuta el comando que solicitaste y actualiza el estado.
+          Forge se instala como skill en OpenCode (y otros 4 agentes). Cuando trabajas en un proyecto, Forge ejecuta una boot sequence que analiza tu stack, detecta la estructura actual, construye un grafo arquitectónico, audita violaciones y genera documentación viva. Luego ejecuta el comando que solicitaste y actualiza el estado.
         </p>
         <div className="bg-surface border border-accent/10 rounded-lg p-4 space-y-2">
-          <p className="text-accent font-display text-sm">Boot Sequence</p>
+          <p className="text-accent font-display text-sm">Boot Sequence (orquestada por forge-boot.mjs)</p>
           <ol className="list-decimal list-inside text-light/70 text-sm space-y-1">
             <li>Detectar stack, platform, features, shared, infra y estado</li>
             <li>Analizar ownership, huérfanos, duplicados y mal ubicados</li>
@@ -41,7 +41,46 @@ export function Overview() {
             <li>Ejecutar el comando solicitado</li>
             <li>Actualizar ARCHITECTURE.md con el nuevo estado</li>
           </ol>
+          <p className="text-light/60 text-xs mt-2">Soporta profundidades minimal, standard y full.</p>
         </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-display text-2xl text-ink">Sistema de Hooks Multi-Agent</h2>
+        <p className="text-light/80 leading-relaxed">
+          Forge se despliega como skill en 5 agentes de IA simultáneamente, con hooks adaptados a cada plataforma:
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-accent/10">
+                <th className="text-left py-2 px-3 text-accent font-display">Agente</th>
+                <th className="text-left py-2 px-3 text-accent font-display">Hook</th>
+                <th className="text-left py-2 px-3 text-accent font-display">Cuándo se ejecuta</th>
+                <th className="text-left py-2 px-3 text-accent font-display">Efecto</th>
+              </tr>
+            </thead>
+            <tbody className="text-light/80">
+              {[
+                ['OpenCode', 'forgeSentinel', 'PostToolUse', 'Reporta violaciones como reminder'],
+                ['Claude Code', 'forgeSentinel', 'PostToolUse', 'Reporta violaciones como reminder'],
+                ['Cursor', 'forgeSmith', 'preToolUse', 'Puede DENEGAR la escritura'],
+                ['Codex CLI', 'forgeSentinel', 'PostToolUse', 'Reporta violaciones como reminder'],
+                ['Gemini', 'SKILL.md', 'Al cargar', 'Instrucciones arquitectónicas'],
+              ].map(([agent, hook, when, effect]) => (
+                <tr key={agent} className="border-b border-white/5">
+                  <td className="py-2 px-3 font-display text-accent">{agent}</td>
+                  <td className="py-2 px-3 font-mono text-xs">{hook}</td>
+                  <td className="py-2 px-3 text-light/70">{when}</td>
+                  <td className="py-2 px-3 text-light/70">{effect}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-light/70 text-sm">
+          Todos los hooks comparten la misma lógica de detección de violaciones R1-R9 a través de <code className="text-accent text-xs">forgeSentinel-lib.mjs</code>.
+        </p>
       </section>
 
       <section className="space-y-4">
@@ -74,6 +113,8 @@ export function Overview() {
                 ['forge api', 'Validación de contratos API'],
                 ['forge rollback', 'Restaura puntos de guardado'],
                 ['forge update', 'Verifica actualizaciones de Forge'],
+                ['forge assay', 'Ensayo multi-persona para interpretación cualitativa'],
+                ['forge graph', 'Grafo arquitectónico y risk score'],
               ].map(([cmd, desc]) => (
                 <tr key={cmd} className="border-b border-white/5">
                   <td className="py-2 px-3 font-mono text-accent">{cmd}</td>

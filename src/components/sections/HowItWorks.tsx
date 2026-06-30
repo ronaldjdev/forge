@@ -5,7 +5,7 @@ const steps = [
   {
     num: "01",
     title: "Instala",
-    desc: "Instala Forge como skill de OpenCode en tu proyecto con un solo comando",
+    desc: "Instala Forge con el wizard interactivo o directamente — soporta OpenCode, Cursor, Claude Code, Codex CLI y Gemini",
     code: "npx @ronaldjdev/forge install",
   },
   {
