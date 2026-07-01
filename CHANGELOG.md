@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v1.3.3 — Fix I-prefix PascalCase en inspector (2026-06-30)
+
+### Fixed
+- **`rename.mjs`: Falso positivo con prefijo `I`**: `toPascalCase` aplanaba la letra tras `I` (ej. `ILogger.port.ts` → `Ilogger.port.ts`). Nuevo helper `toPascalCaseI` preserva la mayúscula en prefijos de interfaz. Afectaba a `domain/port`, `domain/entities` y `shared/contracts`.
+
+---
+
 ## v1.3.2 — Domain Subdirectory Structure & Port Support (2026-06-30)
 
 ### Added

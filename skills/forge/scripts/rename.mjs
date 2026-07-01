@@ -40,6 +40,13 @@ function toPascalCase(str) {
     .join("");
 }
 
+function toPascalCaseI(str) {
+  if (/^I[A-Za-z]/.test(str)) {
+    return "I" + toPascalCase(str.slice(1));
+  }
+  return toPascalCase(str);
+}
+
 function toCamelCase(str) {
   const pascal = toPascalCase(str);
   return pascal.charAt(0).toLowerCase() + pascal.slice(1);
@@ -189,7 +196,7 @@ export function computeExpectedName(filePath) {
           } else {
             inferredEntity = stem;
           }
-          const entityStem = toPascalCase(inferredEntity);
+          const entityStem = toPascalCaseI(inferredEntity);
           const expectedName = `${entityStem}.entity${ext}`;
           if (expectedName !== filename) {
             return { current: filePath, expected: join(dirname(filePath), expectedName), relPath: join(dirname(relPath), expectedName), rule: `feature/${featureName}/domain/entities: ${rule.description}` };
@@ -215,7 +222,7 @@ export function computeExpectedName(filePath) {
             const noEntity = stem.replace(/[Ee]ntity$/, "");
             inferredEntity = noEntity || featureName;
           }
-          const entityStem = toPascalCase(inferredEntity);
+          const entityStem = toPascalCaseI(inferredEntity);
           const expectedName = `${entityStem}.entity${ext}`;
           const expectedPath = join(dirname(filePath), "entities", expectedName);
           return { current: filePath, expected: expectedPath, relPath: join(dirname(relPath), "entities", expectedName), rule: `feature/${featureName}/domain → domain/entities: ${rule.description}` };
@@ -229,7 +236,7 @@ export function computeExpectedName(filePath) {
           } else {
             inferredPort = stem;
           }
-          const portStem = toPascalCase(inferredPort);
+          const portStem = toPascalCaseI(inferredPort);
           const expectedName = `${portStem}.port${ext}`;
           if (expectedName !== filename) {
             return { current: filePath, expected: join(dirname(filePath), expectedName), relPath: join(dirname(relPath), expectedName), rule: `feature/${featureName}/domain: ${rule.description}` };
@@ -336,13 +343,13 @@ export function computeExpectedName(filePath) {
     if (subdir === "contracts") {
       const hasI = stem.startsWith("I");
       if (hasI) {
-        const fixedStem = toPascalCase(stem);
-        if (fixedStem !== stem) {
-          const expectedName = `${fixedStem}${ext}`;
-          return { current: filePath, expected: join(dirname(filePath), expectedName), relPath: join(dirname(relPath), expectedName), rule: `shared/contracts: ${rule.description}` };
-        }
-      } else {
-        const expectedName = `I${toPascalCase(stem)}${ext}`;
+          const fixedStem = toPascalCaseI(stem);
+          if (fixedStem !== stem) {
+            const expectedName = `${fixedStem}${ext}`;
+            return { current: filePath, expected: join(dirname(filePath), expectedName), relPath: join(dirname(relPath), expectedName), rule: `shared/contracts: ${rule.description}` };
+          }
+        } else {
+          const expectedName = `I${toPascalCaseI(stem)}${ext}`;
         return { current: filePath, expected: join(dirname(filePath), expectedName), relPath: join(dirname(relPath), expectedName), rule: `shared/contracts: ${rule.description}` };
       }
     }
