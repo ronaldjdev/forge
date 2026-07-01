@@ -1,7 +1,7 @@
 ```typescript
 // src/features/<domain>/adapters/out/persistence/<Domain>.schema.ts
 import { model, Schema } from "mongoose";
-import type { <Domain> } from "../../../domain/<Domain>.entity.js";
+import type { <Domain> } from "../../../domain/entities/<Domain>.entity.js";
 
 const <Domain>Schema = new Schema<<Domain>>(
   {

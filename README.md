@@ -1,6 +1,6 @@
 <img src="favicon.svg" alt="Forge Logo" width="100" height="100">
 
-> **v1.3.1** — Bugfixes, New Templates & Interactive Flags
+> **v1.3.2** — Domain Subdirectory Structure & Port Support
 
 ## Forge — Backend Architecture Operating System
 
@@ -58,8 +58,10 @@ Crea un nuevo feature (vertical slice) con estructura hexagonal completa. Antes 
 ```
 src/features/<name>/
 ├── domain/
-│   ├── <Domain>.entity.ts
-│   └── I<Domain>.repository.ts
+│   ├── entities/         (<Domain>.entity.ts)
+│   ├── repositories/     (I<Domain>.repository.ts)
+│   ├── errors/           (<Domain>NotFound.error.ts)
+│   └── events/           (<Domain>Created.event.ts)
 ├── application/
 │   ├── use-cases/     (<Action>.uc.ts)
 │   └── mappers/       (<Domain>.mapper.ts)
@@ -262,6 +264,10 @@ src/
 ├── features/        ← Capacidades de negocio
 │   └── <name>/
 │       ├── domain/
+│       │   ├── entities/       (<Domain>.entity.ts)
+│       │   ├── repositories/   (I<Domain>.repository.ts)
+│       │   ├── errors/         (<Domain>NotFound.error.ts)
+│       │   └── events/         (<Domain>Created.event.ts)
 │       ├── application/
 │       └── adapters/
 │
@@ -291,6 +297,7 @@ src/
 | Directorios | `kebab-case/` | `credit-card/`, `event-bus/` |
 | Archivos | `<PascalCase>.<artefacto>.ts` | `User.entity.ts` |
 | Interfaces | `I<PascalCase>.<artefacto>.ts` | `IUser.repository.ts` |
+| Puertos (domain) | `<Name>.port.ts` | `PaymentPort.port.ts` |
 | Use cases | `<Action>.uc.ts` | `CreateUser.uc.ts` |
 | Clases | `PascalCase` | `UserController` |
 | Funciones | `camelCase` | `formatDate` |
@@ -378,7 +385,7 @@ Donde vive toda la inteligencia arquitectónica:
 | `reference/assay.md` | Documentación del comando assay |
 | `reference/hooks.md` | Documentación del sistema de hooks |
 | `profiles/` | 10 perfiles tecnológicos detallados |
-| `templates/feature/` | 11 templates TypeScript para features |
+| `templates/feature/` | 17 templates TypeScript para features |
 | `templates/platform/` | 6 templates para componentes de platform |
 | `templates/shared/` | 4 templates para shared (errors, contracts, types, utils) |
 | `templates/infra/` | 4 templates para infra (prisma, mongodb, redis, mail) |

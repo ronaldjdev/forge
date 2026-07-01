@@ -1,5 +1,5 @@
 ```typescript
-// src/features/<domain>/domain/<Domain>.entity.ts
+// src/features/<domain>/domain/entities/<Domain>.entity.ts
 import type { SomeGlobalType } from "@/shared/types/types.js";
 
 export interface <Domain> {

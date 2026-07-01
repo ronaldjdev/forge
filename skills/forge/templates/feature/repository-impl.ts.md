@@ -1,8 +1,8 @@
 ```typescript
 // src/features/<domain>/adapters/out/persistence/<Domain>.repository.ts
 import { injectable } from "tsyringe";
-import type { <Domain> } from "../../../domain/<Domain>.entity.js";
-import type { I<Domain>Repository } from "../../../domain/I<Domain>.repository.js";
+import type { <Domain> } from "../../../domain/entities/<Domain>.entity.js";
+import type { I<Domain>Repository } from "../../../domain/repositories/I<Domain>.repository.js";
 import { <Domain>Mapper } from "../../../application/mappers/<Domain>.mapper.js";
 import <Domain>Model from "./<Domain>.schema.js";
 import { RepositoryError } from "@/shared/errors/RepositoryError.js";

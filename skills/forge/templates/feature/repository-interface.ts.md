@@ -1,6 +1,6 @@
 ```typescript
-// src/features/<domain>/domain/I<Domain>.repository.ts
-import type { <Domain> } from "./<Domain>.entity.js";
+// src/features/<domain>/domain/repositories/I<Domain>.repository.ts
+import type { <Domain> } from "../entities/<Domain>.entity.js";
 
 export interface I<Domain>Repository {
   create(data: Partial<<Domain>>, session?: unknown): Promise<<Domain>>;

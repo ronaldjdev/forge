@@ -1,8 +1,8 @@
 ```typescript
 // src/features/<domain>/adapters/out/saga/SagaOrchestrator.ts
 import { injectable, inject } from "tsyringe";
-import type { SagaInstance, SagaStatus } from "../../domain/SagaInstance.entity.js";
-import type { ISagaRepository } from "../../domain/ISagaRepository.js";
+import type { SagaInstance, SagaStatus } from "../../domain/entities/SagaInstance.entity.js";
+import type { ISagaRepository } from "../../domain/repositories/ISagaRepository.repository.js";
 import type { IEventBus } from "@/platform/events/IEventBus.js";
 import type { ILogger } from "@/platform/logger/ILogger.js";
 

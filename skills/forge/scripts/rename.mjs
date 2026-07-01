@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from "fs";
 import { join, relative, dirname, basename, extname, parse } from "path";
 
 const ROOT = process.cwd();
@@ -66,7 +66,10 @@ const PLATFORM_RULES = {
 };
 
 const FEATURE_SUBDIR_RULES = [
+  { subdir: "domain/entities", pattern: "entity", case: "pascal", description: "<Name>.entity.ts" },
+  { subdir: "domain/repositories", pattern: "repository", prefix: "I", case: "pascal", description: "I<Name>.repository.ts" },
   { subdir: "domain", pattern: "entity", case: "pascal", description: "<Name>.entity.ts" },
+  { subdir: "domain", pattern: "port", case: "pascal", description: "<Name>.port.ts" },
   { subdir: "domain", pattern: "repository", prefix: "I", case: "pascal", description: "I<Name>.repository.ts" },
   { subdir: "application/use-cases", pattern: "uc", case: "pascal", description: "<Action>.uc.ts" },
   { subdir: "application/mappers", pattern: "mapper", case: "pascal", description: "<Name>.mapper.ts" },
@@ -178,9 +181,33 @@ export function computeExpectedName(filePath) {
       if (featureSubpath === rule.subdir || featureSubpath.startsWith(rule.subdir + "/")) {
         const stemLower = stem.toLowerCase();
 
-        // For domain/entity: <Entity>.entity.ts
-        // Entity name derived from feature dir or current filename
-        if (rule.subdir === "domain" && rule.pattern === "entity") {
+        // For domain/entities/: <Name>.entity.ts
+        if (rule.subdir === "domain/entities") {
+          let inferredEntity;
+          if (hasSuffix(stem, "entity")) {
+            inferredEntity = stem.replace(/\.entity$/i, "");
+          } else {
+            inferredEntity = stem;
+          }
+          const entityStem = toPascalCase(inferredEntity);
+          const expectedName = `${entityStem}.entity${ext}`;
+          if (expectedName !== filename) {
+            return { current: filePath, expected: join(dirname(filePath), expectedName), relPath: join(dirname(relPath), expectedName), rule: `feature/${featureName}/domain/entities: ${rule.description}` };
+          }
+        }
+
+        // For domain/repositories/: I<Name>.repository.ts
+        if (rule.subdir === "domain/repositories") {
+          const expectedStem = `I${entityName}.repository`;
+          const expectedName = `${expectedStem}${ext}`;
+          const currentMatches = stem === expectedStem;
+          if (!currentMatches) {
+            return { current: filePath, expected: join(dirname(filePath), expectedName), relPath: join(dirname(relPath), expectedName), rule: `feature/${featureName}/domain/repositories: ${rule.description}` };
+          }
+        }
+
+        // For flat domain/entity: migrates to domain/entities/<Name>.entity.ts
+        if (rule.subdir === "domain" && rule.pattern === "entity" && featureSubpath === "domain") {
           let inferredEntity;
           if (hasSuffix(stem, "entity")) {
             inferredEntity = stem.replace(/\.entity$/i, "");
@@ -190,25 +217,37 @@ export function computeExpectedName(filePath) {
           }
           const entityStem = toPascalCase(inferredEntity);
           const expectedName = `${entityStem}.entity${ext}`;
+          const expectedPath = join(dirname(filePath), "entities", expectedName);
+          return { current: filePath, expected: expectedPath, relPath: join(dirname(relPath), "entities", expectedName), rule: `feature/${featureName}/domain → domain/entities: ${rule.description}` };
+        }
+
+        // For domain/port: <Name>.port.ts
+        if (rule.subdir === "domain" && rule.pattern === "port") {
+          let inferredPort;
+          if (hasSuffix(stem, "port")) {
+            inferredPort = stem.replace(/\.port$/i, "");
+          } else {
+            inferredPort = stem;
+          }
+          const portStem = toPascalCase(inferredPort);
+          const expectedName = `${portStem}.port${ext}`;
           if (expectedName !== filename) {
             return { current: filePath, expected: join(dirname(filePath), expectedName), relPath: join(dirname(relPath), expectedName), rule: `feature/${featureName}/domain: ${rule.description}` };
           }
         }
 
-        // For domain/repository interface: I<Entity>.repository.ts
-        if (rule.subdir === "domain" && rule.pattern === "repository") {
+        // For flat domain/repository: migrates to domain/repositories/I<Entity>.repository.ts
+        if (rule.subdir === "domain" && rule.pattern === "repository" && featureSubpath === "domain") {
           const expectedStem = `I${entityName}.repository`;
           const expectedName = `${expectedStem}${ext}`;
-          const currentMatches = stem === expectedStem;
-          if (!currentMatches) {
-            return { current: filePath, expected: join(dirname(filePath), expectedName), relPath: join(dirname(relPath), expectedName), rule: `feature/${featureName}/domain: ${rule.description}` };
-          }
-          return null;
+          const expectedPath = join(dirname(filePath), "repositories", expectedName);
+          return { current: filePath, expected: expectedPath, relPath: join(dirname(relPath), "repositories", expectedName), rule: `feature/${featureName}/domain → domain/repositories: ${rule.description}` };
         }
 
         // For use-cases: <Action>.uc.ts
         if (rule.subdir === "application/use-cases") {
-          const expectedName = `${toPascalCase(stem)}.uc${ext}`;
+          const cleanStem = hasSuffix(stem, "uc") ? stem.replace(/\.uc$/i, "") : stem;
+          const expectedName = `${toPascalCase(cleanStem)}.uc${ext}`;
           if (expectedName !== filename) {
             return { current: filePath, expected: join(dirname(filePath), expectedName), relPath: join(dirname(relPath), expectedName), rule: `feature/${featureName}/application/use-cases: ${rule.description}` };
           }
@@ -237,15 +276,21 @@ export function computeExpectedName(filePath) {
       }
     }
 
-    // Check domain/ for files that look like entity/repository but don't match (loose files)
+    // Check domain/ for loose files without suffix → migrate to subdirectory
     if (featureSubpath === "domain" && !stem.includes(".")) {
       const lower = stem.toLowerCase();
       if (lower.includes("repository") || stem.startsWith("I")) {
         const expectedName = `I${entityName}.repository${ext}`;
-        return { current: filePath, expected: join(dirname(filePath), expectedName), relPath: join(dirname(relPath), expectedName), rule: `feature/${featureName}/domain: I<Name>.repository.ts` };
+        const expectedPath = join(dirname(filePath), "repositories", expectedName);
+        return { current: filePath, expected: expectedPath, relPath: join(dirname(relPath), "repositories", expectedName), rule: `feature/${featureName}/domain → domain/repositories: I<Name>.repository.ts` };
+      }
+      if (lower.includes("port")) {
+        const expectedName = `${entityName}.port${ext}`;
+        return { current: filePath, expected: join(dirname(filePath), expectedName), relPath: join(dirname(relPath), expectedName), rule: `feature/${featureName}/domain: <Name>.port.ts` };
       }
       const expectedName = `${entityName}.entity${ext}`;
-      return { current: filePath, expected: join(dirname(filePath), expectedName), relPath: join(dirname(relPath), expectedName), rule: `feature/${featureName}/domain: <Name>.entity.ts` };
+      const expectedPath = join(dirname(filePath), "entities", expectedName);
+      return { current: filePath, expected: expectedPath, relPath: join(dirname(relPath), "entities", expectedName), rule: `feature/${featureName}/domain → domain/entities: <Name>.entity.ts` };
     }
 
     return null;
@@ -535,6 +580,9 @@ export function renameFile(oldPath, newPath, projectRoot = ROOT) {
   if (oldPath === newPath) {
     return { success: true, updatedImports: [], note: "El archivo ya tiene el nombre correcto" };
   }
+
+  // Ensure target directory exists
+  mkdirSync(dirname(newPath), { recursive: true });
 
   // Physical rename
   try {

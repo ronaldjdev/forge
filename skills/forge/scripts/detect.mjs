@@ -232,17 +232,29 @@ export function checkStructure(features) {
 
     if (hasSubdir(fDir, "domain")) {
       const dDir = join(fDir, "domain");
-      if (hasFile(dDir, /\.entity\.ts$/)) {
-        checks.push({ ...severity(`${feat}: domain/<Name>.entity.ts`, SEVERITY.INFO), pass: true });
+      const entitiesDir = join(dDir, "entities");
+      const reposDir = join(dDir, "repositories");
+
+      // Check domain/entities/ subdirectory (preferred)
+      if (hasSubdir(dDir, "entities") && hasFile(entitiesDir, /\.entity\.ts$/)) {
+        checks.push({ ...severity(`${feat}: domain/entities/<Name>.entity.ts`, SEVERITY.INFO), pass: true });
         featScore += 3;
+      } else if (hasFile(dDir, /\.entity\.ts$/)) {
+        checks.push({ ...severity(`${feat}: domain/<Name>.entity.ts (plano — migrar a domain/entities/)`, SEVERITY.WARNING), pass: false, fix: `Mover a ${feat}/domain/entities/` });
+        featScore += 1;
       } else {
-        checks.push({ ...severity(`${feat}: falta entity en domain/`, SEVERITY.ERROR), pass: false, fix: `Crear ${feat}.entity.ts en ${feat}/domain/` });
+        checks.push({ ...severity(`${feat}: falta entity en domain/`, SEVERITY.ERROR), pass: false, fix: `Crear ${feat}/domain/entities/<Name>.entity.ts` });
       }
-      if (hasFile(dDir, /^I[A-Z]/)) {
-        checks.push({ ...severity(`${feat}: domain/I<Name>Repository.ts`, SEVERITY.INFO), pass: true });
+
+      // Check domain/repositories/ subdirectory (preferred)
+      if (hasSubdir(dDir, "repositories") && hasFile(reposDir, /\.repository\.ts$/)) {
+        checks.push({ ...severity(`${feat}: domain/repositories/I<Name>.repository.ts`, SEVERITY.INFO), pass: true });
         featScore += 2;
+      } else if (hasFile(dDir, /^I[A-Z]/)) {
+        checks.push({ ...severity(`${feat}: domain/I<Name>Repository.ts (plano — migrar a domain/repositories/)`, SEVERITY.WARNING), pass: false, fix: `Mover a ${feat}/domain/repositories/I<Name>.repository.ts` });
+        featScore += 1;
       } else {
-        checks.push({ ...severity(`${feat}: falta repository interface en domain/`, SEVERITY.WARNING), pass: false, fix: `Crear I${feat.charAt(0).toUpperCase() + feat.slice(1)}Repository.ts` });
+        checks.push({ ...severity(`${feat}: falta repository interface en domain/`, SEVERITY.WARNING), pass: false, fix: `Crear ${feat}/domain/repositories/I${feat.charAt(0).toUpperCase() + feat.slice(1)}.repository.ts` });
       }
     } else {
       checks.push({ ...severity(`${feat}: falta domain/`, SEVERITY.ERROR), pass: false, fix: `Crear ${feat}/domain/` });

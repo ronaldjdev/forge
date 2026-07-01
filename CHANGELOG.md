@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## v1.3.2 — Domain Subdirectory Structure & Port Support (2026-06-30)
+
+### Added
+- **`rename.mjs`: Subdirectory domain structure**: `domain/entities/` y `domain/repositories/` como ubicaciones preferidas. `rename.mjs --all` migra automáticamente archivos planos a subdirectorios.
+- **`rename.mjs`: `mkdirSync` automático**: Crea directorios `entities/` o `repositories/` si no existen durante el rename.
+- **`rename.mjs`: Soporte `port` en domain**: Nuevo patrón `<Name>.port.ts` para interfaces de puerto en la capa de dominio.
+- **`detect.mjs`: Validación de subdirectorios**: Reconoce `domain/entities/*.entity.ts` y `domain/repositories/*.repository.ts`; emite WARNING si encuentra archivos planos sugiriendo migración.
+
+### Fixed
+- **`rename.mjs --all`**: Bug de dobles extensiones (`.uc.uc.ts`, `.config.config.ts`) corregido. El handler de use-cases ahora extrae el sufijo `.uc` antes de aplicar `toPascalCase`.
+- **ACL templates**: Nombres estandarizados (`ISagaRepository` → `ISagaRepository.repository.js`, `<Domain>Entity.js` → `<Domain>.entity.js`) con imports actualizados.
+
+### Changed
+- **Feature templates**: 9 templates actualizados con rutas a `domain/entities/` y `domain/repositories/`.
+- **Estructura de feature recomendada**: Ahora `domain/entities/`, `domain/repositories/`, `domain/errors/`, `domain/events/` como subdirectorios estándar.
+
+---
+
 ## v1.3.1 — Bugfixes, New Templates & Interactive Flags (2026-06-29)
 
 ### Fixed (16 issues)

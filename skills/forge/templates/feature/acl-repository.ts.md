@@ -1,8 +1,8 @@
 ```typescript
 // src/features/<domain>/adapters/out/legacy-<system>/<Domain>ACL.ts
 import { injectable, inject } from "tsyringe";
-import type { I<Domain>Repository } from "../../domain/I<Domain>Repository.js";
-import type { <Domain>Entity } from "../../domain/<Domain>Entity.js";
+import type { I<Domain>Repository } from "../../domain/repositories/I<Domain>.repository.js";
+import type { <Domain>Entity } from "../../domain/entities/<Domain>.entity.js";
 import { <Domain>Gateway } from "./<Domain>Gateway.js";
 import { <Domain>Translator } from "./<Domain>Translator.js";
 
