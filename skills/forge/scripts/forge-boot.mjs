@@ -105,4 +105,6 @@ async function main() {
   console.log(`Boot [${depth}]: ${result.profile.profile} | features: ${ctx.features.total} | graph: ${result.graph.stats.totalNodes}n/${result.graph.stats.totalEdges}e | violations: ${result.inspect.totalChecks} [CRIT:${result.inspect.critical} ERR:${result.inspect.errors} WARN:${result.inspect.warnings}]`);
 }
 
-main().catch(console.error);
+if (process.argv[1] && (process.argv[1].endsWith("forge-boot.mjs") || process.argv[1].endsWith("forge-boot.js"))) {
+  main().catch(console.error);
+}

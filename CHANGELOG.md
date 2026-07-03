@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## v1.4.0 — Forge Init, Auto-Fix Iterativo & Inspect Full Default (2026-07-02)
+
+### Added
+- **`forge forge` (init)**: Flujo expandido a 11 pasos con configuración persistente: `context` → `bootstrap` → `mkdir src/features/` → `forge-config --init` → `forge-config --update` → verificar `tsconfig.json` decorators → `armorer` → `graph` → `chain` → `detect --summary` → `architecture`. Crea `.forge/config.json`, `.forge/state.json`, `src/features/`, y habilita decorators en tsconfig.
+- **`quench --auto`**: Nueva flag que ejecuta un ciclo iterativo de fix → re-detect → fix hasta estabilizar todas las violaciones auto-corregibles. Reporta total corregido por iteración y violaciones restantes con desglose por severidad.
+- **`command/forge.md`**: Flag `--force` para `forge` init, flag `--auto` para `quench`.
+- **`SKILL.md`**: Documentación de flag `--auto` en tabla de flags.
+- **`reference/forge.md`**: Flujo expandido de 10 a 14 pasos, output esperado actualizado con 4 nuevas entradas.
+
+### Fixed
+- **`scripts/inspect.mjs`**: Modo por defecto cambiado de `--diff` a `--full`. Ahora `inspect` sin flags ejecuta un análisis completo del proyecto. Para diff explícito usar `--diff`. Si no hay cambios en diff, sugiere `inspect --full`.
+- **`scripts/inspect.mjs`**: Ahora usa `detectFeaturesOnSrc()` (todos los features en `src/features/`) en vez de `ctx.features.migrated`, igual que `quench`. Verifica duplicados y reglas arquitectónicas en todos los features.
+- **`scripts/forge-boot.mjs`**: Agregado CLI guard `if (process.argv[1]...)` para evitar ejecución al importar.
+- **`scripts/forgeSentinel-lib.mjs`**: Eliminado parámetro `strict` no utilizado en `runSentinelCheck()`.
+- **`scripts/update.mjs`**: Versión ahora se lee dinámicamente desde `package.json` en vez de hardcodearse.
+
+### Changed
+- **`README.md`**: Badge v1.3.6 → v1.4.0.
+
+---
+
 ## v1.3.6 — Multi-Agent Path Resolution Fix (2026-07-02)
 
 ### Fixed

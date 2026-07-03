@@ -217,6 +217,7 @@ node --test {{AGENT_PATH}}/tests/core.test.mjs
 | Flag | Comando | Descripción |
 |------|---------|-------------|
 | `--fix` | `quench` | Auto-corrige violaciones WARNING/INFO (missing @injectable(), tsconfig, naming, container.resolve) |
+| `--auto` | `quench` | Itera fix → re-detect → fix hasta estabilizar violaciones auto-corregibles |
 | `--show-ignores` | `quench` | Muestra los inline ignores encontrados en el código |
 | `--persona=<id>` | `assay` | Filtra ensayo por una persona (bezos, fowler, hacker, pm, senior) |
 | `--save` | `assay` | Persiste ensayo en `.forge/assay/` |

@@ -10,7 +10,7 @@ import { evaluateRules } from "./registry/rules.mjs";
 const ROOT = process.cwd();
 
 export async function runSentinelCheck(files, opts = {}) {
-  const { strict = false, reminder = false } = opts;
+  const { reminder = false } = opts;
 
   if (!files || files.length === 0) {
     return { violations: [], graphViolations: [], total: 0, hasCritical: false, hasErrors: false, filesChecked: 0, summary: "Sin archivos fuente modificados" };

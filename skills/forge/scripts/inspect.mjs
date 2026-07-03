@@ -5,7 +5,7 @@ import { execFileSync } from "child_process";
 import { buildContext } from "./context.mjs";
 import { detectProfile, detectProfileExtended } from "./profile.mjs";
 import { buildDependencyGraph } from "./chain.mjs";
-import { allChecks, checkStructure, checkLayers, checkDecorators } from "./detect.mjs";
+import { allChecks, checkStructure, checkLayers, checkDecorators, detectFeaturesOnSrc } from "./detect.mjs";
 import { saveHistory, updateStateFromAudit } from "./forge-config.mjs";
 import { buildPipeline, printPipeline } from "./recommendation-engine.mjs";
 
@@ -217,7 +217,7 @@ function getChangedFeatures(changedFiles, allFeatures) {
 async function main() {
   const args = process.argv.slice(2);
   const isJson = args.includes("--json");
-  const isDiff = args.includes("--diff") || !args.includes("--full");
+  const isDiff = args.includes("--diff");
   const isSummary = args.includes("--summary");
   const force = args.includes("--force");
   const filterSeverity = args.includes("--severity") ? args[args.indexOf("--severity") + 1] : null;
@@ -227,7 +227,7 @@ async function main() {
   const profile = profileExtended.profile;
   const archGraph = ctx.graph;
   const chainGraph = buildDependencyGraph(process.cwd(), archGraph);
-  const features = ctx.features.migrated;
+  const features = detectFeaturesOnSrc();
 
   if (isSummary) {
     const result = allChecks(features, archGraph, ctx);
@@ -267,7 +267,8 @@ async function main() {
     if (changedFeatures.length === 0) {
       if (!isJson) {
         console.log(`\n${YELLOW}⚠ No hay features afectados por los cambios.${RESET}`);
-        console.log(`${DIM}Los cambios están fuera de src/features/ o no hay features migrados.${RESET}\n`);
+        console.log(`${DIM}Los cambios están fuera de src/features/ o no hay features migrados.${RESET}`);
+        console.log(`${DIM}Usá 'inspect --full' para un análisis completo de todo el proyecto.${RESET}\n`);
       } else {
         console.log(JSON.stringify({ diff: { changedFiles: changedFiles.length, changedFeatures: [], affectedFeatures: false } }));
       }

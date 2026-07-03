@@ -11,13 +11,32 @@
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
-import { join } from "path";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = process.cwd();
 const CACHE_PATH = join(ROOT, ".forge", "version-cache.json");
 const CACHE_TTL = 86400000; // 24h
 const VERSION_URL = "https://forge.dev/latest";
-const CURRENT_VERSION = "1.3.6";
+
+function readVersion() {
+  const candidates = [
+    join(__dirname, "..", "package.json"),
+    join(__dirname, "..", "..", "package.json"),
+    join(__dirname, "..", "..", "..", "package.json"),
+    join(__dirname, "..", "..", "..", "..", "package.json"),
+    join(__dirname, "..", "..", "..", "..", "..", "package.json"),
+  ];
+  for (const p of candidates) {
+    try {
+      const pkg = JSON.parse(readFileSync(p, "utf-8"));
+      if (pkg.version && pkg.name === "@ronaldjdevfs/forge") return pkg.version;
+    } catch {}
+  }
+  return "0.0.0";
+}
+const CURRENT_VERSION = readVersion();
 
 function readJson(path) {
   try {

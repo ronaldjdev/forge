@@ -1,6 +1,6 @@
 <img src="favicon.svg" alt="Forge Logo" width="100" height="100">
 
-> **v1.3.6** — Multi-Agent Path Resolution Fix
+> **v1.4.0** — Forge Init, Auto-Fix Iterativo & Inspect Full Default
 
 ## Forge — Backend Architecture Operating System
 

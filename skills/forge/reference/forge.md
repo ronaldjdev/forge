@@ -11,20 +11,28 @@ Inicializa un proyecto para trabajar con Forge como Backend Architecture Operati
 
 ## Flujo
 
-1. Ejecutar `scripts/context.mjs` para detectar stack actual (incluye platform, features, shared, infra)
-2. Ejecutar `scripts/bootstrap.mjs` para crear layers faltantes (platform, shared, infra)
-3. Ejecutar `scripts/profile.mjs` para determinar perfil tecnológico
-4. Ejecutar `scripts/armorer.mjs` para detectar ownership y huérfanos
-5. Ejecutar `scripts/graph.mjs` para construir grafo arquitectónico global
-6. Ejecutar `scripts/chain.mjs` para analizar dependencias multi-capa
-7. Si `ARCHITECTURE.md` no existe, crearlo con `forge inscribe`
-8. Si faltan dependencias clave (según perfil), listarlas
-9. Si el proyecto tiene código legacy, sugerir `forge relocate`
-10. Si el proyecto está listo, sugerir `forge cast`
+1. Ejecutar `scripts/context.mjs` — detectar stack actual (incluye platform, features, shared, infra)
+2. Ejecutar `scripts/bootstrap.mjs` — crear layers faltantes (platform, shared, infra)
+3. Crear `src/features/` — directorio de features si no existe
+4. Ejecutar `forge-config.mjs --init` — crear `.forge/config.json` + `.forge/state.json`
+5. Ejecutar `forge-config.mjs --update` — detectar y persistir perfil tecnológico
+6. Verificar `tsconfig.json` — agregar `experimentalDecorators` y `emitDecoratorMetadata` si falta
+7. Ejecutar `scripts/armorer.mjs` — detectar ownership y huérfanos
+8. Ejecutar `scripts/graph.mjs` — construir grafo arquitectónico global
+9. Ejecutar `scripts/chain.mjs` — analizar dependencias multi-capa
+10. Ejecutar `detect.mjs --summary` — auditoría base
+11. Ejecutar `architecture.mjs` — generar `ARCHITECTURE.md`
+12. Si faltan dependencias clave (según perfil), listarlas
+13. Si el proyecto tiene código legacy, sugerir `forge relocate`
+14. Si el proyecto está listo, sugerir `forge cast`
 
 ## Output esperado
 
 - `ARCHITECTURE.md` creado en la raíz del proyecto
+- `.forge/config.json` con perfil tecnológico persistido
+- `.forge/state.json` con estado inicial
+- `src/features/` creado si no existía
+- `tsconfig.json` con `experimentalDecorators` y `emitDecoratorMetadata` habilitados
 - Layers Platform, Shared e Infrastructure creados si no existían
 - Perfil tecnológico detectado y registrado
 - Ownership analizado

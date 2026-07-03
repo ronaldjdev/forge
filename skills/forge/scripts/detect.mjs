@@ -1308,6 +1308,45 @@ export function applyFixes(checks, projectRoot = ROOT) {
   return { fixed, skipped, details };
 }
 
+/**
+ * autoFixLoop — Iterative auto-fix: fix → re-detect → fix → ... until stable.
+ * Returns { totalFixed, iterations, remaining } where remaining is the filtered
+ * violations list from the last iteration.
+ */
+async function autoFixLoop(initialFiltered, maxIterations = 10) {
+  let totalFixed = 0;
+  let filtered = initialFiltered;
+  let iteration = 0;
+
+  for (; iteration < maxIterations; iteration++) {
+    const result = applyFixes(filtered);
+    if (result.fixed === 0) break;
+
+    totalFixed += result.fixed;
+
+    // Re-detect after fixes
+    const { buildContext } = await import("./context.mjs");
+    const ctx = await buildContext();
+    const features = detectFeaturesOnSrc();
+    const graph = ctx.graph || getGraph();
+    const results = allChecks(features, graph, ctx);
+
+    let all = [];
+    for (const [, cat] of Object.entries(results)) {
+      all = all.concat(cat.checks);
+    }
+
+    const allIgnores = loadAllInlineIgnores(join(ROOT, "src"));
+    filtered = all.filter(c => {
+      if (c.pass) return true;
+      if (isIgnored(c, allIgnores)) return false;
+      return true;
+    });
+  }
+
+  return { totalFixed, iterations: iteration, remaining: filtered };
+}
+
 /* ── CLI ── */
 async function main() {
   const args = process.argv.slice(2);
@@ -1315,6 +1354,7 @@ async function main() {
   const filterSeverity = args.includes("--severity") ? args[args.indexOf("--severity") + 1] : null;
   const format = args.includes("--json") ? "json" : "text";
   const doFix = args.includes("--fix");
+  const doAuto = args.includes("--auto");
   const showIgnores = args.includes("--show-ignores");
 
   const { buildContext } = await import("./context.mjs");
@@ -1351,6 +1391,29 @@ async function main() {
     }
     if (result.skipped > 0) {
       console.log(` ${YELLOW}⚠${RESET} ${result.skipped} violación(es) CRITICAL no se auto-corrigieron (requieren intervención manual)`);
+    }
+    console.log();
+    return;
+  }
+
+  if (doAuto) {
+    const result = await autoFixLoop(filtered);
+    console.log(`\n${BOLD}Auto-Fix Iterativo${RESET}`);
+    console.log(` ${GREEN}✔${RESET} ${result.totalFixed} violación(es) corregidas en ${result.iterations} iteración(es)`);
+    console.log();
+
+    const remaining = result.remaining.filter(c => !c.pass);
+    if (remaining.length === 0) {
+      console.log(` ${GREEN}✔${RESET} No quedan violaciones.`);
+      return;
+    }
+
+    const critical = remaining.filter(c => c.severity === "CRITICAL").length;
+    const errors = remaining.filter(c => c.severity === "ERROR").length;
+    const warnings = remaining.filter(c => c.severity === "WARNING").length;
+    console.log(` ${YELLOW}⚠${RESET} Quedan ${remaining.length} violación(es) sin corregir (${critical} CRITICAL, ${errors} ERROR, ${warnings} WARNING):\n`);
+    for (const c of remaining) {
+      console.log(formatCheck(c));
     }
     console.log();
     return;

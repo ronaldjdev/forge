@@ -9,11 +9,11 @@ Si el subcomando NO tiene flags en $ARGUMENTS y tiene flags disponibles (ver tab
 
 | Comando | Flags disponibles |
 |---------|------------------|
-| `forge` | Sin flags |
+| `forge` | `--force` |
 | `cast` | Sin flags (pide nombre del feature interactivamente) |
 | `inspect` | `--json`, `--diff`, `--full`, `--summary`, `--severity=<nivel>`, `--force` |
 | `assay` | `--persona=<id>`, `--json`, `--save`, `history` |
-| `quench` | `--fix`, `--show-ignores`, `--severity=<nivel>`, `--json` |
+| `quench` | `--fix`, `--auto`, `--show-ignores`, `--severity=<nivel>`, `--json` |
 | `chain` | `--json` |
 | `graph` | `--json` |
 | `armorer` | Sin flags |
@@ -27,17 +27,19 @@ Si el subcomando NO tiene flags en $ARGUMENTS y tiene flags disponibles (ver tab
 
 ### forge
 
-Inicializa el proyecto arquitectónicamente. Ejecuta context + bootstrap + profile + armorer + graph + chain + inscribe.
+Inicializa el proyecto arquitectónicamente con configuración persistente.
 
-```
-node {{AGENT_PATH}}/scripts/context.mjs
-node {{AGENT_PATH}}/scripts/bootstrap.mjs
-node {{AGENT_PATH}}/scripts/profile.mjs
-node {{AGENT_PATH}}/scripts/armorer.mjs
-node {{AGENT_PATH}}/scripts/graph.mjs
-node {{AGENT_PATH}}/scripts/chain.mjs
-node {{AGENT_PATH}}/scripts/architecture.mjs
-```
+1. `node {{AGENT_PATH}}/scripts/context.mjs` — detectar stack actual
+2. `node {{AGENT_PATH}}/scripts/bootstrap.mjs` — crear platform/, shared/, infra/
+3. Crear `src/features/` — si no existe
+4. `node {{AGENT_PATH}}/scripts/forge-config.mjs --init` — crear `.forge/config.json` + `.forge/state.json`
+5. `node {{AGENT_PATH}}/scripts/forge-config.mjs --update` — detectar y persistir perfil
+6. Verificar `tsconfig.json` — agregar `experimentalDecorators` y `emitDecoratorMetadata` si falta
+7. `node {{AGENT_PATH}}/scripts/armorer.mjs` — ownership
+8. `node {{AGENT_PATH}}/scripts/graph.mjs` — grafo arquitectónico
+9. `node {{AGENT_PATH}}/scripts/chain.mjs` — dependencias multi-capa
+10. `node {{AGENT_PATH}}/scripts/detect.mjs --summary` — auditoría base
+11. `node {{AGENT_PATH}}/scripts/architecture.mjs` — generar `ARCHITECTURE.md`
 
 ### cast
 
