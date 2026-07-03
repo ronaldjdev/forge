@@ -18,8 +18,10 @@ const CAT_NAMES = {
   layers: "Capas",
   ownership: "Ownership",
   platform: "Platform",
+  platformDomain: "Platform Domain",
   dependencies: "Dependencias",
   graph: "Grafo",
+  importConventions: "Import Conventions",
 };
 
 const CAT_MAX = {
@@ -28,10 +30,12 @@ const CAT_MAX = {
   decorators: 20,
   ownership: 20,
   platform: 15,
+  platformDomain: 10,
   dependencies: 15,
   graph: 20,
   customRules: 5,
   naming: 10,
+  importConventions: 20,
 };
 
 function countBySeverity(checks) {

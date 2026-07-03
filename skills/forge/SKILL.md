@@ -150,6 +150,17 @@ El boot usa caché de `.forge/cache/`. Si los archivos `src/` no cambiaron, los 
 - Si `ARCHITECTURE.md` está desactualizado (fecha de auditoría > 7 días), sugerir `forge inscribe`.
 - Todos los resultados se muestran con severidades: `[CRITICAL]`, `[ERROR]`, `[WARNING]`, `[INFO]`, `[SUGGESTION]`.
 
+### ⚠️ Regla de Platform: Sin lógica de dominio
+
+Cuando `reforge` o `relocate` operen sobre `src/platform/`, verificar que los archivos movidos/creados no contengan lógica de dominio:
+
+- **No** mover entidades, value objects, casos de uso, mappers de dominio, schemas de entidades, repositorios de dominio a `platform/`
+- **No** crear archivos con sufijos `.entity.ts`, `.uc.ts`, `.mapper.ts`, `.repository.ts` (domain), `.port.ts` dentro de `platform/`
+- **No** importar desde `features/` dentro de `platform/` (viola R2)
+- Si un componente tiene imports hacia `domain/` o `features/`, pertenece a un feature, no a platform
+
+Platform solo acepta: config, database, http, server, logger, cache, security, events, scheduler, observability, di.
+
 ### Inline Ignores
 
 Forge soporta comentarios inline para excepcionar violaciones línea por línea:

@@ -60,9 +60,94 @@ function hasCriticalViolations(result) {
  * Quick check against proposed content.
  * Returns violations that would be introduced by the proposed content.
  */
+/**
+ * Quickly check proposed content for common import violations
+ * before the file is written to disk (preToolUse guard).
+ */
+function checkProposedContentViolations(filePath, content) {
+  const violations = [];
+  const lines = content.split("\n");
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Match import/export from statements
+    const importMatch = line.match(
+      /(?:import|export)\s+(?:type\s+)?(?:\{[^}]*\}|[^;{]+?)\s+from\s+['"]([^'"]+)['"]/
+    );
+    if (!importMatch) continue;
+
+    const src = importMatch[1];
+    const lineNum = i + 1;
+
+    // R10: Bare specifier — import from "domain/..." (no ./ ../ @/ prefix)
+    if (
+      !src.startsWith("./") &&
+      !src.startsWith("../") &&
+      !src.startsWith("@/") &&
+      !src.startsWith("/") &&
+      src.includes("/") &&
+      !src.startsWith("tsyringe") &&
+      !src.startsWith("reflect-metadata") &&
+      !src.startsWith("express") &&
+      !src.startsWith("node:") &&
+      !src.startsWith("mongoose") &&
+      !src.startsWith("prisma") &&
+      src !== "tsyringe"
+    ) {
+      violations.push({
+        severity: "CRITICAL",
+        label: `[R10] Bare specifier — debe usar ./ o @/ prefix`,
+        detail: `${filePath}:${lineNum} → "${src}"`,
+        fix: `Agregar prefijo "./" o "@/" al import`,
+      });
+    }
+
+    // R11: Import con extensión .ts en vez de .js
+    if (src.endsWith(".ts") && !src.endsWith(".d.ts")) {
+      violations.push({
+        severity: "ERROR",
+        label: `[R11] Import con extensión .ts — debe usar .js`,
+        detail: `${filePath}:${lineNum} → "${src}"`,
+        fix: src.replace(/\.ts$/, ".js"),
+      });
+    }
+
+    // R12: import desde bootstrap.di.js
+    if (src.includes("bootstrap.di")) {
+      violations.push({
+        severity: "CRITICAL",
+        label: `[R12] Import a bootstrap.di.js — no existe en esta arquitectura`,
+        detail: `${filePath}:${lineNum} → "${src}"`,
+        fix: 'Usar "./di.js" o "@/setting/dependencies/<feature>.di.js"',
+      });
+    }
+  }
+
+  // R12b: registerSingleton con model() (Mongoose)
+  if (content.includes("registerSingleton") && content.includes("model(")) {
+    violations.push({
+      severity: "CRITICAL",
+      label: `[R12] registerSingleton con model() — usar register({ useValue })`,
+      detail: filePath,
+      fix: 'container.register("Token", { useValue: Model as any })',
+    });
+  }
+
+  return violations;
+}
+
 async function checkProposedFile(filePath, content) {
   if (!isSourceFile(filePath)) {
     return { violations: [], total: 0, hasCritical: false, hasErrors: false };
+  }
+
+  // Fast pre-check on proposed content (before it hits disk)
+  const contentViolations = checkProposedContentViolations(filePath, content);
+  if (contentViolations.length > 0) {
+    const hasCritical = contentViolations.some(v => v.severity === "CRITICAL");
+    const hasErrors = contentViolations.some(v => v.severity === "ERROR");
+    return { violations: contentViolations, total: contentViolations.length, hasCritical, hasErrors };
   }
 
   const ctx = await buildContext();

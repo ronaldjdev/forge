@@ -1,6 +1,6 @@
 <img src="favicon.svg" alt="Forge Logo" width="100" height="100">
 
-> **v1.3.2** — Domain Subdirectory Structure & Port Support
+> **v1.3.5** — R13 Platform Domain Guard & Legacy Cleanup
 
 ## Forge — Backend Architecture Operating System
 
@@ -29,10 +29,10 @@ Los proyectos backend degeneran en código acoplado porque la infraestructura t�
 |-----------|---------|-------------|
 | **Proyecto nuevo** | `forge` | Inicializa platform/features/shared/infra, detecta stack, crea `ARCHITECTURE.md` |
 | **Crear un nuevo dominio** | `cast` | Genera un feature completo desde cero (verifica platform/shared/infra primero) |
-| **Auditar arquitectura** | `inspect` | Evaluación completa 110pts → 0-100 con ownership, platform y grafo |
+| **Auditar arquitectura** | `inspect` | Evaluación completa 180pts → 0-100 con ownership, platform, grafo e import conventions |
 | **Migrar código legacy** | `relocate` | Traslada código a platform/, shared/, infra/ o features/ |
 | **Refactorizar** | `reforge` | Reestructura features o componentes multi-capa |
-| **Validar reglas** | `quench` | Verifica 9 reglas arquitectónicas (R1-R9) |
+| **Validar reglas** | `quench` | Verifica 12 reglas arquitectónicas (R1-R12) |
 | **Endurecer DI** | `temper` | Aplica inyección por constructor, elimina service locators |
 | **Analizar dependencias** | `chain` | Grafo multi-capa (platform, features, shared, infra), orden topológico, ciclos |
 | **Documentar** | `inscribe` | Genera/actualiza `ARCHITECTURE.md` con métricas, ownership y violaciones |
@@ -72,16 +72,20 @@ src/features/<name>/
 
 ### `inspect` — Auditoría arquitectónica
 
-Evalúa 6 categorías contra un máximo de 110 puntos (normalizado a 0-100):
+Evalúa 10 categorías contra un máximo de 180 puntos (normalizado a 0-100):
 
 | Categoría | Puntos | Qué mide |
 |-----------|--------|----------|
-| Structure | 20 | Organización de platform, features, shared, infra |
-| Layers | 20 | Aislamiento entre capas, imports prohibidos |
+| Structure | 30 | Organización de platform, features, shared, infra |
+| Layers | 25 | Aislamiento entre capas, imports prohibidos |
+| Decorators | 20 | Decoradores @injectable()/@inject() en use cases, controllers, repos |
 | Ownership | 20 | Huérfanos, duplicados, mal ubicados |
 | Platform | 15 | Completitud del backbone técnico (config, server, logger, di, etc.) |
 | Dependencies | 15 | Dirección de dependencias, ciclos, edges inválidos |
 | Graph | 20 | Salud del grafo arquitectónico, risk score |
+| Custom Rules | 5 | Reglas personalizadas desde `.forge/rules.json` |
+| Naming | 10 | Convenciones de nomenclatura PascalCase/kebab |
+| Import Conventions | 20 | R10-R12: bare specifiers, extensión .ts, bootstrap.di.js |
 
 **Resultado**: Score 0-100 con grado A-F y severidades por cada violación.
 
@@ -116,6 +120,10 @@ Ejecuta 9 reglas arquitectónicas (R1-R9) con severidad:
 | R7 | `infra → feature` (prohibido) | WARNING |
 | R8 | Cross-feature direct imports | ERROR |
 | R9 | Ciclos de dependencia | ERROR |
+| R10 | Bare specifiers en imports locales | ERROR |
+| R11 | Extensión `.ts` en imports (debe ser `.js`) | ERROR |
+| R12 | Import a `bootstrap.di.js` (no existe) | CRITICAL |
+| R12b | `registerSingleton` con model() de Mongoose | CRITICAL |
 
 ### `temper` — Endurecimiento de DI
 
@@ -311,8 +319,8 @@ Ver `reference/patterns.md` para el detalle completo.
 - **4 dominios arquitectónicos**: Platform (backbone), Features (negocio), Shared (código puro), Infra (implementaciones)
 - **Architecture graph como fuente de verdad**: 6 tipos de nodo (platform, feature, shared, infra, domain, adapter), 9 reglas (R1-R9), risk score y dependency health
 - **Ownership automático**: Detección de huérfanos, duplicados, componentes mal ubicados y sugerencias de reubicación
-- **Scoring arquitectónico**: 110 puntos en 6 categorías, normalizado a 0-100 con grado A-F
-- **5 perfiles tecnológicos predefinidos**: Express + MongoDB, Express + PostgreSQL, Express + Prisma, Fastify + Prisma, NestJS + Prisma
+- **Scoring arquitectónico**: 180 puntos en 10 categorías, normalizado a 0-100 con grado A-F
+- **10 perfiles tecnológicos predefinidos**: Express + MongoDB, Express + PostgreSQL, Express + Prisma, Express + Drizzle, Fastify + MongoDB, Fastify + PostgreSQL, Fastify + Prisma, NestJS + MongoDB, NestJS + PostgreSQL, NestJS + Prisma
 - **Boot sequence obligatoria**: 9 pasos que garantizan contexto completo antes de cualquier acción
 - **Documentación automática**: `ARCHITECTURE.md` vivo que se actualiza tras cada operación
 - **Sin dependencias runtime**: Solo Node ≥ 18, todo corre con scripts ESM propios
@@ -358,7 +366,7 @@ Donde vive toda la inteligencia arquitectónica:
 | `scripts/profile.mjs` | Matchea stack contra perfiles conocidos o sintetiza uno genérico |
 | `scripts/graph.mjs` | Grafo completo: 6 tipos de nodo, 4 capas, 9 reglas (R1-R9), risk score, dependency health |
 | `scripts/chain.mjs` | Grafo multi-capa (platform, features, shared, infra) con orden topológico |
-| `scripts/detect.mjs` | Validación de reglas R1-R9 con inline ignores y `--fix` |
+| `scripts/detect.mjs` | Validación de reglas R1-R12 con inline ignores, `--fix` e import conventions |
 | `scripts/inspect.mjs` | Orquesta auditoría completa con reporte coloreado |
 | `scripts/architecture.mjs` | Genera/actualiza `ARCHITECTURE.md` vivo |
 | `scripts/bootstrap.mjs` | Inicializa platform/shared/infra según perfil (interno) |
@@ -385,7 +393,7 @@ Donde vive toda la inteligencia arquitectónica:
 | `reference/assay.md` | Documentación del comando assay |
 | `reference/hooks.md` | Documentación del sistema de hooks |
 | `profiles/` | 10 perfiles tecnológicos detallados |
-| `templates/feature/` | 17 templates TypeScript para features |
+| `templates/feature/` | 19 templates TypeScript para features |
 | `templates/platform/` | 6 templates para componentes de platform |
 | `templates/shared/` | 4 templates para shared (errors, contracts, types, utils) |
 | `templates/infra/` | 4 templates para infra (prisma, mongodb, redis, mail) |

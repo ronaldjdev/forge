@@ -150,11 +150,70 @@ REST prefiere `/api/v1/resources`. GraphQL schema en `adapters/in/graphql/` dent
 
 ---
 
+## Import Conventions (OBLIGATORIO)
+
+Todo import generado por Forge debe cumplir estas reglas. Violaciones = ERROR en forge quench:
+
+### 1. Prefijo relativo obligatorio
+Los imports locales SIEMPRE deben usar prefijo `./` o `../`. Prohibido el bare specifier:
+```ts
+// ✅ Correcto
+import { X } from "./foo.js";
+import { Y } from "../../bar.js";
+
+// ❌ Incorrecto (bare specifier — se resuelve contra node_modules)
+import { X } from "domain/entities/Task.js";
+import { Y } from "domain/repositories/IRepo.js";
+```
+
+### 2. Extensión .js obligatoria
+Con `moduleResolution: "nodenext"`, todos los imports locales requieren extensión `.js`:
+```ts
+// ✅ Correcto
+import { X } from "./foo.js";
+
+// ❌ Incorrecto
+import { X } from "./foo.ts";
+import { X } from "./foo";
+```
+
+### 3. Path alias para cross-layer
+Usar path alias `@/` para cruzar capas, no paths relativos largos:
+| Capa | Alias | Ejemplo |
+|------|-------|---------|
+| Platform → cualquiera | `@/platform/` | `@/platform/config/App.config.js` |
+| Shared → cualquiera | `@/shared/` | `@/shared/errors/NotFoundError.js` |
+| Infra → cualquiera | `@/infra/` | `@/infra/mongodb/Mongo.config.js` |
+| **Entities compartidas** | **`@/domain/`** | **`@/domain/entities/Task.js`** |
+
+```ts
+// ✅ Correcto — path alias para entidad compartida
+import { Task } from "@/domain/entities/Task.js";
+
+// ❌ Incorrecto — path relativo largo que no resuelve
+import { Task } from "../../../../domain/entities/Task.js";
+```
+
+### 4. Entity Discovery — compartida vs local
+- Si la entidad vive en `src/features/<feature>/domain/entities/` → import relativo (`../../domain/entities/`)
+- Si la entidad vive en `src/platform/domain/entities/` → path alias (`@/domain/entities/`)
+- Verificar existencia ANTES de generar el import
+
+### 5. Controllers y DI
+- Controllers importan desde `./di.js` (feature con DI propia) o `@/setting/dependencies/<name>.di.js` (feature sin DI propia)
+- Prohibido importar desde `bootstrap.di.js` — ese archivo no existe en la arquitectura actual
+
+### 6. Tests
+- Todos los imports con extensión `.js` (nunca `.ts`)
+- Usar `as const` para literales de union types
+- Usar `result!` para valores posiblemente null
+- Usar `(result as any)._id` si `_id` no está en el tipo
+
 ## Export Conventions
 
 - Cada directorio expone un `index.ts` barrel con named exports
 - Usar `export * from "./<Name>.<artifact>.js"` en barrels
 - Preferir `export function` / `export class` sobre `export default`
 - Imports relativos dentro del mismo feature (`../../domain/`)
-- Path alias para cross-layer: `@/platform/`, `@/shared/`, `@/infra/`
+- Path alias para cross-layer: `@/platform/`, `@/shared/`, `@/infra/`, `@/domain/`
 - Extension `.js` en imports (ESM compat): `import { X } from "./foo.js"`

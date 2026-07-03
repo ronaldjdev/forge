@@ -249,6 +249,31 @@ export const RULES = [
       return violations;
     },
   }),
+
+  defineRule({
+    id: "R13",
+    name: "Platform no contiene lógica de dominio",
+    severity: SEVERITY.CRITICAL,
+    category: CATEGORY.STRUCTURE,
+    description: "Platform es backbone técnico y no debe contener entidades, casos de uso, mappers de dominio, schemas de entidades, repositorios de dominio ni ninguna otra lógica de negocio.",
+    fix: "Mover el archivo con lógica de dominio a src/features/<name>/domain/, src/features/<name>/application/, o src/features/<name>/adapters/ según corresponda.",
+    example: "✘ platform/User.entity.ts, platform/payments/ creando lógica de dominio en platform/",
+    check: (graph, ctx) => {
+      const violations = [];
+      if (!ctx || !ctx.platform || !ctx.platform.exists) return violations;
+      for (const comp of (ctx.platform.components || [])) {
+        const lower = comp.toLowerCase();
+        if (lower.endsWith(".entity") || lower.endsWith(".uc") || lower.endsWith(".mapper") || lower.endsWith(".port")) {
+          violations.push({
+            rule: "R13", severity: SEVERITY.CRITICAL,
+            from: `platform:${comp}`, to: "(domain)",
+            description: `Platform contiene artefacto de dominio: "${comp}"`,
+          });
+        }
+      }
+      return violations;
+    },
+  }),
 ];
 
 /**

@@ -1,9 +1,14 @@
 ```typescript
 // src/features/<domain>/adapters/out/persistence/<Domain>.repository.ts
+//
+// IMPORTANTE: Si la entidad <Domain> está en platform/domain/entities/ (compartida),
+// reemplazar el import relativo por path alias:
+//   import type { <Domain> } from "@/domain/entities/<Domain>.js";
+
 import { injectable } from "tsyringe";
 import type { <Domain> } from "../../../domain/entities/<Domain>.entity.js";
 import type { I<Domain>Repository } from "../../../domain/repositories/I<Domain>.repository.js";
-import { <Domain>Mapper } from "../../../application/mappers/<Domain>.mapper.js";
+import { <Domain>Mapper } from "../../application/mappers/<Domain>.mapper.js";
 import <Domain>Model from "./<Domain>.schema.js";
 import { RepositoryError } from "@/shared/errors/RepositoryError.js";
 

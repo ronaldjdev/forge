@@ -1,5 +1,10 @@
 ```typescript
 // src/features/<domain>/application/use-cases/Create<Domain>.uc.ts
+//
+// IMPORTANTE: Si la entidad <Domain> está en platform/domain/entities/ (compartida),
+// reemplazar el import relativo por path alias:
+//   import type { <Domain> } from "@/domain/entities/<Domain>.js";
+
 import { injectable, inject } from "tsyringe";
 import type { <Domain> } from "../../domain/entities/<Domain>.entity.js";
 import type { I<Domain>Repository } from "../../domain/repositories/I<Domain>.repository.js";

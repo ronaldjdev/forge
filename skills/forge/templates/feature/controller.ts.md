@@ -1,12 +1,20 @@
 ```typescript
 // src/features/<domain>/adapters/in/http/<Domain>.controller.ts
+//
+// IMPORTANTE — Convenciones:
+// 1. Nombres de métodos: usar createHandler (no "add", "store", etc.)
+// 2. Si la entidad <Domain> es compartida desde platform/domain/,
+//    importar con path alias: import type { <Domain> } from "@/domain/entities/<Domain>.js";
+// 3. Si el feature NO tiene di.ts propio, el controller se importa desde
+//    @/setting/dependencies/<domain>.di.js en vez de bootstrap.di.js
+
 import { injectable, inject } from "tsyringe";
 import type { Request, Response, NextFunction } from "express";
-import { Create<Domain> } from "../../../application/use-cases/Create<Domain>.uc.js";
-import { Get<Domain> } from "../../../application/use-cases/Get<Domain>.uc.js";
-import { List<Domain> } from "../../../application/use-cases/List<Domain>.uc.js";
-import { Update<Domain> } from "../../../application/use-cases/Update<Domain>.uc.js";
-import { Delete<Domain> } from "../../../application/use-cases/Delete<Domain>.uc.js";
+import { Create<Domain> } from "../../application/use-cases/Create<Domain>.uc.js";
+import { Get<Domain> } from "../../application/use-cases/Get<Domain>.uc.js";
+import { List<Domain> } from "../../application/use-cases/List<Domain>.uc.js";
+import { Update<Domain> } from "../../application/use-cases/Update<Domain>.uc.js";
+import { Delete<Domain> } from "../../application/use-cases/Delete<Domain>.uc.js";
 
 @injectable()
 export class <Domain>Controller {

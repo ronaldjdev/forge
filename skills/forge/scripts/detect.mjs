@@ -848,6 +848,67 @@ export function checkPlatform(ctx) {
   return { score: Math.min(score, 15), checks };
 }
 
+/* ── R13: Domain logic in platform ── */
+
+export function checkPlatformForDomain(ctx) {
+  const checks = [];
+  let score = 10;
+
+  if (!ctx.platform || !ctx.platform.exists) {
+    return { score, checks };
+  }
+
+  const DOMAIN_PATTERNS = /\.(entity|uc|mapper|port|repository)\.(ts|js)$/i;
+  const DOMAIN_KEYWORDS = /\b(entity|useCase|use_case|valueObject|domainService|domain_event|dto)\b/i;
+  const LOGIC_KEYWORDS = /\b(if|for|while|switch|catch|throw|return)\s*\(/g;
+
+  const platformDir = join(ROOT, "src", "platform");
+  if (!isDir(platformDir)) return { score: score, checks };
+
+  const allPlatformFiles = findFiles(platformDir, ".ts", 6).concat(findFiles(platformDir, ".js", 6));
+  let violations = 0;
+
+  for (const f of allPlatformFiles) {
+    const relPath = relative(ROOT, f);
+    const basenamePath = basename(f);
+
+    // Check 1: File naming suggests domain artifact
+    if (DOMAIN_PATTERNS.test(basenamePath)) {
+      checks.push({
+        ...severity(`[R13] Platform contiene artefacto de dominio: ${basenamePath}`, SEVERITY.CRITICAL),
+        pass: false,
+        detail: relPath,
+        fix: "Mover a src/features/<name>/domain/ o application/. Platform no debe tener lógica de negocio.",
+      });
+      violations++;
+      score -= 3;
+      continue;
+    }
+
+    // Check 2: Content references domain concepts
+    const content = read(f);
+    if (!content) continue;
+
+    if (DOMAIN_KEYWORDS.test(content)) {
+      checks.push({
+        ...severity(`[R13] Platform contiene terminología de dominio en ${basenamePath}`, SEVERITY.WARNING),
+        pass: false,
+        detail: relPath,
+        fix: "Si contiene lógica de negocio, mover a features/. Si es naming accidental, renombrar.",
+      });
+      violations++;
+      score -= 2;
+    }
+  }
+
+  if (violations === 0 && allPlatformFiles.length > 0) {
+    checks.push({ ...severity("Platform sin lógica de dominio", SEVERITY.INFO), pass: true });
+    score = 10;
+  }
+
+  return { score: Math.max(score, 0), checks };
+}
+
 export function checkDependencies(ctx) {
   const checks = [];
   let score = 0;
@@ -997,6 +1058,111 @@ export function checkNaming(projectRoot = ROOT) {
   return { score: Math.max(score, 0), checks };
 }
 
+export function checkImportConventions(features) {
+  const checks = [];
+  let score = 20;
+
+  if (features.length === 0) return { score: 20, checks };
+
+  const allFeatureFiles = findFiles(FEATURES, ".ts", 6).concat(findFiles(FEATURES, ".js", 6));
+  const allPlatformFiles = isDir(join(SRC, "platform")) ? findFiles(join(SRC, "platform"), ".ts", 6) : [];
+  const files = [...allFeatureFiles, ...allPlatformFiles];
+
+  let r10Violations = 0; // Bare specifiers
+  let r11Violations = 0; // Missing .js extension
+  let r12Violations = 0; // bootstrap.di.js imports
+
+  for (const f of files) {
+    const content = read(f);
+    if (!content) continue;
+    const imports = parseImportsWithLines(content, f);
+
+    for (const imp of imports) {
+      const src = imp.source;
+
+      // R10: Bare specifier — import from "domain/..." (no ./ ../ @/ prefix)
+      if (
+        !src.startsWith("./") &&
+        !src.startsWith("../") &&
+        !src.startsWith("@/") &&
+        !src.startsWith("/") &&
+        src.includes("/") &&
+        !src.startsWith("tsyringe") &&
+        !src.startsWith("reflect-metadata") &&
+        !src.startsWith("express") &&
+        !src.startsWith("node:") &&
+        !src.startsWith("mongoose") &&
+        !src.startsWith("prisma") &&
+        src !== "tsyringe" &&
+        !src.includes("node_modules")
+      ) {
+        r10Violations++;
+        checks.push({
+          severity: SEVERITY.ERROR,
+          label: `[R10] Bare specifier en import local — debe usar ./ o @/`,
+          pass: false,
+          detail: `${relative(ROOT, f)}:${imp.line} → "${src}"`,
+          fix: `Reemplazar "${src}" por "./${src}.js" (relativo) o "@/shared/${src.split("/").pop()}" (alias)`,
+        });
+        score -= 2;
+      }
+
+      // R11: Import con extensión .ts en vez de .js
+      if (src.endsWith(".ts") && !src.endsWith(".d.ts")) {
+        r11Violations++;
+        checks.push({
+          severity: SEVERITY.ERROR,
+          label: `[R11] Import con extensión .ts — debe usar .js`,
+          pass: false,
+          detail: `${relative(ROOT, f)}:${imp.line} → "${src}"`,
+          fix: src.replace(/\.ts$/, ".js"),
+        });
+        score -= 2;
+      }
+
+      // R12: Import desde bootstrap.di.js
+      if (src.includes("bootstrap.di")) {
+        r12Violations++;
+        checks.push({
+          severity: SEVERITY.ERROR,
+          label: `[R12] Import desde bootstrap.di.js — no existe en arquitectura actual`,
+          pass: false,
+          detail: `${relative(ROOT, f)}:${imp.line} → "${src}"`,
+          fix: `Reemplazar por "./di.js" (feature con DI propia) o "@/setting/dependencies/<feature>.di.js" (feature sin DI propia)`,
+        });
+        score -= 3;
+      }
+    }
+
+    // R12b: registerSingleton con model() (Mongoose)
+    if (content.includes("registerSingleton") && content.includes("model(")) {
+      checks.push({
+        severity: SEVERITY.WARNING,
+        label: `[R12] registerSingleton usado con model() — debe usar register({ useValue })`,
+        pass: false,
+        detail: relative(ROOT, f),
+        fix: 'Reemplazar container.registerSingleton(...) por container.register(..., { useValue: ... as any })',
+      });
+      score -= 2;
+    }
+  }
+
+  if (r10Violations === 0 && files.length > 0) {
+    checks.push({ ...severity("[R10] Sin bare specifiers en imports", SEVERITY.INFO), pass: true });
+    score += 2;
+  }
+  if (r11Violations === 0 && files.length > 0) {
+    checks.push({ ...severity("[R11] Sin imports con extensión .ts", SEVERITY.INFO), pass: true });
+    score += 2;
+  }
+  if (r12Violations === 0 && files.length > 0) {
+    checks.push({ ...severity("[R12] Sin imports a bootstrap.di.js", SEVERITY.INFO), pass: true });
+    score += 2;
+  }
+
+  return { score: Math.max(score, 0), checks };
+}
+
 export function allChecks(features, graph, ctx) {
   const g = graph || getGraph();
   const c = ctx || {};
@@ -1006,10 +1172,12 @@ export function allChecks(features, graph, ctx) {
     decorators: checkDecorators(features),
     ownership: checkOwnership(c),
     platform: checkPlatform(c),
+    platformDomain: checkPlatformForDomain(c),
     dependencies: checkDependencies(c),
     graph: checkGraph(g),
     customRules: checkCustomRules(features),
     naming: checkNaming(),
+    importConventions: checkImportConventions(features),
   };
 }
 
@@ -1099,6 +1267,26 @@ export function applyFixes(checks, projectRoot = ROOT) {
           writeFileSync(filePath, newContent);
           fixed++;
           details.push(`  ${GREEN}✔${RESET} ${relative(projectRoot, filePath)}: container.resolve() reemplazado`);
+        }
+      }
+    }
+
+    // Fix R11: .ts → .js in import path
+    if (check.label?.includes("[R11]") && check.fix && check.detail) {
+      const filePath = join(projectRoot, check.detail.split(":")[0]);
+      if (existsSync(filePath)) {
+        const content = readFileSync(filePath, "utf-8");
+        const newContent = content.replace(
+          /(from\s+['"])([^'"]+)\.ts(['"])/g,
+          (match, prefix, path, suffix) => {
+            if (path.endsWith(".d")) return match;
+            return `${prefix}${path}.js${suffix}`;
+          }
+        );
+        if (newContent !== content) {
+          writeFileSync(filePath, newContent);
+          fixed++;
+          details.push(`  ${GREEN}✔${RESET} ${relative(projectRoot, filePath)}: extensión .ts → .js en imports`);
         }
       }
     }

@@ -143,6 +143,49 @@ Usar el perfil detectado para determinar:
 - Convenciones de imports (rutas relativas vs alias)
 - Componentes de platform a usar (config, logger, http, database)
 
+## ⚠️ Post-Cast: Entity Discovery
+
+Antes de crear `<Name>.entity.ts`, verificar si la entidad ya existe como entidad compartida:
+
+1. **Buscar en `src/platform/domain/entities/<Name>.ts`** — si existe, NO crear entidad local
+2. **Si es compartida**: usar `@/domain/entities/<Name>.js` en vez de path relativo en todos los templates
+3. **Verificar también** `src/shared/contracts/` por interfaces/DTOs existentes
+
+Regla: si la entidad vive fuera del feature, todos los imports deben usar path alias `@/domain/`, no `../../`.
+
+## ⚠️ Post-Cast: DI Wiring
+
+Después de crear los archivos del feature, generar `di.ts` siguiendo el template `templates/feature/di.ts.md`:
+
+1. **Feature con DI propia**: crear `src/features/<name>/di.ts` usando el template
+2. **Feature SIN DI propia**: si ya existe `src/platform/setting/dependencies/<name>.di.js`, los controllers deben importar desde allí en vez de `bootstrap.di.js`
+3. **Controllers**: asegurar que el import en el controller apunte a `@/setting/dependencies/<name>.di.js` o `./di.js`, NUNCA a `bootstrap.di.js`
+4. **Mongoose model()**: si el schema exporta `export default model()` (objeto, no clase), el DI debe usar `container.register(..., { useValue: ... })`, NO `registerSingleton`
+
+## ⚠️ Post-Cast: Tests
+
+Después del scaffold, generar tests unitarios para cada use case siguiendo `templates/feature/test.ts.md`:
+
+1. Crear `src/features/<name>/__tests__/Create<Name>.test.ts`
+2. Usar `node:test` (sin dependencias externas)
+3. Convenciones de test:
+   - Extension `.js` en imports (no `.ts`)
+   - `as const` para literales de union types: `status: "activo" as const`
+   - `result!` (non-null assertion) cuando execute() retorna `T | null`
+   - `(result as any)._id` si `_id` no existe en el tipo de dominio
+
+## ⚠️ Post-Cast: Import Validation Checklist
+
+Antes de dar por terminado el feature, verificar CADA archivo generado:
+
+- [ ] Todos los imports locales usan prefijo `./` o `../` — sin bare specifiers (`import X from "domain/..."` ❌)
+- [ ] Todos los imports tienen extensión `.js` — sin extensión `.ts`
+- [ ] Entidades compartidas usan `@/domain/` — sin paths relativos rotos
+- [ ] Controllers importan desde `di.ts` o `@/setting/dependencies/` — no desde `bootstrap.di.js`
+- [ ] Nombres de método del controller coinciden con los de la ruta (ej: `createHandler` en controller → `controller.createHandler` en routes)
+- [ ] DI usa `register({ useValue })` para modelos Mongoose — no `registerSingleton`
+- [ ] Tests: `.js` extension, `as const`, `!`, `as any` para _id
+
 ## Post-creación
 
 - `forge quench` — verificar que no hay violaciones

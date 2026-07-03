@@ -246,6 +246,27 @@ export function detectMisplaced(projectRoot = ROOT) {
         suggestion: "Envolver en un adapter dentro de features/<name>/adapters/out/",
       });
     }
+
+    // R13: Platform con lógica de dominio
+    if (isPlatformFile) {
+      const basenamePath = basename(file);
+      const DOMAIN_PATTERNS = /\.(entity|uc|mapper|port|repository)\.(ts|js)$/i;
+      if (DOMAIN_PATTERNS.test(basenamePath)) {
+        misplaced.push({
+          file: relPath,
+          reason: "Platform contiene artefacto de dominio — violación R13",
+          suggestion: "Mover a src/features/<name>/domain/ o application/ según corresponda",
+        });
+      }
+      const featureImportMatch = content.match(featurePattern);
+      if (featureImportMatch) {
+        misplaced.push({
+          file: relPath,
+          reason: "Platform importa de features — violación R2",
+          suggestion: "Platform no debe conocer lógica de negocio. Extraer interfaz a shared/contracts/ o refactorizar.",
+        });
+      }
+    }
   }
 
   return misplaced;

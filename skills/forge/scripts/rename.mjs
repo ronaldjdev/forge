@@ -147,6 +147,15 @@ export function computeExpectedName(filePath) {
   // Platform layer
   if (parts[1] === "platform" && parts[2]) {
     const subdir = parts[2];
+    const DOMAIN_SUFFIXES = /\.(entity|uc|mapper|port|repository)\.(ts|js)$/i;
+    if (DOMAIN_SUFFIXES.test(filename)) {
+      return {
+        current: filePath,
+        expected: filePath,
+        relPath: relPath,
+        rule: `[R13] Platform no debe contener artefactos de dominio: "${filename}" pertenece a src/features/<name>/`,
+      };
+    }
     const rule = PLATFORM_RULES[subdir];
     if (!rule) return null;
 

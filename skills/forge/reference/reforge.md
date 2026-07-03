@@ -67,9 +67,15 @@ $ forge reforge src/features/users/domain/userEntity.ts
    - Naming violations (si no se corrigieron en paso 5)
    - Warnings
 7. Ejecutar cambios en el feature o componente
-8. Verificar con `forge rollback verify` — si el score empeora, restaurar
-9. Ejecutar `forge quench` para verificar
-10. Actualizar `ARCHITECTURE.md`
+8. **Eliminar estructura legacy** — después de migrar/refactorizar, limpiar todo el código fuente legacy que ya no tenga referencias activas:
+   - Archivos originales en ubicaciones legacy (`src/domain/`, `src/application/`, `src/adapters/`, etc.)
+   - Barrel files (`index.ts`) que exportaban exclusivamente código legacy
+   - Directorios vacíos que quedaron huérfanos tras la migración
+   - No dejar imports rotos ni archivos sin dueño
+9. Verificar con `forge rollback verify` — si el score empeora, restaurar
+10. Ejecutar `forge quench` para verificar 0 violaciones
+11. Ejecutar `forge armorer` — confirmar ownership saludable (0 huérfanos, 0 duplicados)
+12. Actualizar `ARCHITECTURE.md`
 
 ### Flags
 
@@ -88,11 +94,27 @@ forge rollback list
 forge rollback restore <id>
 ```
 
+## ⚠️ Regla crítica: Platform solo acepta backbone técnico
+
+**Platform NO debe contener lógica de dominio.** Al refactorizar hacia `src/platform/`, verificar que el componente sea exclusivamente técnico:
+
+| ✅ Permitido en Platform | ❌ Prohibido en Platform |
+|---|---|
+| config, server, logger, DI | Entidades de dominio |
+| http, middleware, router | Casos de uso |
+| cache, security, events | Repositorios (domain) |
+| database, scheduler, observability | Mappers de dominio |
+| Conexiones, clientes de infra | Schemas de entidades |
+| Tokens de DI, contenedores | DTOs de negocio |
+| Health checks, métricas | Lógica de reglas de negocio |
+
+Si durante la refactorización un componente tiene lógica de dominio (entidades, `if/switch` con reglas de negocio, casos de uso), **debe ir a `src/features/<name>/`**, no a `platform/`. Violar esto introduce acoplamiento `platform → feature` (R2).
+
 ## Refactorización multi-capa
 
 Reforge ahora considera las cuatro capas arquitectónicas:
 
-- **Platform**: Mover componentes técnicos sueltos a `src/platform/`
+- **Platform**: Mover componentes técnicos sueltos a `src/platform/` (nunca lógica de dominio)
 - **Features**: Reestructurar features con violaciones
 - **Shared**: Extraer código duplicado a `src/shared/`
 - **Infra**: Organizar implementaciones concretas en `src/infra/`

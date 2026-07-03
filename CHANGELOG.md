@@ -1,5 +1,71 @@
 # CHANGELOG
 
+## v1.3.5 — R13 Platform Domain Guard & Legacy Cleanup (2026-07-02)
+
+### Added
+- **R13 (CRITICAL)**: Nueva regla arquitectónica que detecta artefactos de dominio (`.entity`, `.uc`, `.mapper`, `.port`) dentro de `src/platform/`. Platform es exclusivamente backbone técnico.
+- **`reference/reforge.md`**, **`reference/relocate.md`**: Tablas explícitas de qué pertenece a Platform vs Features. Advertencia de que lógica de dominio en platform viola R2 y R13.
+- **`reference/principles.md`**: Principio 12 extendido con advertencia R13.
+- **`SKILL.md`**: Nueva sección `⚠️ Regla de Platform: Sin lógica de dominio` en routing rules.
+- **`scripts/detect.mjs: checkPlatformForDomain()`**: Escanea archivos en `platform/` por naming de dominio y terminología de negocio. Integrado en `allChecks()`.
+- **`scripts/armorer.mjs: detectMisplaced()`**: Detecta archivos con sufijos de dominio en `platform/` e imports `from 'features/'` dentro de `platform/` como mal ubicados.
+- **`scripts/rename.mjs: computeExpectedName()`**: Rechaza archivos con sufijos de dominio dentro de `platform/` con violación R13.
+- **`scripts/registry/rules.mjs`**: R13 agregada al array de built-in rules (R1-R9+R13 = 10 reglas).
+- **`scripts/inspect.mjs`**: Nueva categoría `platformDomain` en CAT_NAMES/CAT_MAX.
+
+### Changed
+- **`reference/reforge.md`**: Flujo Caso B extendido con paso 8 de limpieza legacy (eliminar archivos originales, barrel files, directorios vacíos) y paso 11 de `forge armorer`.
+- **`reference/relocate.md`**: Flujo extendido con limpieza detallada por directorio legacy (use-cases, controllers, domain, setting/dependencies) y paso 9 de `forge armorer`.
+- **`tests/core.test.mjs`**: Test de reglas actualizado de 9 a 10 (R1-R9 + R13).
+- **`README.md`**: Badge v1.3.4 → v1.3.5.
+
+### Notes
+- `forge inspect` y `forge quench` ahora reportan violaciones R13 si hay lógica de dominio en `platform/`.
+- `forge armorer` detecta archivos mal ubicados en `platform/` con sufijos de dominio.
+- `relocate` y `reforge` ahora exigen eliminar estructura legacy después de migrar.
+
+---
+
+## v1.3.4 — Import Rules R10-R12, DI & Test Templates, Post-Cast Checklist (2026-07-02)
+
+### Added
+- **`templates/feature/di.ts.md`**: Template de contenedor DI con imports relativos `.js`,
+  nota de `useValue` para Mongoose `model()` y entity sharing.
+- **`templates/feature/test.ts.md`**: Template de tests con `node:test`, imports `.js`,
+  `as const`, non-null assertion `!`, `as any` para `_id`.
+- **`scripts/detect.mjs: checkImportConventions`**: Nuevos checks —
+  R10 (bare specifiers), R11 (extensión `.ts`), R12 (bootstrap.di.js),
+  R12b (registerSingleton + model()).
+- **`scripts/forgeSmith.mjs: checkProposedContentViolations`**: Pre-guard que
+  DENIEGA escrituras con R10/R11/R12 antes de que lleguen al disco.
+- **`reference/cast.md`**: 4 secciones post-cast obligatorias:
+  Entity Discovery, DI Wiring, Tests, Import Validation Checklist.
+- **`reference/patterns.md`**: Sección "Import Conventions (OBLIGATORIO)"
+  con reglas detalladas y ejemplos correctos/incorrectos.
+- **`AGENTS.md`**: Tabla R10–R12, Post-Cast Checklist con 6 pasos.
+
+### Fixed
+- **`templates/feature/controller.ts.md`**: Imports corregidos de `../../../` a
+  `../../` (depth correcto). Notas sobre entity sharing, método `createHandler`,
+  DI wiring.
+- **`templates/feature/repository-impl.ts.md`**: Import de mapper corregido
+  (`../../../` → `../../`). Nota sobre entidad compartida.
+- **`templates/feature/use-case.ts.md`**, **`mapper.ts.md`**,
+  **`schema.ts.md`**, **`routes.ts.md`**: Notas sobre entity sharing vía
+  `@/domain/`, uso de `register({ useValue })`, consistencia de nombres
+  de método controller/routes.
+- **`update.mjs`**: `CURRENT_VERSION` actualizado de `"1.0.2"` a `"1.3.4"`.
+
+### Changed
+- **`README.md`**: Badge v1.3.2 → v1.3.4, tabla quench extendida a R10-R12,
+  score inspect de 110pts a 130pts, templates count 17 → 19.
+
+### Notes
+- Projects with bare specifiers or `.ts` imports will now show ERROR in `quench`.
+- `forgeSmith` may deny writes that previously passed.
+
+---
+
 ## v1.3.3 — Fix I-prefix PascalCase en inspector (2026-06-30)
 
 ### Fixed

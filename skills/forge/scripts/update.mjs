@@ -17,7 +17,7 @@ const ROOT = process.cwd();
 const CACHE_PATH = join(ROOT, ".forge", "version-cache.json");
 const CACHE_TTL = 86400000; // 24h
 const VERSION_URL = "https://forge.dev/latest";
-const CURRENT_VERSION = "1.0.2";
+const CURRENT_VERSION = "1.3.5";
 
 function readJson(path) {
   try {
