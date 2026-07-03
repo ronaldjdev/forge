@@ -74,13 +74,13 @@ En esencia:
 
 ANTES de cualquier acción, Forge DEBE ejecutar esta secuencia. Si no lo haces, puedes dar respuestas incorrectas:
 
-1. **context.mjs** — Detectar stack, platform, features, shared, infra, grafo, estado
-2. **armorer.mjs** — Detectar ownership, huérfanos, duplicados, mal ubicados
-3. **profile.mjs** — Determinar perfil tecnológico
-4. **graph.mjs** — Construir grafo arquitectónico global (4 capas + 9 reglas)
-5. **chain.mjs** — Analizar dependencias multi-capa
-6. **inspect.mjs** — Auditoría completa con ownership + platform
-7. **architecture.mjs** — Generar/actualizar ARCHITECTURE.md
+1. **`{{AGENT_PATH}}/scripts/context.mjs`** — Detectar stack, platform, features, shared, infra, grafo, estado
+2. **`{{AGENT_PATH}}/scripts/armorer.mjs`** — Detectar ownership, huérfanos, duplicados, mal ubicados
+3. **`{{AGENT_PATH}}/scripts/profile.mjs`** — Determinar perfil tecnológico
+4. **`{{AGENT_PATH}}/scripts/graph.mjs`** — Construir grafo arquitectónico global (4 capas + 9 reglas)
+5. **`{{AGENT_PATH}}/scripts/chain.mjs`** — Analizar dependencias multi-capa
+6. **`{{AGENT_PATH}}/scripts/inspect.mjs`** — Auditoría completa con ownership + platform
+7. **`{{AGENT_PATH}}/scripts/architecture.mjs`** — Generar/actualizar ARCHITECTURE.md
 8. **Ejecutar comando solicitado** — cast, quench, temper, etc.
 9. **forgeSentinel** — Verificar cambios tras escritura
 10. **Actualizar ARCHITECTURE.md** — Reflejar nuevo estado
@@ -109,17 +109,17 @@ inspect=$(node {{AGENT_PATH}}/scripts/inspect.mjs --json 2>/dev/null)
 | "refactorizar", "rediseñar", "cambiar estructura" | `reforge` | `reference/reforge.md` |
 | "verificar", "quench", "checklist" | `quench` | `reference/quench.md` |
 | "templar", "endurecer", "mejorar" | `temper` | `reference/temper.md` |
-| "cadena", "grafo", "acoplamiento" | `chain` | `scripts/chain.mjs` |
+| "cadena", "grafo", "acoplamiento" | `chain` | `{{AGENT_PATH}}/scripts/chain.mjs` |
 | "inscribir", "grabar", "ARCHITECTURE.md" | `inscribe` | `reference/inscribe.md` |
-| "grafo", "graph", "nodo", "violaciones", "risk score" | `graph` | `scripts/graph.mjs` |
+| "grafo", "graph", "nodo", "violaciones", "risk score" | `graph` | `{{AGENT_PATH}}/scripts/graph.mjs` |
 | "fundir", "compartir", "mover a shared" | `smelt` | `reference/smelt.md` |
 | "ownership", "huérfanos", "armorer" | `inspect` | (incluido en auditoría) |
-| "fijar", "pinar", "atajo", "shortcut" | `nail` | `scripts/pin.mjs` |
-| "desfijar", "despinar", "remover atajo" | `unnail` | `scripts/pin.mjs` |
+| "fijar", "pinar", "atajo", "shortcut" | `nail` | `{{AGENT_PATH}}/scripts/pin.mjs` |
+| "desfijar", "despinar", "remover atajo" | `unnail` | `{{AGENT_PATH}}/scripts/pin.mjs` |
 | "hook", "pre-commit", "githook", "validar commit" | `forge hook` | `reference/hooks.md` |
-| "api", "contrato", "openapi", "swagger", "graphql" | `forge api` | `scripts/forge-api.mjs` |
-| "rollback", "restaurar", "deshacer", "backup" | `forge rollback` | `scripts/rollback.mjs` |
-| "estado", "state", "último audit" | `forge state --show` | `scripts/forge-state.mjs` |
+| "api", "contrato", "openapi", "swagger", "graphql" | `forge api` | `{{AGENT_PATH}}/scripts/forge-api.mjs` |
+| "rollback", "restaurar", "deshacer", "backup" | `forge rollback` | `{{AGENT_PATH}}/scripts/rollback.mjs` |
+| "estado", "state", "último audit" | `forge state --show` | `{{AGENT_PATH}}/scripts/forge-state.mjs` |
 | "examinar","calidad", "assay", "opinión", "personas", "critique", "evaluación cualitativa" | `assay` | `reference/assay.md` |
 
 ---
@@ -128,14 +128,14 @@ inspect=$(node {{AGENT_PATH}}/scripts/inspect.mjs --json 2>/dev/null)
 
 Para cada comando, Forge sigue este flujo:
 
-1. **Contexto**: Ejecutar `context.mjs` + `armorer.mjs` + `profile.mjs`
-2. **Grafo**: Ejecutar `graph.mjs` + `chain.mjs`
-3. **Auditoría**: Ejecutar `inspect.mjs`
+1. **Contexto**: Ejecutar `{{AGENT_PATH}}/scripts/context.mjs` + `{{AGENT_PATH}}/scripts/armorer.mjs` + `{{AGENT_PATH}}/scripts/profile.mjs`
+2. **Grafo**: Ejecutar `{{AGENT_PATH}}/scripts/graph.mjs` + `{{AGENT_PATH}}/scripts/chain.mjs`
+3. **Auditoría**: Ejecutar `{{AGENT_PATH}}/scripts/inspect.mjs`
 4. **Referencia**: Cargar `reference/<command>.md`
 5. **Ejecutar**: Aplicar el flujo definido en la referencia, usando los scripts según corresponda
-6. **Verificar**: Ejecutar `scripts/detect.mjs` para verificar que no se introdujeron violaciones
-7. **forgeSentinel**: Ejecutar `scripts/forgeSentinel.mjs --reminder`
-8. **Actualizar ARCHITECTURE.md**: Reflejar el nuevo estado (`architecture.mjs`)
+6. **Verificar**: Ejecutar `{{AGENT_PATH}}/scripts/detect.mjs` para verificar que no se introdujeron violaciones
+7. **forgeSentinel**: Ejecutar `{{AGENT_PATH}}/scripts/forgeSentinel.mjs --reminder`
+8. **Actualizar ARCHITECTURE.md**: Reflejar el nuevo estado (`{{AGENT_PATH}}/scripts/architecture.mjs`)
 9. **Reportar**: Mostrar resultado al usuario con severidades
 
 ---
@@ -237,14 +237,14 @@ El agente DEBE leer este archivo al inicio de cada interacción y actualizarlo a
 | `reference/help.md` | Lista completa de comandos y flags de Forge |
 | `reference/assay.md` | Ensayo arquitectónico multi-persona — interpretación cualitativa del audit |
 | `profiles/` | Perfiles tecnológicos detallados (Express, Fastify, NestJS, etc.) |
-| `scripts/` | Scripts: context, detect, inspect, chain, profile, graph, architecture, armorer, bootstrap, forge-config, forge-signals, forge-state, forge-api, pin, update, rollback, hook, forgeSentinel, forgeSmith, forgeSentinel-lib, forgeSmith-admin, formatter, assay, registry/rules |
-| `scripts/registry/rules.mjs` | Anti-pattern rule registry (R1-R9 + custom rules desacopladas de detect.mjs) |
-| `scripts/formatter.mjs` | Output formatter unificado (JSON, tabla, severidad coloreada, scoreBar, formatCheck, formatViolation) |
-| `scripts/forgeSentinel.mjs` | PostToolUse hook — analiza archivos modificados tras escritura y reporta violaciones |
-| `scripts/forgeSentinel-lib.mjs` | Lógica compartida para hooks forgeSentinel y forgeSmith |
-| `scripts/forgeSmith.mjs` | preToolUse gate — previene escrituras con violaciones CRITICAL/ERROR (Cursor) |
-| `scripts/forgeSmith-admin.mjs` | Gestión de hooks (on/off/status) |
-| `scripts/assay.mjs` | Motor de ensayo arquitectónico multi-persona (Bezos, Fowler, Hacker, PM, Arquitecta Senior) |
+| `{{AGENT_PATH}}/scripts/` | Scripts: context, detect, inspect, chain, profile, graph, architecture, armorer, bootstrap, forge-config, forge-signals, forge-state, forge-api, pin, update, rollback, hook, forgeSentinel, forgeSmith, forgeSentinel-lib, forgeSmith-admin, formatter, assay, registry/rules |
+| `{{AGENT_PATH}}/scripts/registry/rules.mjs` | Anti-pattern rule registry (R1-R9 + custom rules desacopladas de detect.mjs) |
+| `{{AGENT_PATH}}/scripts/formatter.mjs` | Output formatter unificado (JSON, tabla, severidad coloreada, scoreBar, formatCheck, formatViolation) |
+| `{{AGENT_PATH}}/scripts/forgeSentinel.mjs` | PostToolUse hook — analiza archivos modificados tras escritura y reporta violaciones |
+| `{{AGENT_PATH}}/scripts/forgeSentinel-lib.mjs` | Lógica compartida para hooks forgeSentinel y forgeSmith |
+| `{{AGENT_PATH}}/scripts/forgeSmith.mjs` | preToolUse gate — previene escrituras con violaciones CRITICAL/ERROR (Cursor) |
+| `{{AGENT_PATH}}/scripts/forgeSmith-admin.mjs` | Gestión de hooks (on/off/status) |
+| `{{AGENT_PATH}}/scripts/assay.mjs` | Motor de ensayo arquitectónico multi-persona (Bezos, Fowler, Hacker, PM, Arquitecta Senior) |
 | `templates/feature/` | Templates de feature (entity, repository, uc, controller, routes, schema, mapper) |
 | `templates/platform/` | Templates de platform (config, server, database, logger, http, di) |
 | `templates/shared/` | Templates de shared (errors, contracts, types, utils) |
@@ -261,16 +261,16 @@ node --test {{AGENT_PATH}}/tests/core.test.mjs
 
 | Módulo | Tests | Descripción |
 |--------|-------|-------------|
-| `profile.mjs` | 8 | Detección de perfiles |
-| `graph.mjs` | 1 | Grafo vacío |
-| `armorer.mjs` | 1 | Ownership vacío |
-| `forge-config.mjs` | 2 | Load/save state |
-| `chain.mjs` | 1 | Grafo de dependencias vacío |
-| `formatter.mjs` | 4 | Output format, colores, JSON |
-| `registry/rules.mjs` | 4 | R1-R9, evaluación, custom rules |
-| `detect.mjs` (inline ignores) | 5 | parseInlineIgnores, isIgnored |
-| `forgeSentinel.mjs` | 1 | PostToolUse hook |
-| `assay.mjs` | 4 | Personas, generateAssay, opiniones |
+| `{{AGENT_PATH}}/scripts/profile.mjs` | 8 | Detección de perfiles |
+| `{{AGENT_PATH}}/scripts/graph.mjs` | 1 | Grafo vacío |
+| `{{AGENT_PATH}}/scripts/armorer.mjs` | 1 | Ownership vacío |
+| `{{AGENT_PATH}}/scripts/forge-config.mjs` | 2 | Load/save state |
+| `{{AGENT_PATH}}/scripts/chain.mjs` | 1 | Grafo de dependencias vacío |
+| `{{AGENT_PATH}}/scripts/formatter.mjs` | 4 | Output format, colores, JSON |
+| `{{AGENT_PATH}}/scripts/registry/rules.mjs` | 4 | R1-R9, evaluación, custom rules |
+| `{{AGENT_PATH}}/scripts/detect.mjs` (inline ignores) | 5 | parseInlineIgnores, isIgnored |
+| `{{AGENT_PATH}}/scripts/forgeSentinel.mjs` | 1 | PostToolUse hook |
+| `{{AGENT_PATH}}/scripts/assay.mjs` | 4 | Personas, generateAssay, opiniones |
 
 ### Flags adicionales
 

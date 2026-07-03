@@ -205,10 +205,10 @@ docs/
 El `README.md` se genera automáticamente listando los ADRs activos:
 
 ```bash
-# scripts/forge-adr.mjs (futuro)
-node scripts/forge-adr.mjs list    # lista todos los ADRs
-node scripts/forge-adr.mjs new     # crea nuevo ADR desde template
-node scripts/forge-adr.mjs status  # cambia estado de un ADR
+# {{AGENT_PATH}}/scripts/forge-adr.mjs (futuro)
+node {{AGENT_PATH}}/scripts/forge-adr.mjs list    # lista todos los ADRs
+node {{AGENT_PATH}}/scripts/forge-adr.mjs new     # crea nuevo ADR desde template
+node {{AGENT_PATH}}/scripts/forge-adr.mjs status  # cambia estado de un ADR
 ```
 
 ---

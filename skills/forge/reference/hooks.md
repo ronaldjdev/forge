@@ -33,7 +33,7 @@ forge hook uninstall
 
 ## Comportamiento
 
-El hook ejecuta `detect.mjs` sobre los archivos staged con extensión
+El hook ejecuta `{{AGENT_PATH}}/scripts/detect.mjs` sobre los archivos staged con extensión
 `.ts`, `.js`, `.mjs`, `.tsx`, `.jsx` dentro de `src/`. Si encuentra
 violaciones de severidad CRITICAL o ERROR que afecten a archivos staged:
 

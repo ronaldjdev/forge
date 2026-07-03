@@ -104,20 +104,20 @@ Genera y mantiene el archivo `ARCHITECTURE.md` del proyecto.
 
 | Campo | Fuente |
 |---|---|
-| Framework | `scripts/context.mjs` |
-| Database | `scripts/context.mjs` |
-| ORM | `scripts/context.mjs` |
-| DI Strategy | `scripts/context.mjs` |
-| Active Profile | `scripts/profile.mjs` |
-| Platform | `scripts/context.mjs` → platform |
-| Features | `scripts/context.mjs` → features |
-| Shared | `scripts/context.mjs` → shared |
-| Infra | `scripts/context.mjs` → infra |
-| Ownership | `scripts/armorer.mjs` |
-| Architecture Graph | `scripts/graph.mjs` |
-| Risk Score | `scripts/graph.mjs` → stats.riskScore |
-| Violations | `scripts/graph.mjs` → violations |
-| Last Audit | `scripts/inspect.mjs` → fecha + score |
+| Framework | `{{AGENT_PATH}}/scripts/context.mjs` |
+| Database | `{{AGENT_PATH}}/scripts/context.mjs` |
+| ORM | `{{AGENT_PATH}}/scripts/context.mjs` |
+| DI Strategy | `{{AGENT_PATH}}/scripts/context.mjs` |
+| Active Profile | `{{AGENT_PATH}}/scripts/profile.mjs` |
+| Platform | `{{AGENT_PATH}}/scripts/context.mjs` → platform |
+| Features | `{{AGENT_PATH}}/scripts/context.mjs` → features |
+| Shared | `{{AGENT_PATH}}/scripts/context.mjs` → shared |
+| Infra | `{{AGENT_PATH}}/scripts/context.mjs` → infra |
+| Ownership | `{{AGENT_PATH}}/scripts/armorer.mjs` |
+| Architecture Graph | `{{AGENT_PATH}}/scripts/graph.mjs` |
+| Risk Score | `{{AGENT_PATH}}/scripts/graph.mjs` → stats.riskScore |
+| Violations | `{{AGENT_PATH}}/scripts/graph.mjs` → violations |
+| Last Audit | `{{AGENT_PATH}}/scripts/inspect.mjs` → fecha + score |
 
 ## Reglas
 

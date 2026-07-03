@@ -72,7 +72,7 @@ En esencia:
 
 ## Boot Sequence
 
-ANTES de cualquier acción, Forge DEBE ejecutar `forge-boot.mjs` con la profundidad adecuada al comando:
+ANTES de cualquier acción, Forge DEBE ejecutar `{{AGENT_PATH}}/scripts/forge-boot.mjs` con la profundidad adecuada al comando:
 
 ```bash
 boot=$(node {{AGENT_PATH}}/scripts/forge-boot.mjs --depth <depth> --json 2>/dev/null)
@@ -99,15 +99,15 @@ Si `$boot` contiene datos cacheados en `.forge/cache/` se reusan automáticament
 | Refactorizar | `reforge` | `reference/reforge.md` |
 | Verificar violaciones | `quench` | `reference/quench.md` |
 | Endurecer | `temper` | `reference/temper.md` |
-| Dependencias | `chain` | `scripts/chain.mjs` |
+| Dependencias | `chain` | `{{AGENT_PATH}}/scripts/chain.mjs` |
 | Inscribir ARCHITECTURE.md | `inscribe` | `reference/inscribe.md` |
-| Grafo arquitectónico | `graph` | `scripts/graph.mjs` |
+| Grafo arquitectónico | `graph` | `{{AGENT_PATH}}/scripts/graph.mjs` |
 | Fundir a shared | `smelt` | `reference/smelt.md` |
-| Atajo / pin | `nail` / `unnail` | `scripts/pin.mjs` |
+| Atajo / pin | `nail` / `unnail` | `{{AGENT_PATH}}/scripts/pin.mjs` |
 | Git hook | `forge hook` | `reference/hooks.md` |
-| API design | `forge api` | `scripts/forge-api.mjs` |
-| Rollback | `forge rollback` | `scripts/rollback.mjs` |
-| Estado | `forge state` | `scripts/forge-state.mjs` |
+| API design | `forge api` | `{{AGENT_PATH}}/scripts/forge-api.mjs` |
+| Rollback | `forge rollback` | `{{AGENT_PATH}}/scripts/rollback.mjs` |
+| Estado | `forge state` | `{{AGENT_PATH}}/scripts/forge-state.mjs` |
 | Ensayo cualitativo | `assay` | `reference/assay.md` |
 | Bounded context | `forge` | `reference/bounded-contexts.md` |
 | Modular monolith | `forge` | `reference/modular-monolith.md` |
@@ -126,17 +126,17 @@ Si `$boot` contiene datos cacheados en `.forge/cache/` se reusan automáticament
 
 Para cada comando, Forge sigue este flujo:
 
-1. **Boot condicional**: Ejecutar `forge-boot.mjs --depth <depth>` donde depth es:
+1. **Boot condicional**: Ejecutar `{{AGENT_PATH}}/scripts/forge-boot.mjs --depth <depth>` donde depth es:
    - `minimal` para cast, temper, smelt, relocate, reforge, inscribe
    - `standard` para chain, graph, forge hook
    - `full` para inspect, quench, o cualquier otro comando
 2. **Referencia**: Cargar `reference/<command>.md`
 3. **Ejecutar**: Aplicar el flujo definido en la referencia
-4. **Verificar**: Ejecutar `detect.mjs --summary` (resumen compacto)
-5. **Actualizar ARCHITECTURE.md**: `architecture.mjs` (solo en full)
+4. **Verificar**: Ejecutar `{{AGENT_PATH}}/scripts/detect.mjs --summary` (resumen compacto)
+5. **Actualizar ARCHITECTURE.md**: `{{AGENT_PATH}}/scripts/architecture.mjs` (solo en full)
 6. **Reportar**: Mostrar resultado al usuario con severidades
 
-El boot usa caché de `.forge/cache/`. Si los archivos `src/` no cambiaron, los datos se reusan. Usa `forge-boot.mjs --force` para regenerar todo.
+El boot usa caché de `.forge/cache/`. Si los archivos `src/` no cambiaron, los datos se reusan. Usa `{{AGENT_PATH}}/scripts/forge-boot.mjs --force` para regenerar todo.
 
 ---
 
@@ -180,9 +180,9 @@ import { crossFeature } from "../other-feature/domain/Entity"; // ← R1 y R8 ig
 
 ## ARCHITECTURE.md
 
-Forge mantiene `ARCHITECTURE.md` en la raíz con el estado persistente del proyecto (framework, DB, features, ownership, graph). Se genera y actualiza con `architecture.mjs`.
+Forge mantiene `ARCHITECTURE.md` en la raíz con el estado persistente del proyecto (framework, DB, features, ownership, graph). Se genera y actualiza con `{{AGENT_PATH}}/scripts/architecture.mjs`.
 
-El agente DEBE leer este archivo al inicio de cada interacción y actualizarlo al finalizar cada comando. Ver `scripts/architecture.mjs` para el formato completo.
+El agente DEBE leer este archivo al inicio de cada interacción y actualizarlo al finalizar cada comando. Ver `{{AGENT_PATH}}/scripts/architecture.mjs` para el formato completo.
 
 ---
 
@@ -198,16 +198,16 @@ node --test {{AGENT_PATH}}/tests/core.test.mjs
 
 | Módulo | Tests | Descripción |
 |--------|-------|-------------|
-| `profile.mjs` | 8 | Detección de perfiles |
-| `graph.mjs` | 1 | Grafo vacío |
-| `armorer.mjs` | 1 | Ownership vacío |
-| `forge-config.mjs` | 2 | Load/save state |
-| `chain.mjs` | 1 | Grafo de dependencias vacío |
-| `formatter.mjs` | 4 | Output format, colores, JSON |
-| `registry/rules.mjs` | 4 | R1-R9, evaluación, custom rules |
-| `detect.mjs` (inline ignores) | 5 | parseInlineIgnores, isIgnored |
-| `posttool.mjs` | 1 | PostToolUse hook |
-| `assay.mjs` | 4 | Personas, generateAssay, opiniones |
+| `{{AGENT_PATH}}/scripts/profile.mjs` | 8 | Detección de perfiles |
+| `{{AGENT_PATH}}/scripts/graph.mjs` | 1 | Grafo vacío |
+| `{{AGENT_PATH}}/scripts/armorer.mjs` | 1 | Ownership vacío |
+| `{{AGENT_PATH}}/scripts/forge-config.mjs` | 2 | Load/save state |
+| `{{AGENT_PATH}}/scripts/chain.mjs` | 1 | Grafo de dependencias vacío |
+| `{{AGENT_PATH}}/scripts/formatter.mjs` | 4 | Output format, colores, JSON |
+| `{{AGENT_PATH}}/scripts/registry/rules.mjs` | 4 | R1-R9, evaluación, custom rules |
+| `{{AGENT_PATH}}/scripts/detect.mjs` (inline ignores) | 5 | parseInlineIgnores, isIgnored |
+| `{{AGENT_PATH}}/scripts/posttool.mjs` | 1 | PostToolUse hook |
+| `{{AGENT_PATH}}/scripts/assay.mjs` | 4 | Personas, generateAssay, opiniones |
 | transactional-outbox | 5 | Entry lifecycle, retry, DLQ, required fields, pending |
 | idempotency | 5 | UUID validation, cached response, different keys, TTL, method filter |
 | anti-corruption-layer | 5 | DTO mapping (2 dirs), null handling, 404, delegation order |

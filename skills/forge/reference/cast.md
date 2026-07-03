@@ -21,7 +21,7 @@ Si alguno no existe, ejecutar `bootstrapPlatform()` automáticamente para crearl
 
 **NO escribir código hasta pasar los 3 gates de aprobación.** Cast solía crear scaffolding directamente del nombre del feature. Esto producía features genéricos que requerían refactor posterior. Ahora todo `cast` requiere descubrimiento direccional multi-ronda.
 
-Usar las **señales de `forge-signals.mjs`** para contextualizar el descubrimiento:
+Usar las **señales de `{{AGENT_PATH}}/scripts/forge-signals.mjs`** para contextualizar el descubrimiento:
 - Si hay features existentes, revisar sus entidades y casos de uso para mantener coherencia.
 - Si el perfil está detectado, usarlo para preguntas específicas (ej: "Prisma detectado → schema primero").
 - Si hay archivos modificados en git, considerarlos como contexto del nuevo feature.

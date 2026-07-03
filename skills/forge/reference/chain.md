@@ -63,7 +63,7 @@ node {{AGENT_PATH}}/scripts/graph.mjs
 node {{AGENT_PATH}}/scripts/architecture.mjs
 ```
 
-`chain.mjs` ahora es un wrapper sobre `graph.mjs`. Produce el mismo formato de salida para compatibilidad (nodos, edges, features, orden topológico). El nuevo `graph.mjs` amplía el análisis a todos los tipos de nodo (core, feature, domain, infra, adapter) y detecta violaciones de reglas arquitectónicas (R1-R6).
+`{{AGENT_PATH}}/scripts/chain.mjs` ahora es un wrapper sobre `{{AGENT_PATH}}/scripts/graph.mjs`. Produce el mismo formato de salida para compatibilidad (nodos, edges, features, orden topológico). El nuevo `{{AGENT_PATH}}/scripts/graph.mjs` amplía el análisis a todos los tipos de nodo (core, feature, domain, infra, adapter) y detecta violaciones de reglas arquitectónicas (R1-R6).
 
 ## Buenas prácticas
 
@@ -74,6 +74,6 @@ node {{AGENT_PATH}}/scripts/architecture.mjs
 
 ## Ver también
 
-- `scripts/graph.mjs` — el grafo que chain analiza topológicamente
+- `{{AGENT_PATH}}/scripts/graph.mjs` — el grafo que chain analiza topológicamente
 - `reference/evolutionary-architecture.md` — fitness functions de dependencias
 - `reference/modular-monolith.md` — ciclo de dependencias como señal de split

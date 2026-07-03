@@ -11,10 +11,10 @@ Inspecciona la conformidad arquitectónica del proyecto.
 
 ## Flujo
 
-1. Ejecutar `scripts/context.mjs` → detectar stack y estructura
-2. Ejecutar `scripts/profile.mjs` → determinar perfil activo
-3. Ejecutar `scripts/chain.mjs` → construir cadena de dependencias
-4. Ejecutar `scripts/detect.mjs` → detectar todas las violaciones
+1. Ejecutar `{{AGENT_PATH}}/scripts/context.mjs` → detectar stack y estructura
+2. Ejecutar `{{AGENT_PATH}}/scripts/profile.mjs` → determinar perfil activo
+3. Ejecutar `{{AGENT_PATH}}/scripts/chain.mjs` → construir cadena de dependencias
+4. Ejecutar `{{AGENT_PATH}}/scripts/detect.mjs` → detectar todas las violaciones
 5. Construir reporte con puntuación y severidades
 6. Mostrar resultado al usuario
 

@@ -25,7 +25,7 @@ Una **fitness function** es un test automatizado que valida una característica 
 Las 9 reglas de Forge son fitness functions:
 
 ```ts
-// scripts/registry/rules.mjs (conceptual)
+// {{AGENT_PATH}}/scripts/registry/rules.mjs (conceptual)
 const rules = {
   R1: {
     name: "feature → infra prohibited",
@@ -44,7 +44,7 @@ const rules = {
 ```
 
 Estas fitness functions se ejecutan en:
-- `node scripts/detect.mjs` — detección local
+- `node {{AGENT_PATH}}/scripts/detect.mjs` — detección local
 - `forge quench` — validación completa
 - PostToolUse hook — después de cada escritura del agente
 
@@ -53,7 +53,7 @@ Estas fitness functions se ejecutan en:
 Los usuarios pueden registrar sus propias funciones:
 
 ```ts
-// scripts/registry/rules.mjs
+// {{AGENT_PATH}}/scripts/registry/rules.mjs
 import { registerRule } from "./registry/rules.mjs";
 
 registerRule({
@@ -70,7 +70,7 @@ registerRule({
 
 | Tipo | Ejecución | Ejemplo |
 |---|---|---|
-| **Estática** | Lint/build | `detect.mjs` analiza imports |
+| **Estática** | Lint/build | `{{AGENT_PATH}}/scripts/detect.mjs` analiza imports |
 | **Dinámica** | Runtime | Verificar que event bus no pierde eventos |
 | **Benchmark** | CI periódico | Tiempo de respuesta de queries < 200ms |
 | **Trigger-based** | Evento (PR, deploy) | No hay imports directos entre features |
@@ -100,7 +100,7 @@ El flujo de cambio guiado de Forge asegura que cada modificación arquitectónic
 ### 1. Estado actual (before)
 
 ```bash
-node scripts/inspect.mjs --json
+node {{AGENT_PATH}}/scripts/inspect.mjs --json
 # Score: 85
 # Violaciones: 2 WARNING (R9 borderline, naming)
 ```
@@ -130,7 +130,7 @@ forge reforge --apply
 ### 5. Estado actual (after)
 
 ```bash
-node scripts/inspect.mjs --json
+node {{AGENT_PATH}}/scripts/inspect.mjs --json
 # Score: 92 (+7)
 # Violaciones: 0
 ```
@@ -264,7 +264,7 @@ forge reforge --publish shared/contracts as @company/contracts
 # 1. Extrae contracts/ a packages/contracts/
 # 2. Configura build con tsc
 # 3. Actualiza imports en todas las features
-# 4. Verifica con detect.mjs que los nuevos imports son válidos
+# 4. Verifica con {{AGENT_PATH}}/scripts/detect.mjs que los nuevos imports son válidos
 ```
 
 ---

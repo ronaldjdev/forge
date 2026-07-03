@@ -33,7 +33,7 @@ Valida que el proyecto cumpla las reglas arquitectónicas.
 | R5 | Ciclo de dependencias | ERROR | Ciclo detectado en el grafo de features |
 | R6 | infra → domain/feature | WARNING | Infraestructura no debe importar dominio interno |
 
-El grafo se construye automáticamente con `scripts/graph.mjs` y las violaciones se incluyen en `scripts/detect.mjs` (categoría `graph`).
+El grafo se construye automáticamente con `{{AGENT_PATH}}/scripts/graph.mjs` y las violaciones se incluyen en `{{AGENT_PATH}}/scripts/detect.mjs` (categoría `graph`).
 
 ## Checklist pre-migración
 

@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## v1.4.1 — Wizard Path Rendering Fix & Multi-Agent Consistency (2026-07-02)
+
+### Fixed
+- **`wizard.mjs`**: `installAgentTemplates()` no llamaba a `renderSkillPaths()`, por lo que el wizard instalaba el skill con `{{AGENT_PATH}}` literal para Claude, Cursor, Codex, Gemini y Agents. Ahora cada agente recibe paths específicos (`.claude/skills/forge/`, `.gemini/skills/forge/`, etc.).
+- **`wizard.mjs`**: Los paths de OpenCode global y project también omitían `renderSkillPaths()`. Corregido con `skillPath` dinámico.
+- **`reference/*.md`**: Todas las referencias a scripts que usaban `scripts/name.mjs` o nombres sin path fueron migradas a `{{AGENT_PATH}}/scripts/name.mjs` (forge, inspect, inscribe, chain, evolutionary-architecture, quench, adr, cohesion-checklist, architectural-depth-checklist, hooks, cast).
+- **`SKILL.md.template`**: Sincronizado con los mismos patrones `{{AGENT_PATH}}/scripts/...` en boot sequence, routing table, execution flow, module index y test table.
+
+### Added
+- **`templates/agents/opencode/SKILL.md`**: Template wrapper para OpenCode, consistente con los otros agentes.
+- **`wizard.mjs`**: Entrada `opencode: ".opencode/skills/forge"` en `AGENT_SKILL_PATHS`.
+
+### Changed
+- **`README.md`**: Badge v1.4.0 → v1.4.1.
+
+---
+
 ## v1.4.0 — Forge Init, Auto-Fix Iterativo & Inspect Full Default (2026-07-02)
 
 ### Added

@@ -11,17 +11,17 @@ Inicializa un proyecto para trabajar con Forge como Backend Architecture Operati
 
 ## Flujo
 
-1. Ejecutar `scripts/context.mjs` — detectar stack actual (incluye platform, features, shared, infra)
-2. Ejecutar `scripts/bootstrap.mjs` — crear layers faltantes (platform, shared, infra)
+1. Ejecutar `{{AGENT_PATH}}/scripts/context.mjs` — detectar stack actual (incluye platform, features, shared, infra)
+2. Ejecutar `{{AGENT_PATH}}/scripts/bootstrap.mjs` — crear layers faltantes (platform, shared, infra)
 3. Crear `src/features/` — directorio de features si no existe
-4. Ejecutar `forge-config.mjs --init` — crear `.forge/config.json` + `.forge/state.json`
-5. Ejecutar `forge-config.mjs --update` — detectar y persistir perfil tecnológico
+4. Ejecutar `{{AGENT_PATH}}/scripts/forge-config.mjs --init` — crear `.forge/config.json` + `.forge/state.json`
+5. Ejecutar `{{AGENT_PATH}}/scripts/forge-config.mjs --update` — detectar y persistir perfil tecnológico
 6. Verificar `tsconfig.json` — agregar `experimentalDecorators` y `emitDecoratorMetadata` si falta
-7. Ejecutar `scripts/armorer.mjs` — detectar ownership y huérfanos
-8. Ejecutar `scripts/graph.mjs` — construir grafo arquitectónico global
-9. Ejecutar `scripts/chain.mjs` — analizar dependencias multi-capa
-10. Ejecutar `detect.mjs --summary` — auditoría base
-11. Ejecutar `architecture.mjs` — generar `ARCHITECTURE.md`
+7. Ejecutar `{{AGENT_PATH}}/scripts/armorer.mjs` — detectar ownership y huérfanos
+8. Ejecutar `{{AGENT_PATH}}/scripts/graph.mjs` — construir grafo arquitectónico global
+9. Ejecutar `{{AGENT_PATH}}/scripts/chain.mjs` — analizar dependencias multi-capa
+10. Ejecutar `{{AGENT_PATH}}/scripts/detect.mjs --summary` — auditoría base
+11. Ejecutar `{{AGENT_PATH}}/scripts/architecture.mjs` — generar `ARCHITECTURE.md`
 12. Si faltan dependencias clave (según perfil), listarlas
 13. Si el proyecto tiene código legacy, sugerir `forge relocate`
 14. Si el proyecto está listo, sugerir `forge cast`

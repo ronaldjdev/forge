@@ -1,6 +1,6 @@
 <img src="favicon.svg" alt="Forge Logo" width="100" height="100">
 
-> **v1.4.0** — Forge Init, Auto-Fix Iterativo & Inspect Full Default
+> **v1.4.1** — Wizard Path Rendering Fix & Multi-Agent Consistency
 
 ## Forge — Backend Architecture Operating System
 

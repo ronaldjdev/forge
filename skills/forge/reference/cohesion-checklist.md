@@ -30,7 +30,7 @@ Checklist para llevar la cohesión del corpus de referencias de ~8.5/10 a 10/10.
 ### F1.2 — `chain.md`
 
 - [ ] Añadir "Ver también" al final:
-  - `scripts/graph.mjs` — el grafo que chain analiza topológicamente
+  - `{{AGENT_PATH}}/scripts/graph.mjs` — el grafo que chain analiza topológicamente
   - `reference/evolutionary-architecture.md` — fitness functions de dependencias
   - `reference/modular-monolith.md` — ciclo de dependencias como señal de split
 
@@ -55,7 +55,7 @@ Checklist para llevar la cohesión del corpus de referencias de ~8.5/10 a 10/10.
   - `reference/quench.md` — validación que el hook ejecuta en pre-commit
   - `reference/evolutionary-architecture.md` — fitness functions como hook
   - `reference/adr.md` — ADRs como insumo para validación en hook
-  - `reference/detect.mjs` — script que el hook invoca
+  - `{{AGENT_PATH}}/scripts/detect.mjs` — script que el hook invoca
 
 ### F1.6 — `smelt.md`
 

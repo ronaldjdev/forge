@@ -1,6 +1,6 @@
 import pc from "picocolors";
 import { intro, outro, select, multiselect, text, spinner, isCancel, cancel, log, tasks } from "@clack/prompts";
-import { existsSync, mkdirSync, copyFileSync, readdirSync, cpSync, writeFileSync, readFileSync } from "fs";
+import { existsSync, mkdirSync, copyFileSync, readdirSync, cpSync, writeFileSync, readFileSync, statSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
@@ -93,12 +93,27 @@ function copyAgentTemplate(name, dest) {
   }
 }
 
+function renderSkillPaths(skillDest, skillPath) {
+  for (const entry of readdirSync(skillDest)) {
+    const fullPath = join(skillDest, entry);
+    if (statSync(fullPath).isDirectory()) {
+      renderSkillPaths(fullPath, skillPath);
+    } else if (entry.endsWith(".md")) {
+      const content = readFileSync(fullPath, "utf-8");
+      if (content.includes("{{AGENT_PATH}}")) {
+        writeFileSync(fullPath, content.replace(/\{\{AGENT_PATH\}\}/g, skillPath), "utf-8");
+      }
+    }
+  }
+}
+
 const AGENT_SKILL_PATHS = {
   claude: ".claude/skills/forge",
   cursor: ".cursor/skills/forge",
   codex:  ".agents/skills/forge",
   gemini: ".gemini/skills/forge",
   agents: ".agents/skills/forge",
+  opencode: ".opencode/skills/forge",
 };
 
 function installAgentTemplates(agentDir, agentName) {
@@ -113,14 +128,18 @@ function installAgentTemplates(agentDir, agentName) {
   // Copy template files (hooks, CLAUDE.md, .cursorrules, etc.)
   copyAgentTemplate(agentName, agentDir);
 
+  const skillPath = AGENT_SKILL_PATHS[agentName] || agentName;
+
   // Render SKILL.md with agent-specific path
   const templatePath = join(AGENTS_TEMPLATES, "SKILL.md.template");
   if (existsSync(templatePath)) {
     const template = readFileSync(templatePath, "utf-8");
-    const skillPath = AGENT_SKILL_PATHS[agentName] || agentName;
     const rendered = template.replace(/\{\{AGENT_PATH\}\}/g, skillPath);
     writeFileSync(join(skillDest, "SKILL.md"), rendered, "utf-8");
   }
+
+  // Render {{AGENT_PATH}} in remaining .md files (command/forge.md, reference/*.md)
+  renderSkillPaths(skillDest, skillPath);
 
   // Codex special case: also copy hooks.json to .codex/
   if (agentName === "codex") {
@@ -351,10 +370,12 @@ function buildAgentSteps(agent, cwd) {
   if (agent.id === "opencode-global") {
     const dest = join(HOME, ".config", "opencode", "skills", "forge");
     const configDir = join(HOME, ".config", "opencode");
+    const skillPath = join(".config", "opencode", "skills", "forge");
     const steps = [];
     steps.push(s("Copiando Skill en opencode/", async () => {
       mkdirSync(dest, { recursive: true });
       cpSync(SKILL_SRC, dest, { recursive: true, force: true });
+      renderSkillPaths(dest, skillPath);
       return "Skill copiada";
     }));
     steps.push(s("Registrando comandos + dependencias", async () => {
@@ -372,10 +393,12 @@ function buildAgentSteps(agent, cwd) {
   if (agent.id === "opencode-project") {
     const dest = join(cwd, ".opencode", "skills", "forge");
     const configDir = join(cwd, ".opencode");
+    const skillPath = join(".opencode", "skills", "forge");
     const steps = [];
     steps.push(s("Copiando Skill en .opencode/", async () => {
       mkdirSync(dest, { recursive: true });
       cpSync(SKILL_SRC, dest, { recursive: true, force: true });
+      renderSkillPaths(dest, skillPath);
       return "Skill copiada";
     }));
     steps.push(s("Registrando comandos + dependencias", async () => {

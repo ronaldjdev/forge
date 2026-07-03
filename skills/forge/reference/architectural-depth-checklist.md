@@ -87,7 +87,7 @@ Un equipo puede evaluar su arquitectura actual contra el marco de decisión y ob
 - [ ] **Integración con `inscribe`**: anexar ADRs activos en ARCHITECTURE.md
 - [ ] **Integración con `assay`**: las decisiones como insumo para el ensayo multi-persona
 - [ ] **Cuándo escribir un ADR**: scoping, tecnología, patrón, estándar, cambio de regla, excepción
-- [ ] **ADRs como fuente de verdad**: enlazar ADRs desde reglas de detect.mjs, desde inline ignores
+- [ ] **ADRs como fuente de verdad**: enlazar ADRs desde reglas de {{AGENT_PATH}}/scripts/detect.mjs, desde inline ignores
 - [ ] **Ejemplos**: ADRs reales del modelo Forge (ej. "usar capa Shared en vez de cross-feather imports", "adoptar Prisma como ORM")
 - [ ] **Tooling**: script para crear, listar, cambiar estado de ADRs
 - [ ] **Anti-patrones**: ADRs que nunca se leen, ADRs sin contexto, ADRs sin consecuencia, ADRs de frameworks
@@ -114,7 +114,7 @@ Un `forge inscribe` genera ARCHITECTURE.md con enlaces a ADRs activos. Un nuevo 
 - [ ] **Mapeo de integraciones legacy**: cómo modelar sistemas externos como bounded contexts con ACL
 - [ ] **Estrategias de traducción**: event-based (publicar/suscribir), service-based (llamadas sincrónicas), repository-based (datos compartidos)
 - [ ] **Conexión con reglas R1 y R7**: cómo ACL permite feature → infra sin violar la regla (porque el adapter traduce)
-- [ ] **Detección automática**: qué patrones en detect.mjs indican necesidad de ACL
+- [ ] **Detección automática**: qué patrones en {{AGENT_PATH}}/scripts/detect.mjs indican necesidad de ACL
 - [ ] **Ejemplo**: feature de "Orders" migrando de legacy SQL a nuevo schema con ACL + Strangler Fig
 - [ ] **Anti-patrones**: ACL que filtra sin traducir (leaky abstraction), ACL que muta el origen, ACL como pasamanos
 
@@ -136,8 +136,8 @@ Un desarrollador puede identificar cuándo necesita una ACL, modelarla dentro de
 - [ ] **Definición**: arquitectura que evoluciona incrementalmente guiada por fitness functions
 - [ ] **Fitness functions**: tests automatizados que validan características arquitectónicas (acoplamiento, modularidad, performance, seguridad)
 - [ ] **Tipos de fitness functions**: estáticas (lint-level), dinámicas (runtime), periódicas (benchmark), trigger-based (CI)
-- [ ] **Implementación en Forge**: las reglas R1-R9 como fitness functions gobernadas por detect.mjs
-- [ ] **Fitness functions custom**: cómo el usuario define sus propias funciones y se registran en registry/rules.mjs
+- [ ] **Implementación en Forge**: las reglas R1-R9 como fitness functions gobernadas por {{AGENT_PATH}}/scripts/detect.mjs
+- [ ] **Fitness functions custom**: cómo el usuario define sus propias funciones y se registran en {{AGENT_PATH}}/scripts/registry/rules.mjs
 - [ ] **Guía de cambio incremental**: smallest viable change, refactor patterns, scaffolding antes de feature completo
 - [ ] **Evolución de boundaries**: cómo partir, fusionar o mover features sin reescribir
 - [ ] **Integración con CI/CD**: fitness functions en pipeline, gate de deployment, alertas de regresión
