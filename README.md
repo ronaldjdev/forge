@@ -1,6 +1,6 @@
 <img src="favicon.svg" alt="Forge Logo" width="100" height="100">
 
-> **v1.3.5** — R13 Platform Domain Guard & Legacy Cleanup
+> **v1.3.6** — Multi-Agent Path Resolution Fix
 
 ## Forge — Backend Architecture Operating System
 

@@ -23,26 +23,26 @@ Genera un **ensayo arquitectónico multi-persona** que evalúa el estado actual 
 
 ```bash
 # Ensayo completo con todas las personas
-node .opencode/skills/forge/scripts/assay.mjs
+node {{AGENT_PATH}}/scripts/assay.mjs
 
 # Solo la opinión de una persona
-node .opencode/skills/forge/scripts/assay.mjs --persona=bezos
-node .opencode/skills/forge/scripts/assay.mjs --persona=fowler
-node .opencode/skills/forge/scripts/assay.mjs --persona=hacker
-node .opencode/skills/forge/scripts/assay.mjs --persona=pm
-node .opencode/skills/forge/scripts/assay.mjs --persona=senior
+node {{AGENT_PATH}}/scripts/assay.mjs --persona=bezos
+node {{AGENT_PATH}}/scripts/assay.mjs --persona=fowler
+node {{AGENT_PATH}}/scripts/assay.mjs --persona=hacker
+node {{AGENT_PATH}}/scripts/assay.mjs --persona=pm
+node {{AGENT_PATH}}/scripts/assay.mjs --persona=senior
 
 # Salida JSON (para consumo por herramientas)
-node .opencode/skills/forge/scripts/assay.mjs --json
+node {{AGENT_PATH}}/scripts/assay.mjs --json
 
 # Persistir ensayo en .forge/assay/
-node .opencode/skills/forge/scripts/assay.mjs --save
+node {{AGENT_PATH}}/scripts/assay.mjs --save
 
 # Ver historial de ensayos
-node .opencode/skills/forge/scripts/assay.mjs history
+node {{AGENT_PATH}}/scripts/assay.mjs history
 
 # Leer un ensayo previo
-node .opencode/skills/forge/scripts/assay.mjs read assay-2026-06-25T00-00-00.md
+node {{AGENT_PATH}}/scripts/assay.mjs read assay-2026-06-25T00-00-00.md
 ```
 
 ## Formato de salida

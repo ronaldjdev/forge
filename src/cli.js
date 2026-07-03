@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { copyFileSync, mkdirSync, existsSync, writeFileSync, readFileSync, cpSync, readdirSync } from "fs";
+import { copyFileSync, mkdirSync, existsSync, writeFileSync, readFileSync, cpSync, readdirSync, statSync } from "fs";
 import { join, dirname, relative } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
@@ -41,6 +41,20 @@ function getConfigDir(global) {
 
 function copyRecursive(src, dest) {
   cpSync(src, dest, { recursive: true, force: true });
+}
+
+function renderSkillPaths(skillDest, skillPath) {
+  for (const entry of readdirSync(skillDest)) {
+    const fullPath = join(skillDest, entry);
+    if (statSync(fullPath).isDirectory()) {
+      renderSkillPaths(fullPath, skillPath);
+    } else if (entry.endsWith(".md")) {
+      const content = readFileSync(fullPath, "utf-8");
+      if (content.includes("{{AGENT_PATH}}")) {
+        writeFileSync(fullPath, content.replace(/\{\{AGENT_PATH\}\}/g, skillPath), "utf-8");
+      }
+    }
+  }
 }
 
 function detectPM(configDir) {
@@ -143,8 +157,11 @@ async function installOpenCode(isGlobal = false) {
 
   const s = spinner();
 
+  const skillPath = isGlobal ? join("~/.config/opencode", "skills", "forge") : join(".opencode", "skills", "forge");
+
   s.start("Copiando skill a " + rel);
   copyRecursive(SKILL_SRC, target);
+  renderSkillPaths(target, skillPath);
   s.stop("Skill copiada a " + rel);
 
   s.start("Generando comandos /forge-*");
@@ -191,6 +208,9 @@ async function installAgentTemplates(agentDir, agentName) {
     const rendered = template.replace(/\{\{AGENT_PATH\}\}/g, config.skillPath);
     writeFileSync(join(skillDest, "SKILL.md"), rendered, "utf-8");
   }
+
+  // Render {{AGENT_PATH}} in remaining .md files (command/forge.md, reference/*.md)
+  renderSkillPaths(skillDest, config.skillPath);
 
   s.stop(`${agentName} configurado en ${agentDir}/`);
   log.success(`${agentName} listo (skill + ${config.postInstall || "templates"})`);

@@ -64,13 +64,13 @@ El grafo se construye automáticamente con `scripts/graph.mjs` y las violaciones
 
 ```bash
 # Validación completa
-node .opencode/skills/forge/scripts/detect.mjs
+node {{AGENT_PATH}}/scripts/detect.mjs
 
 # Solo errores y críticos
-node .opencode/skills/forge/scripts/detect.mjs --severity ERROR
+node {{AGENT_PATH}}/scripts/detect.mjs --severity ERROR
 
 # Solo un tipo específico
-node .opencode/skills/forge/scripts/detect.mjs --type layers
+node {{AGENT_PATH}}/scripts/detect.mjs --type layers
 
 ## Ver también
 

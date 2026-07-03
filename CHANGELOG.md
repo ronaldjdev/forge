@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## v1.3.6 — Multi-Agent Path Resolution Fix (2026-07-02)
+
+### Fixed
+- **`command/forge.md`**: Todos los paths a scripts hardcodeados a `.opencode/skills/forge/` fueron reemplazados por el placeholder `{{AGENT_PATH}}`, que se renderiza con el path específico del agente durante la instalación. `/forge reforge` ahora funciona desde cualquier agente (Claude, Cursor, Gemini, etc.).
+- **`SKILL.md`**: Boot sequence y test command actualizados con `{{AGENT_PATH}}`.
+- **`reference/*.md`**: Todos los paths de ejemplo en reference docs ahora usan `{{AGENT_PATH}}`.
+- **`src/cli.js`**: Nueva función `renderSkillPaths()` que recorre recursivamente los `.md` copiados y reemplaza `{{AGENT_PATH}}` con el path del agente (`.claude/skills/forge/`, `.gemini/skills/forge/`, etc.). Se ejecuta tanto en `installOpenCode()` como en `installAgentTemplates()`.
+
+### Changed
+- **`README.md`**: Badge v1.3.5 → v1.3.6.
+
+### Notes
+- Los scripts runtime (`scripts/*.mjs`) mantienen `.opencode/skills/forge/` en mensajes de error/uso por ser paths del entorno original de desarrollo.
+
+---
+
 ## v1.3.5 — R13 Platform Domain Guard & Legacy Cleanup (2026-07-02)
 
 ### Added

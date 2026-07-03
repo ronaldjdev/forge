@@ -85,10 +85,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: node .opencode/skills/forge/scripts/detect.mjs
+      - run: node {{AGENT_PATH}}/scripts/detect.mjs
         env:
           FORGE_STRICT: "true"
-      - run: node .opencode/skills/forge/scripts/chain.mjs --json
+      - run: node {{AGENT_PATH}}/scripts/chain.mjs --json
 ```
 
 ---

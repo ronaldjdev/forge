@@ -52,9 +52,9 @@ Inspecciona la conformidad arquitectónica del proyecto.
 ## Ejecución
 
 ```bash
-node .opencode/skills/forge/scripts/inspect.mjs
-node .opencode/skills/forge/scripts/inspect.mjs --json
-node .opencode/skills/forge/scripts/detect.mjs --severity ERROR
+node {{AGENT_PATH}}/scripts/inspect.mjs
+node {{AGENT_PATH}}/scripts/inspect.mjs --json
+node {{AGENT_PATH}}/scripts/detect.mjs --severity ERROR
 
 ## Ver también
 

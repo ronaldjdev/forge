@@ -75,7 +75,7 @@ En esencia:
 ANTES de cualquier acción, Forge DEBE ejecutar `forge-boot.mjs` con la profundidad adecuada al comando:
 
 ```bash
-boot=$(node .opencode/skills/forge/scripts/forge-boot.mjs --depth <depth> --json 2>/dev/null)
+boot=$(node {{AGENT_PATH}}/scripts/forge-boot.mjs --depth <depth> --json 2>/dev/null)
 ```
 
 La profundidad (`--depth`) depende del comando (ver Execution Flow):
@@ -193,7 +193,7 @@ El agente DEBE leer este archivo al inicio de cada interacción y actualizarlo a
 Forge incluye tests unitarios con `node:test` (sin dependencias externas).
 
 ```bash
-node --test .opencode/skills/forge/tests/core.test.mjs
+node --test {{AGENT_PATH}}/tests/core.test.mjs
 ```
 
 | Módulo | Tests | Descripción |

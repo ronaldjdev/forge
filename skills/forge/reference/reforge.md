@@ -23,10 +23,10 @@ Renombra un único archivo según las convenciones de `reference/patterns.md` y 
 ### Flujo
 
 1. Identificar la ruta del archivo (relativa a la raíz del proyecto)
-2. Ejecutar `node .opencode/skills/forge/scripts/rename.mjs --detect --file <path>` para detectar violación
+2. Ejecutar `node {{AGENT_PATH}}/scripts/rename.mjs --detect --file <path>` para detectar violación
 3. Si el archivo ya cumple naming, informar y terminar
 4. Mostrar preview del cambio al usuario
-5. Ejecutar `node .opencode/skills/forge/scripts/rename.mjs --file <path>` que:
+5. Ejecutar `node {{AGENT_PATH}}/scripts/rename.mjs --file <path>` que:
    - Renombra físicamente el archivo
    - Escanea todos los `.ts`/`.js` del proyecto
    - Actualiza imports que referencian el path antiguo (relativos y absolutos)
@@ -57,9 +57,9 @@ $ forge reforge src/features/users/domain/userEntity.ts
 1. Ejecutar `forge inspect` para obtener estado actual
 2. Identificar violaciones en el grafo arquitectónico
 3. Identificar ownership problemático (huérfanos, duplicados, mal ubicados)
-4. **Detectar naming violations**: Ejecutar `node .opencode/skills/forge/scripts/rename.mjs --detect --json`
+4. **Detectar naming violations**: Ejecutar `node {{AGENT_PATH}}/scripts/rename.mjs --detect --json`
 5. Si hay naming violations, preguntar al usuario: "¿Corregir naming conventions automáticamente?"
-   - Si acepta, ejecutar `node .opencode/skills/forge/scripts/rename.mjs --all`
+   - Si acepta, ejecutar `node {{AGENT_PATH}}/scripts/rename.mjs --all`
 6. Decidir las acciones correctivas en orden:
    - Violaciones CRITICAL primero (R1, R2, R5, R6)
    - Violaciones ERROR después (R3, R4, R8, R9)

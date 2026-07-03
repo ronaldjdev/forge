@@ -30,13 +30,13 @@ Si el subcomando NO tiene flags en $ARGUMENTS y tiene flags disponibles (ver tab
 Inicializa el proyecto arquitectónicamente. Ejecuta context + bootstrap + profile + armorer + graph + chain + inscribe.
 
 ```
-node .opencode/skills/forge/scripts/context.mjs
-node .opencode/skills/forge/scripts/bootstrap.mjs
-node .opencode/skills/forge/scripts/profile.mjs
-node .opencode/skills/forge/scripts/armorer.mjs
-node .opencode/skills/forge/scripts/graph.mjs
-node .opencode/skills/forge/scripts/chain.mjs
-node .opencode/skills/forge/scripts/architecture.mjs
+node {{AGENT_PATH}}/scripts/context.mjs
+node {{AGENT_PATH}}/scripts/bootstrap.mjs
+node {{AGENT_PATH}}/scripts/profile.mjs
+node {{AGENT_PATH}}/scripts/armorer.mjs
+node {{AGENT_PATH}}/scripts/graph.mjs
+node {{AGENT_PATH}}/scripts/chain.mjs
+node {{AGENT_PATH}}/scripts/architecture.mjs
 ```
 
 ### cast
@@ -52,7 +52,7 @@ Migra un feature existente. Puede targetizar platform/, shared/, infra/ o featur
 Genera ARCHITECTURE.md con grafo arquitectónico, ownership y platform.
 
 ```
-node .opencode/skills/forge/scripts/architecture.mjs
+node {{AGENT_PATH}}/scripts/architecture.mjs
 ```
 
 ### graph
@@ -60,13 +60,13 @@ node .opencode/skills/forge/scripts/architecture.mjs
 Construye el grafo arquitectónico del proyecto (4 capas: platform, feature, shared, infra) con reglas R1-R9.
 
 ```
-node .opencode/skills/forge/scripts/graph.mjs
+node {{AGENT_PATH}}/scripts/graph.mjs
 ```
 
 Para salida JSON:
 
 ```
-node .opencode/skills/forge/scripts/graph.mjs --json
+node {{AGENT_PATH}}/scripts/graph.mjs --json
 ```
 
 ### smelt
@@ -78,7 +78,7 @@ Extrae código reutilizable a shared/ (solo código puro, sin dependencias infra
 Inicializa platform, shared e infra layers (uso interno, se ejecuta automáticamente).
 
 ```
-node .opencode/skills/forge/scripts/bootstrap.mjs
+node {{AGENT_PATH}}/scripts/bootstrap.mjs
 ```
 
 ## Evaluate
@@ -88,13 +88,13 @@ node .opencode/skills/forge/scripts/bootstrap.mjs
 Audita la conformidad arquitectónica completa. 6 categorías: structure(20), layers(20), ownership(20), platform(15), dependencies(15), graph(20).
 
 ```
-node .opencode/skills/forge/scripts/inspect.mjs
+node {{AGENT_PATH}}/scripts/inspect.mjs
 ```
 
 Para salida JSON:
 
 ```
-node .opencode/skills/forge/scripts/inspect.mjs --json
+node {{AGENT_PATH}}/scripts/inspect.mjs --json
 ```
 
 ### assay
@@ -102,16 +102,16 @@ node .opencode/skills/forge/scripts/inspect.mjs --json
 Ensayo arquitectónico multi-persona. Interpretación cualitativa del audit desde 5 perspectivas (Bezos, Fowler, Hacker, PM, Arquitecta Senior).
 
 ```
-node .opencode/skills/forge/scripts/assay.mjs
+node {{AGENT_PATH}}/scripts/assay.mjs
 ```
 
 Filtros:
 
 ```
-node .opencode/skills/forge/scripts/assay.mjs --persona=bezos
-node .opencode/skills/forge/scripts/assay.mjs --json
-node .opencode/skills/forge/scripts/assay.mjs --save
-node .opencode/skills/forge/scripts/assay.mjs history
+node {{AGENT_PATH}}/scripts/assay.mjs --persona=bezos
+node {{AGENT_PATH}}/scripts/assay.mjs --json
+node {{AGENT_PATH}}/scripts/assay.mjs --save
+node {{AGENT_PATH}}/scripts/assay.mjs history
 ```
 
 ### quench
@@ -119,7 +119,7 @@ node .opencode/skills/forge/scripts/assay.mjs history
 Valida reglas arquitectónicas R1-R9.
 
 ```
-node .opencode/skills/forge/scripts/detect.mjs
+node {{AGENT_PATH}}/scripts/detect.mjs
 ```
 
 ### chain
@@ -127,13 +127,13 @@ node .opencode/skills/forge/scripts/detect.mjs
 Orden topológico de dependencias multi-capa (platform, features, shared, infra).
 
 ```
-node .opencode/skills/forge/scripts/chain.mjs
+node {{AGENT_PATH}}/scripts/chain.mjs
 ```
 
 Para salida JSON:
 
 ```
-node .opencode/skills/forge/scripts/chain.mjs --json
+node {{AGENT_PATH}}/scripts/chain.mjs --json
 ```
 
 ### armorer
@@ -141,7 +141,7 @@ node .opencode/skills/forge/scripts/chain.mjs --json
 Reporte de ownership: huérfanos, duplicados, componentes mal ubicados.
 
 ```
-node .opencode/skills/forge/scripts/armorer.mjs
+node {{AGENT_PATH}}/scripts/armorer.mjs
 ```
 
 ## Refine
