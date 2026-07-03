@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## v1.4.2 — Instalación por agente con templates aislados (2026-07-03)
+
+### Added
+- **`cli.js`**: Función `cleanAgentTemplates(skillDest, keepAgent)` que elimina los subdirectorios de `templates/agents/` que no corresponden al agente instalado. Invocada en `installOpenCode()` (conserva `opencode/`) y `installAgentTemplates()` (conserva el template del agente).
+- **`wizard.mjs`**: Función `cleanAgentTemplates()` idéntica. Invocada en `installAgentTemplates()`, `opencode-global`, `opencode-project` y ruta personalizada.
+
+### Changed
+- Al instalar `--opencode`, el directorio `templates/agents/` solo contiene `opencode/` + `SKILL.md.template` (antes copiaba claude/, cursor/, codex/, gemini/, agents/).
+- Al instalar cualquier otro agente (`--cursor`, `--claude`, `--codex`, `--gemini`), solo se conserva el template del agente correspondiente.
+- **`README.md`**: Badge v1.4.1 → v1.4.2.
+
+---
+
 ## v1.4.1 — Wizard Path Rendering Fix & Multi-Agent Consistency (2026-07-02)
 
 ### Fixed

@@ -1,6 +1,6 @@
 <img src="favicon.svg" alt="Forge Logo" width="100" height="100">
 
-> **v1.4.1** — Wizard Path Rendering Fix & Multi-Agent Consistency
+> **v1.4.2** — Instalación por agente con templates aislados
 
 ## Forge — Backend Architecture Operating System
 

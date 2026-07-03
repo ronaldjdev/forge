@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { copyFileSync, mkdirSync, existsSync, writeFileSync, readFileSync, cpSync, readdirSync, statSync } from "fs";
+import { copyFileSync, mkdirSync, existsSync, writeFileSync, readFileSync, cpSync, readdirSync, statSync, rmSync } from "fs";
 import { join, dirname, relative } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
@@ -41,6 +41,17 @@ function getConfigDir(global) {
 
 function copyRecursive(src, dest) {
   cpSync(src, dest, { recursive: true, force: true });
+}
+
+function cleanAgentTemplates(skillDest, keepAgent) {
+  const agentsDir = join(skillDest, "templates", "agents");
+  if (!existsSync(agentsDir)) return;
+  for (const entry of readdirSync(agentsDir)) {
+    const entryPath = join(agentsDir, entry);
+    if (statSync(entryPath).isDirectory() && entry !== keepAgent) {
+      rmSync(entryPath, { recursive: true, force: true });
+    }
+  }
 }
 
 function renderSkillPaths(skillDest, skillPath) {
@@ -161,6 +172,7 @@ async function installOpenCode(isGlobal = false) {
 
   s.start("Copiando skill a " + rel);
   copyRecursive(SKILL_SRC, target);
+  cleanAgentTemplates(target, "opencode");
   renderSkillPaths(target, skillPath);
   s.stop("Skill copiada a " + rel);
 
@@ -193,6 +205,7 @@ async function installAgentTemplates(agentDir, agentName) {
   // Copy skill into <agentDir>/skills/forge/
   const skillDest = join(agentDir, "skills", "forge");
   cpSync(SKILL_SRC, skillDest, { recursive: true, force: true });
+  cleanAgentTemplates(skillDest, config.template);
 
   // Copy template files (hooks, CLAUDE.md, .cursorrules, etc.)
   for (const entry of readdirSync(templateDir)) {

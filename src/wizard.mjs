@@ -1,6 +1,6 @@
 import pc from "picocolors";
 import { intro, outro, select, multiselect, text, spinner, isCancel, cancel, log, tasks } from "@clack/prompts";
-import { existsSync, mkdirSync, copyFileSync, readdirSync, cpSync, writeFileSync, readFileSync, statSync } from "fs";
+import { existsSync, mkdirSync, copyFileSync, readdirSync, cpSync, writeFileSync, readFileSync, statSync, rmSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
@@ -107,6 +107,17 @@ function renderSkillPaths(skillDest, skillPath) {
   }
 }
 
+function cleanAgentTemplates(skillDest, keepAgent) {
+  const agentsDir = join(skillDest, "templates", "agents");
+  if (!existsSync(agentsDir)) return;
+  for (const entry of readdirSync(agentsDir)) {
+    const entryPath = join(agentsDir, entry);
+    if (statSync(entryPath).isDirectory() && entry !== keepAgent) {
+      rmSync(entryPath, { recursive: true, force: true });
+    }
+  }
+}
+
 const AGENT_SKILL_PATHS = {
   claude: ".claude/skills/forge",
   cursor: ".cursor/skills/forge",
@@ -125,6 +136,7 @@ function installAgentTemplates(agentDir, agentName) {
   // Copy skill into <agentDir>/skills/forge/
   const skillDest = join(agentDir, "skills", "forge");
   cpSync(SKILL_SRC, skillDest, { recursive: true, force: true });
+  cleanAgentTemplates(skillDest, agentName);
   // Copy template files (hooks, CLAUDE.md, .cursorrules, etc.)
   copyAgentTemplate(agentName, agentDir);
 
@@ -375,6 +387,7 @@ function buildAgentSteps(agent, cwd) {
     steps.push(s("Copiando Skill en opencode/", async () => {
       mkdirSync(dest, { recursive: true });
       cpSync(SKILL_SRC, dest, { recursive: true, force: true });
+      cleanAgentTemplates(dest, "opencode");
       renderSkillPaths(dest, skillPath);
       return "Skill copiada";
     }));
@@ -398,6 +411,7 @@ function buildAgentSteps(agent, cwd) {
     steps.push(s("Copiando Skill en .opencode/", async () => {
       mkdirSync(dest, { recursive: true });
       cpSync(SKILL_SRC, dest, { recursive: true, force: true });
+      cleanAgentTemplates(dest, "opencode");
       renderSkillPaths(dest, skillPath);
       return "Skill copiada";
     }));
@@ -463,6 +477,7 @@ async function installPhase(result, cwd) {
     steps.push(s("Instalando Forge en ruta personalizada", async () => {
       mkdirSync(dest, { recursive: true });
       cpSync(SKILL_SRC, join(dest, "forge"), { recursive: true, force: true });
+      cleanAgentTemplates(join(dest, "forge"), "claude");
       copyAgentTemplate("claude", dest);
       return "Forge instalado";
     }));
