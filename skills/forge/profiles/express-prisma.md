@@ -37,7 +37,7 @@ architecture: hexagonal-feature
 
 ## DI Setup
 
-Igual que `express-mongodb` (tsyringe). Las interfaces se registran como singletons.
+Igual que `express-mongodb` (tsyringe). Cada feature registra sus dependencias en `feature/di.ts`. `app.ts` importa esos archivos:
 
 ## Persistence (Prisma)
 

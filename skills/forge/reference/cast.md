@@ -157,9 +157,9 @@ Regla: si la entidad vive fuera del feature, todos los imports deben usar path a
 
 Después de crear los archivos del feature, generar `di.ts` siguiendo el template `templates/feature/di.ts.md`:
 
-1. **Feature con DI propia**: crear `src/features/<name>/di.ts` usando el template
-2. **Feature SIN DI propia**: si ya existe `src/platform/setting/dependencies/<name>.di.js`, los controllers deben importar desde allí en vez de `bootstrap.di.js`
-3. **Controllers**: asegurar que el import en el controller apunte a `@/setting/dependencies/<name>.di.js` o `./di.js`, NUNCA a `bootstrap.di.js`
+1. **Feature con DI propia (siempre)**: crear `src/features/<name>/di.ts` usando el template. Este archivo es la **fuente única** de registro para el feature.
+2. **app.ts**: importar el `di.ts` del feature (ej: `import "@/features/<name>/di.js";`). No registrar las mismas dependencias en app.ts.
+3. **Controllers**: asegurar que el import en el controller apunte a `./di.js` (del feature), NUNCA a `bootstrap.di.js`
 4. **Mongoose model()**: si el schema exporta `export default model()` (objeto, no clase), el DI debe usar `container.register(..., { useValue: ... })`, NO `registerSingleton`
 
 ## ⚠️ Post-Cast: Tests
@@ -181,7 +181,7 @@ Antes de dar por terminado el feature, verificar CADA archivo generado:
 - [ ] Todos los imports locales usan prefijo `./` o `../` — sin bare specifiers (`import X from "domain/..."` ❌)
 - [ ] Todos los imports tienen extensión `.js` — sin extensión `.ts`
 - [ ] Entidades compartidas usan `@/domain/` — sin paths relativos rotos
-- [ ] Controllers importan desde `di.ts` o `@/setting/dependencies/` — no desde `bootstrap.di.js`
+- [ ] Controllers importan desde `./di.js` — no desde `bootstrap.di.js`
 - [ ] Nombres de método del controller coinciden con los de la ruta (ej: `createHandler` en controller → `controller.createHandler` en routes)
 - [ ] DI usa `register({ useValue })` para modelos Mongoose — no `registerSingleton`
 - [ ] Tests: `.js` extension, `as const`, `!`, `as any` para _id

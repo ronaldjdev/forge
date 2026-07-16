@@ -5,8 +5,7 @@
 // 1. Nombres de métodos: usar createHandler (no "add", "store", etc.)
 // 2. Si la entidad <Domain> es compartida desde platform/domain/,
 //    importar con path alias: import type { <Domain> } from "@/domain/entities/<Domain>.js";
-// 3. Si el feature NO tiene di.ts propio, el controller se importa desde
-//    @/setting/dependencies/<domain>.di.js en vez de bootstrap.di.js
+// 3. Los use cases se resuelven via @inject() — el di.ts del feature registra las implementaciones
 
 import { injectable, inject } from "tsyringe";
 import type { Request, Response, NextFunction } from "express";

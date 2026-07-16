@@ -1,11 +1,15 @@
 ```typescript
 // src/features/<domain>/di.ts
-// DI container wiring para el feature <Domain>.
+// ── FUENTE ÚNICA de registro DI para el feature <Domain> ──
 //
-// NOTA: Si el repositorio exporta un modelo Mongoose (model()) en lugar de una clase,
-// usar container.register() con useValue en vez de registerSingleton.
+// Este archivo es la ÚNICA lugar donde se registran las dependencias de este feature.
+// app.ts importa este archivo para que el contenedor conozca las implementaciones.
+// NUNCA registrar las mismas dependencias en app.ts directamente.
 //
-// Para entidades compartidas desde platform/domain/, usar path alias @/domain/ en vez de relativo.
+// Reglas:
+// - Si el repositorio exporta un modelo Mongoose (model()), usar container.register() con useValue.
+// - Para entidades compartidas desde platform/domain/, usar path alias @/domain/.
+// - No registrar dependencias de otros features aquí.
 
 import { container } from "tsyringe";
 import type { I<Domain>Repository } from "./domain/repositories/I<Domain>.repository.js";

@@ -91,16 +91,16 @@ Dependency rules (violations = CRITICAL/ERROR):
 |------|-------------|-----------|
 | **R10** | No bare specifiers — imports locales deben usar `./`, `../` o `@/` como prefijo. Prohibido: `import X from "domain/..."` | ERROR |
 | **R11** | Extensión `.js` obligatoria en imports — nunca `.ts` (ESM + verbatimModuleSyntax) | ERROR |
-| **R12** | No `bootstrap.di.js` — controllers importan desde `./di.js` o `@/setting/dependencies/` | CRITICAL |
+| **R12** | No importar desde archivos DI inexistentes (ej: `bootstrap.di.js`) — controllers importan desde `./di.js` (feature di.ts) | CRITICAL |
 | **R12b** | `registerSingleton` prohibido con `model()` de Mongoose — usar `register({ useValue })` | CRITICAL |
 
 ## Post-Cast Checklist (obligatorio)
 
 Cada vez que se ejecuta `cast`, verificar:
 1. **Entity Discovery**: si la entidad ya existe en `platform/domain/entities/`, usar `@/domain/` en vez de crear entidad local
-2. **DI Wiring**: crear `di.ts` siguiendo `templates/feature/di.ts.md`
+2. **DI Wiring**: crear `di.ts` (fuente única de registro) y importarlo en `app.ts`
 3. **Tests**: crear `__tests__/Create<Name>.test.ts` siguiendo `templates/feature/test.ts.md`
-4. **Import Validation**: R10 (no bare specifiers), R11 (extensión .js), R12 (no bootstrap.di.js)
+4. **Import Validation**: R10 (no bare specifiers), R11 (extensión .js), R12 (no imports a archivos DI inexistentes)
 5. **Controller/Routes**: nombres de método consistentes (createHandler vs add)
 6. **quench**: `forge quench` para 0 violaciones
 

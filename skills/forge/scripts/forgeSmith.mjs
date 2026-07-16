@@ -119,7 +119,7 @@ function checkProposedContentViolations(filePath, content) {
         severity: "CRITICAL",
         label: `[R12] Import a bootstrap.di.js — no existe en esta arquitectura`,
         detail: `${filePath}:${lineNum} → "${src}"`,
-        fix: 'Usar "./di.js" o "@/setting/dependencies/<feature>.di.js"',
+        fix: 'Usar "./di.js" (feature di.ts — fuente única de registro)',
       });
     }
   }

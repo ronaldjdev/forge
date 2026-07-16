@@ -1,6 +1,6 @@
 <img src="favicon.svg" alt="Forge Logo" width="100" height="100">
 
-> **v1.4.2** — Instalación por agente con templates aislados
+> **v1.4.3** — DI: feature/di.ts como fuente única de registro
 
 ## Forge — Backend Architecture Operating System
 
@@ -85,7 +85,7 @@ Evalúa 10 categorías contra un máximo de 180 puntos (normalizado a 0-100):
 | Graph | 20 | Salud del grafo arquitectónico, risk score |
 | Custom Rules | 5 | Reglas personalizadas desde `.forge/rules.json` |
 | Naming | 10 | Convenciones de nomenclatura PascalCase/kebab |
-| Import Conventions | 20 | R10-R12: bare specifiers, extensión .ts, bootstrap.di.js |
+| Import Conventions | 20 | R10-R12: bare specifiers, extensión .ts, imports prohibidos |
 
 **Resultado**: Score 0-100 con grado A-F y severidades por cada violación.
 
@@ -122,7 +122,7 @@ Ejecuta 9 reglas arquitectónicas (R1-R9) con severidad:
 | R9 | Ciclos de dependencia | ERROR |
 | R10 | Bare specifiers en imports locales | ERROR |
 | R11 | Extensión `.ts` en imports (debe ser `.js`) | ERROR |
-| R12 | Import a `bootstrap.di.js` (no existe) | CRITICAL |
+| R12 | Import a archivo DI inexistente (ej: `bootstrap.di.js`) | CRITICAL |
 | R12b | `registerSingleton` con model() de Mongoose | CRITICAL |
 
 ### `temper` — Endurecimiento de DI

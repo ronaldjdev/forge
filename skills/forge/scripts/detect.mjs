@@ -1128,7 +1128,7 @@ export function checkImportConventions(features) {
           label: `[R12] Import desde bootstrap.di.js — no existe en arquitectura actual`,
           pass: false,
           detail: `${relative(ROOT, f)}:${imp.line} → "${src}"`,
-          fix: `Reemplazar por "./di.js" (feature con DI propia) o "@/setting/dependencies/<feature>.di.js" (feature sin DI propia)`,
+          fix: `Reemplazar por "./di.js" (feature di.ts — fuente única de registro)`,
         });
         score -= 3;
       }

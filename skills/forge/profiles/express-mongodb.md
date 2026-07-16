@@ -91,20 +91,25 @@ import { createApp } from "./app.js";
 ```typescript
 import { container } from "tsyringe";
 
-// Interfaces se registran como singletons
-container.registerSingleton<ICreditRepository>(
-  ICreditRepository as symbol,
-  CreditRepository
-);
+// Importar los di.ts de cada feature — cada uno registra sus propias dependencias.
+// NUNCA registrar las mismas dependencias aquí directamente.
+import "@/features/credit/di.js";
+// import "@/features/users/di.js";  // más features...
+
+// Solo registrar dependencias transversales (platform/shared) aquí:
+// container.registerSingleton<ILogger>("ILogger", WinstonLogger);
 ```
 
 ## DI Rules
 
 - `@injectable()` en toda clase con dependencias (use cases, controllers, repositories)
 - `@inject(Token)` con tokens de clase, nunca strings
-- `container.resolve()` solo en bootstrap (app.ts, routes)
+- Cada feature registra sus dependencias en `feature/di.ts` (fuente única)
+- `app.ts` importa los `di.ts` de cada feature — no registra features directamente
+- `container.resolve()` solo en routes (para resolver controllers)
 - Prohibido `container.resolve()` en use cases, entities o adapters
 - Prohibido `new UseCase(dep1, dep2)` en features migrados a DI
+- Prohibido registrar la misma dependencia en `app.ts` y `feature/di.ts`
 
 ## Routes & Controllers
 

@@ -200,7 +200,7 @@ import { Task } from "../../../../domain/entities/Task.js";
 - Verificar existencia ANTES de generar el import
 
 ### 5. Controllers y DI
-- Controllers importan desde `./di.js` (feature con DI propia) o `@/setting/dependencies/<name>.di.js` (feature sin DI propia)
+- Controllers importan desde `./di.js` (feature di.ts)
 - Prohibido importar desde `bootstrap.di.js` — ese archivo no existe en la arquitectura actual
 
 ### 6. Tests

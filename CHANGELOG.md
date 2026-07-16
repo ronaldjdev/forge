@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## v1.4.3 — DI: feature/di.ts como fuente única de registro (2026-07-16)
+
+### Fixed
+- **Redundancia DI eliminada**: `feature/di.ts` es ahora la fuente única de registro por feature. Se eliminó el registro duplicado en `app.ts` de los profiles tsyringe (`express-mongodb`, `express-prisma`).
+- **`templates/feature/di.ts.md`**: Añadido comentario que establece este archivo como fuente única de registro.
+- **`profiles/express-mongodb.md`**: `app.ts` ahora importa `di.ts` de cada feature en vez de registrar dependencias directamente.
+- **`profiles/express-prisma.md`**: Referencia actualizada al nuevo patrón.
+- **`reference/di-strategies.md`**: Documentado el patrón feature/di.ts como Composition Root delegado.
+- **`reference/cast.md`**: Post-cast checklist simplificado — toda feature tiene su `di.ts`.
+- **`templates/feature/controller.ts.md`**: Eliminada referencia a `@/setting/dependencies/`.
+- **`reference/patterns.md`**: Eliminada referencia a `@/setting/dependencies/`.
+- **`scripts/detect.mjs`**: Fix message actualizado para recomendar `./di.js`.
+- **`scripts/forgeSmith.mjs`**: Fix message actualizado para recomendar `./di.js`.
+- **`AGENTS.md`**: R12 actualizado — genérico para cualquier archivo DI inexistente, no solo `bootstrap.di.js`.
+- **`README.md`**: R12 descrito genéricamente.
+
+---
+
 ## v1.4.2 — Instalación por agente con templates aislados (2026-07-03)
 
 ### Added
