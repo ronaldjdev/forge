@@ -139,3 +139,44 @@ forge install --opencode         # Solo OpenCode
 - SKILL.md per agent is rendered from `templates/agents/SKILL.md.template` with `{{AGENT_PATH}}` replaced
 - All scripts are self-contained `.mjs` modules with `if (process.argv[1]...)` CLI guards
 - Imports between scripts are via ESM named exports
+
+## Versionado (SemVer) — obligatorio
+
+Antes de cualquier bump, clasificar los cambios con estas reglas:
+
+### MAJOR (`X.0.0`) — Breaking changes
+
+- Eliminar o renombrar comandos (`cast`, `inspect`, `quench`, etc.)
+- Cambios incompatibles en boot sequence, CLI flags o estructura de `SKILL.md`
+- Eliminar reglas arquitectónicas (R1-R14) o subir su severidad de forma que rompa CI/pipelines existentes
+- Cambios en templates u hooks que requieran **reinstalación o migración manual** de proyectos ya scaffolded
+- Cambios en la API exportada de scripts consumida externamente
+
+### MINOR (`x.Y.0`) — Funcionalidad nueva retrocompatible
+
+- Nuevo comando o subcomando
+- Nueva regla arquitectónica (R15+) o nueva severidad informativa
+- Cambios en la **estructura de scaffolding** (templates) — ej: subdirectorios `controllers/`, `routes/`, `repositories/`, `schemas/`
+- Nuevo perfil tecnológico en `profiles/`
+- Nuevo agente soportado o nuevo hook
+- Nueva categoría en `inspect` o cambios en el scoring
+- Nuevos flags retrocompatibles
+
+### PATCH (`x.y.Z`) — Correcciones sin cambio funcional
+
+- Fix en detección de una regla existente (falsos positivos/negativos)
+- Corrección de paths/imports en templates **sin cambiar la estructura**
+- Fixes de rendering, colores, output del CLI o wizard
+- Actualización de docs (`reference/`, `profiles/`, README) sin cambio de comportamiento
+- Sincronización de severidades/mensajes entre scripts
+- Mejoras de performance internas
+
+### Release checklist (obligatorio)
+
+1. Determinar el bump con la tabla anterior (ante la duda entre dos, usar el mayor)
+2. Actualizar `"version"` en `package.json`
+3. Actualizar el tagline del README: `> **vX.Y.Z** — <resumen del cambio>`
+4. Commit con formato: `type(vX.Y.Z): <descripción>` — type ∈ `feat` (minor), `fix` (patch), `feat!`/`BREAKING CHANGE` (major)
+5. `git push origin main`
+6. `npm publish`
+7. Verificar con `npm view @ronaldjdevfs/forge version`

@@ -488,6 +488,16 @@ npm install     # instala dependencias de desarrollo
 
 La skill se referencia desde `.opencode/skills/forge/` como symlink a `skills/forge/`, por lo que cualquier cambio se refleja inmediatamente.
 
+### Versionado (SemVer)
+
+| Bump | Cuándo | Ejemplo |
+|------|--------|---------|
+| **MAJOR** `X.0.0` | Breaking changes: comandos eliminados/renombrados, reglas eliminadas, cambios que requieren reinstalación o migración manual | `2.0.0` |
+| **MINOR** `x.Y.0` | Funcionalidad nueva retrocompatible: nuevos comandos, nuevas reglas, cambios en estructura de scaffolding, nuevos perfiles/agentes/hooks | `1.5.0` |
+| **PATCH** `x.y.Z` | Fixes sin cambio funcional: detección de reglas, paths en templates, rendering, docs | `1.4.4` |
+
+Ante la duda entre dos niveles, usar el mayor. Ver `AGENTS.md` para la checklist completa de release.
+
 
 ---
 
