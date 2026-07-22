@@ -40,7 +40,7 @@ export function defineRule({ id, name, severity, category, description, check, f
 }
 
 /**
- * R1-R9 built-in rules.
+ * R1-R9 + R13 + R14 built-in rules.
  * check(graph, ctx) → Array<{ rule, severity, from, to, file, line?, description }>
  */
 export const RULES = [
@@ -268,6 +268,29 @@ export const RULES = [
             rule: "R13", severity: SEVERITY.CRITICAL,
             from: `platform:${comp}`, to: "(domain)",
             description: `Platform contiene artefacto de dominio: "${comp}"`,
+          });
+        }
+      }
+      return violations;
+    },
+  }),
+
+  defineRule({
+    id: "R14",
+    name: "Shared no importa domain de features",
+    severity: SEVERITY.CRITICAL,
+    category: CATEGORY.DEPENDENCY,
+    description: "Shared no debe depender de entidades o lógica de dominio de features específicos. Shared es código puro reutilizable sin acoplamiento a features.",
+    fix: "Mover la lógica compartida a shared/ como interfaz o tipo puro, o crear un contrato en shared/contracts/ que los features implementen.",
+    example: "✘ shared/contracts/ICampaign.repository.ts importa Campaign de features/campaign/domain/",
+    check: (graph) => {
+      const violations = [];
+      for (const edge of graph.edges || []) {
+        if (edge.fromLayer === "shared" && edge.toLayer === "domain") {
+          violations.push({
+            rule: "R14", severity: SEVERITY.CRITICAL,
+            from: edge.from, to: edge.to, file: edge.file,
+            description: `Shared "${edge.from}" importa domain "${edge.to}"`,
           });
         }
       }

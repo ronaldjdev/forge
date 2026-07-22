@@ -145,13 +145,14 @@ Usar el perfil detectado para determinar:
 
 ## ⚠️ Post-Cast: Entity Discovery
 
-Antes de crear `<Name>.entity.ts`, verificar si la entidad ya existe como entidad compartida:
+Antes de crear `<Name>.entity.ts`, verificar si la entidad ya existe:
 
-1. **Buscar en `src/platform/domain/entities/<Name>.ts`** — si existe, NO crear entidad local
-2. **Si es compartida**: usar `@/domain/entities/<Name>.js` en vez de path relativo en todos los templates
-3. **Verificar también** `src/shared/contracts/` por interfaces/DTOs existentes
+1. **Buscar en `src/shared/contracts/`** por interfaces/DTOs existentes de la entidad
+2. **Buscar en features hermanos** — si otro feature ya tiene una entidad similar, usar path relativo o crear un contrato compartido en shared
+3. **Si es compartida**: crear la interfaz en `src/shared/contracts/I<Name>.ts` y que cada feature la implemente
+4. **Si es nueva**: crear dentro del feature en `domain/entities/<Name>.entity.ts`
 
-Regla: si la entidad vive fuera del feature, todos los imports deben usar path alias `@/domain/`, no `../../`.
+NUNCA buscar entidades en `src/platform/domain/entities/` — esto viola R13 (platform no contiene lógica de dominio).
 
 ## ⚠️ Post-Cast: DI Wiring
 
@@ -161,6 +162,8 @@ Después de crear los archivos del feature, generar `di.ts` siguiendo el templat
 2. **app.ts**: importar el `di.ts` del feature (ej: `import "@/features/<name>/di.js";`). No registrar las mismas dependencias en app.ts.
 3. **Controllers**: asegurar que el import en el controller apunte a `./di.js` (del feature), NUNCA a `bootstrap.di.js`
 4. **Mongoose model()**: si el schema exporta `export default model()` (objeto, no clase), el DI debe usar `container.register(..., { useValue: ... })`, NO `registerSingleton`
+
+> **⚠️ Cada feature DEBE registrar sus propias dependencias en `src/features/<name>/adapters/<name>.di.ts`.** El Container centralizado en `platform/di/Container.ts` NO debe importar use cases de features (viola R2). El DI distribuido es la arquitectura correcta.
 
 ## ⚠️ Post-Cast: Tests
 
@@ -180,7 +183,7 @@ Antes de dar por terminado el feature, verificar CADA archivo generado:
 
 - [ ] Todos los imports locales usan prefijo `./` o `../` — sin bare specifiers (`import X from "domain/..."` ❌)
 - [ ] Todos los imports tienen extensión `.js` — sin extensión `.ts`
-- [ ] Entidades compartidas usan `@/domain/` — sin paths relativos rotos
+- [ ] Entidades compartidas usan `@/shared/contracts/` — sin paths relativos rotos
 - [ ] Controllers importan desde `./di.js` — no desde `bootstrap.di.js`
 - [ ] Nombres de método del controller coinciden con los de la ruta (ej: `createHandler` en controller → `controller.createHandler` en routes)
 - [ ] DI usa `register({ useValue })` para modelos Mongoose — no `registerSingleton`

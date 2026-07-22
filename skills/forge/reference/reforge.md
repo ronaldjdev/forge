@@ -61,8 +61,8 @@ $ forge reforge src/features/users/domain/userEntity.ts
 5. Si hay naming violations, preguntar al usuario: "¿Corregir naming conventions automáticamente?"
    - Si acepta, ejecutar `node {{AGENT_PATH}}/scripts/rename.mjs --all`
 6. Decidir las acciones correctivas en orden:
-   - Violaciones CRITICAL primero (R1, R2, R5, R6)
-   - Violaciones ERROR después (R3, R4, R8, R9)
+   - Violaciones CRITICAL primero (R1, R2, R3, R4, R5, R13, R14)
+   - Violaciones ERROR después (R6, R7, R8, R9)
    - Ownership problemático
    - Naming violations (si no se corrigieron en paso 5)
    - Warnings

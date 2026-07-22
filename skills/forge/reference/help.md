@@ -7,10 +7,10 @@
 
   forge               Inicializar proyecto (boot sequence completa)
   cast                Crear nuevo feature con estructura hexagonal
-  inspect             Auditoría arquitectónica (110pts → 0-100)
+  inspect             Auditoría arquitectónica (190pts → 0-100%)
   relocate            Migrar código legacy a features/platform/shared/infra
   reforge             Refactorizar arquitectura multi-capa
-  quench              Validar reglas R1-R9 (--fix auto-corrige)
+  quench              Validar reglas R1-R14 (--fix auto-corrige)
   temper              Endurecer inyección de dependencias
   chain               Grafo de dependencias multi-capa
   graph               Grafo arquitectónico con risk score
@@ -28,13 +28,19 @@
 ## Flags
 
   --fix               Auto-corregir violaciones (quench)
+  --auto              Iterar fix → re-detect → fix hasta estabilizar (quench)
   --show-ignores      Mostrar inline ignores (quench)
+  --dry-run           Preview de naming violations sin cambios (reforge)
+  --fix-naming        Corregir naming violations sin preguntar (reforge)
+  --skip-naming       Omitir detección de naming (reforge)
   --persona=<id>      Filtrar ensayo por persona (assay)
   --save              Persistir ensayo en .forge/assay/ (assay)
-  --json              Salida JSON (assay, forge state)
+  --json              Salida JSON (assay, inspect, forge state)
 
 ## Inline Ignores
 
   // forge-ignore-next-line
   // forge-ignore: R1
-  // forge-ignore: R1, R8
+  // forge-ignore: R2, R5
+  // forge-ignore: R13
+  // IDs disponibles: R1-R14

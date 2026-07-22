@@ -42,8 +42,10 @@ Permitido:
 
 Prohibido:
 - `feature → infra`
+- `feature → feature`
 - `platform → feature`
 - `shared → feature`
+- `shared → domain`
 - `shared → infra`
 - `domain → infra`
 - `domain → platform`
@@ -79,8 +81,8 @@ boot=$(node {{AGENT_PATH}}/scripts/forge-boot.mjs --depth <depth> --json 2>/dev/
 ```
 
 La profundidad (`--depth`) depende del comando (ver Execution Flow):
-- **minimal** → context + profile (cast, temper, smelt, relocate, reforge, inscribe)
-- **standard** → minimal + graph + chain (chain, graph, forge hook)
+- **minimal** → context + profile (cast, temper, smelt, relocate, inscribe)
+- **standard** → minimal + graph + chain (chain, graph, forge hook, reforge)
 - **full** → standard + ownership + inspect (inspect, quench, default)
 
 Si `$boot` contiene datos cacheados en `.forge/cache/` se reusan automáticamente. Pasa `--force` para regenerar.
@@ -127,8 +129,8 @@ Si `$boot` contiene datos cacheados en `.forge/cache/` se reusan automáticament
 Para cada comando, Forge sigue este flujo:
 
 1. **Boot condicional**: Ejecutar `{{AGENT_PATH}}/scripts/forge-boot.mjs --depth <depth>` donde depth es:
-   - `minimal` para cast, temper, smelt, relocate, reforge, inscribe
-   - `standard` para chain, graph, forge hook
+   - `minimal` para cast, temper, smelt, relocate, inscribe
+   - `standard` para chain, graph, forge hook, reforge
    - `full` para inspect, quench, o cualquier otro comando
 2. **Referencia**: Cargar `reference/<command>.md`
 3. **Ejecutar**: Aplicar el flujo definido en la referencia
@@ -163,7 +165,7 @@ Platform solo acepta: config, database, http, server, logger, cache, security, e
 
 ### Inline Ignores
 
-Forge soporta comentarios inline para excepcionar violaciones línea por línea:
+Forge soporta comentarios inline para excepcionar violaciones línea por línea. Los IDs disponibles son R1-R14 (reglas de `scripts/registry/rules.mjs` + `scripts/detect.mjs`):
 
 ```ts
 // forge-ignore-next-line
@@ -172,8 +174,11 @@ import { something } from "../infra/prisma";  // ← esta línea no se reporta
 // forge-ignore: R1
 import { PrismaClient } from "../../infra/prisma/client"; // ← solo R1 ignorada
 
-// forge-ignore: R1, R8
-import { crossFeature } from "../other-feature/domain/Entity"; // ← R1 y R8 ignoradas
+// forge-ignore: R2, R5
+import { platformDep } from "../../platform/config"; // ← R2 y R5 ignoradas
+
+// forge-ignore: R13
+// Platform contiene lógica de dominio — se reporta pero se ignora esta línea
 ```
 
 ---
@@ -204,7 +209,7 @@ node --test {{AGENT_PATH}}/tests/core.test.mjs
 | `{{AGENT_PATH}}/scripts/forge-config.mjs` | 2 | Load/save state |
 | `{{AGENT_PATH}}/scripts/chain.mjs` | 1 | Grafo de dependencias vacío |
 | `{{AGENT_PATH}}/scripts/formatter.mjs` | 4 | Output format, colores, JSON |
-| `{{AGENT_PATH}}/scripts/registry/rules.mjs` | 4 | R1-R9, evaluación, custom rules |
+| `{{AGENT_PATH}}/scripts/registry/rules.mjs` | 4 | R1-R9 + R13 + R14, evaluación, custom rules |
 | `{{AGENT_PATH}}/scripts/detect.mjs` (inline ignores) | 5 | parseInlineIgnores, isIgnored |
 | `{{AGENT_PATH}}/scripts/posttool.mjs` | 1 | PostToolUse hook |
 | `{{AGENT_PATH}}/scripts/assay.mjs` | 4 | Personas, generateAssay, opiniones |
@@ -222,3 +227,6 @@ node --test {{AGENT_PATH}}/tests/core.test.mjs
 | `--persona=<id>` | `assay` | Filtra ensayo por una persona (bezos, fowler, hacker, pm, senior) |
 | `--save` | `assay` | Persiste ensayo en `.forge/assay/` |
 | `--json` | `assay` | Salida JSON |
+| `--dry-run` | `reforge` | Muestra cambios sin ejecutarlos |
+| `--fix-naming` | `reforge` | Corrige naming violations automáticamente |
+| `--skip-naming` | `reforge` | Omite detección de naming conventions |

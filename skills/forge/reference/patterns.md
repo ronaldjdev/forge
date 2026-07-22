@@ -184,20 +184,24 @@ Usar path alias `@/` para cruzar capas, no paths relativos largos:
 | Platform → cualquiera | `@/platform/` | `@/platform/config/App.config.js` |
 | Shared → cualquiera | `@/shared/` | `@/shared/errors/NotFoundError.js` |
 | Infra → cualquiera | `@/infra/` | `@/infra/mongodb/Mongo.config.js` |
-| **Entities compartidas** | **`@/domain/`** | **`@/domain/entities/Task.js`** |
+
+> **⚠️ NO existe alias `@/domain/`** — no hay `src/domain/` compartido. Las entidades viven dentro de cada feature o en `src/shared/`.
 
 ```ts
-// ✅ Correcto — path alias para entidad compartida
-import { Task } from "@/domain/entities/Task.js";
+// ✅ Correcto — path alias para shared
+import { Task } from "@/shared/contracts/ITask.js";
 
-// ❌ Incorrecto — path relativo largo que no resuelve
-import { Task } from "../../../../domain/entities/Task.js";
+// ✅ Correcto — path relativo dentro del feature
+import { Task } from "../../domain/entities/Task.js";
+
+// ❌ Incorrecto — alias @/domain/ no existe
+import { Task } from "@/domain/entities/Task.js";
 ```
 
 ### 4. Entity Discovery — compartida vs local
 - Si la entidad vive en `src/features/<feature>/domain/entities/` → import relativo (`../../domain/entities/`)
-- Si la entidad vive en `src/platform/domain/entities/` → path alias (`@/domain/entities/`)
-- Verificar existencia ANTES de generar el import
+- Si es compartida entre features → crear interfaz en `src/shared/contracts/I<Name>.ts` y usar alias `@/shared/contracts/`
+- NUNCA buscar en `src/platform/domain/entities/` (viola R13 — platform no contiene lógica de dominio)
 
 ### 5. Controllers y DI
 - Controllers importan desde `./di.js` (feature di.ts)
@@ -215,5 +219,5 @@ import { Task } from "../../../../domain/entities/Task.js";
 - Usar `export * from "./<Name>.<artifact>.js"` en barrels
 - Preferir `export function` / `export class` sobre `export default`
 - Imports relativos dentro del mismo feature (`../../domain/`)
-- Path alias para cross-layer: `@/platform/`, `@/shared/`, `@/infra/`, `@/domain/`
+- Path alias para cross-layer: `@/platform/`, `@/shared/`, `@/infra/`
 - Extension `.js` en imports (ESM compat): `import { X } from "./foo.js"`

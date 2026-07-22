@@ -746,6 +746,11 @@ export function checkGraph(graph) {
         : v.rule === "R3" ? "Shared no debe importar de features. Shared debe ser puro, sin dependencias de negocio."
         : v.rule === "R4" ? "Shared no debe importar infraestructura. Shared debe ser puro, sin dependencias técnicas."
         : v.rule === "R5" ? "Domain no puede importar infraestructura. El dominio debe estar aislado de la infra."
+        : v.rule === "R6" ? "Domain no debe importar platform. Inyectar dependencias de platform como interfaces."
+        : v.rule === "R7" ? "Infra no debe importar features. Si infra necesita datos del feature, crear un adapter."
+        : v.rule === "R8" ? "Features no deben importarse directamente. Extraer interfaz compartida a shared/contracts/."
+        : v.rule === "R9" ? "Ciclo de dependencias detectado. Extraer interfaz compartida a shared/ y romper el ciclo."
+        : v.rule === "R14" ? "Shared no debe importar domain de features. Crear contratos compartidos en shared/contracts/."
         : "Revisar la dirección de la dependencia",
     });
     score += penalty;
@@ -930,14 +935,14 @@ export function checkDependencies(ctx) {
     checks.push({ ...severity("Sin violaciones CRITICAL en dependencias", SEVERITY.INFO), pass: true });
     score += 4;
   } else {
-    checks.push({ ...severity(`${graph.stats.criticalViolations} violación(es) CRITICAL`, SEVERITY.CRITICAL), pass: false, fix: "Corregir violaciones de reglas R1, R2, R5, R6" });
+    checks.push({ ...severity(`${graph.stats.criticalViolations} violación(es) CRITICAL`, SEVERITY.CRITICAL), pass: false, fix: "Corregir violaciones de reglas R1-R5, R13, R14" });
   }
 
   if (graph.stats.errorViolations === 0) {
     checks.push({ ...severity("Sin violaciones ERROR en dependencias", SEVERITY.INFO), pass: true });
     score += 4;
   } else {
-    checks.push({ ...severity(`${graph.stats.errorViolations} violación(es) ERROR`, SEVERITY.ERROR), pass: false, fix: "Corregir violaciones de reglas R3, R4, R8, R9" });
+    checks.push({ ...severity(`${graph.stats.errorViolations} violación(es) ERROR`, SEVERITY.ERROR), pass: false, fix: "Corregir violaciones de reglas R6-R9" });
   }
 
   if (graph.stats.riskScore === 0) {

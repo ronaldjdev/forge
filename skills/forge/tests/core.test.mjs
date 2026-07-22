@@ -233,12 +233,13 @@ describe("formatter.mjs", () => {
 });
 
 describe("registry/rules.mjs", () => {
-  it("has 10 built-in rules (R1-R9 + R13)", async () => {
+  it("has 11 built-in rules (R1-R9 + R13 + R14)", async () => {
     const { RULES, RULES_BY_ID } = await import("../scripts/registry/rules.mjs");
-    assert.equal(RULES.length, 10);
+    assert.equal(RULES.length, 11);
     assert.ok(RULES_BY_ID.R1);
     assert.ok(RULES_BY_ID.R9);
     assert.ok(RULES_BY_ID.R13);
+    assert.ok(RULES_BY_ID.R14);
     for (const r of RULES) {
       assert.ok(r.id);
       assert.ok(r.name);

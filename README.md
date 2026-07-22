@@ -1,6 +1,6 @@
 <img src="favicon.svg" alt="Forge Logo" width="100" height="100">
 
-> **v1.4.3** — DI: feature/di.ts como fuente única de registro
+> **v1.4.4** — Sincronización de reglas: R1-R14, severidades y rutas DI
 
 ## Forge — Backend Architecture Operating System
 
@@ -18,7 +18,7 @@ Los proyectos backend degeneran en código acoplado porque la infraestructura t�
 - Mantiene el dominio aislado de infraestructura
 - Previene acoplamiento directo entre features
 - Detecta automáticamente ownership, huérfanos, duplicados y componentes mal ubicados
-- Produce un **architecture graph** como fuente de verdad con 9 reglas (R1-R9)
+- Produce un **architecture graph** como fuente de verdad con 11 reglas (R1-R9 + R13 + R14)
 - Genera y mantiene `ARCHITECTURE.md` vivo
 
 ---
@@ -29,10 +29,10 @@ Los proyectos backend degeneran en código acoplado porque la infraestructura t�
 |-----------|---------|-------------|
 | **Proyecto nuevo** | `forge` | Inicializa platform/features/shared/infra, detecta stack, crea `ARCHITECTURE.md` |
 | **Crear un nuevo dominio** | `cast` | Genera un feature completo desde cero (verifica platform/shared/infra primero) |
-| **Auditar arquitectura** | `inspect` | Evaluación completa 180pts → 0-100 con ownership, platform, grafo e import conventions |
+| **Auditar arquitectura** | `inspect` | Evaluación completa 190pts → 0-100 con ownership, platform, grafo e import conventions |
 | **Migrar código legacy** | `relocate` | Traslada código a platform/, shared/, infra/ o features/ |
 | **Refactorizar** | `reforge` | Reestructura features o componentes multi-capa |
-| **Validar reglas** | `quench` | Verifica 12 reglas arquitectónicas (R1-R12) |
+| **Validar reglas** | `quench` | Verifica 14 reglas arquitectónicas (R1-R14) |
 | **Endurecer DI** | `temper` | Aplica inyección por constructor, elimina service locators |
 | **Analizar dependencias** | `chain` | Grafo multi-capa (platform, features, shared, infra), orden topológico, ciclos |
 | **Documentar** | `inscribe` | Genera/actualiza `ARCHITECTURE.md` con métricas, ownership y violaciones |
@@ -72,7 +72,7 @@ src/features/<name>/
 
 ### `inspect` — Auditoría arquitectónica
 
-Evalúa 10 categorías contra un máximo de 180 puntos (normalizado a 0-100):
+Evalúa 11 categorías contra un máximo de 190 puntos (normalizado a 0-100):
 
 | Categoría | Puntos | Qué mide |
 |-----------|--------|----------|
@@ -107,23 +107,25 @@ Refactoriza la arquitectura considerando las 4 capas:
 
 ### `quench` — Validación
 
-Ejecuta 9 reglas arquitectónicas (R1-R9) con severidad:
+Ejecuta 14 reglas arquitectónicas (R1-R14) con severidad:
 
 | Regla | Descripción | Severidad |
 |-------|-------------|-----------|
 | R1 | `feature → infra` (prohibido) | CRITICAL |
 | R2 | `platform → feature` (prohibido) | CRITICAL |
-| R3 | `shared → feature` (prohibido) | ERROR |
-| R4 | `shared → infra` (prohibido) | ERROR |
+| R3 | `shared → feature` (prohibido) | CRITICAL |
+| R4 | `shared → infra` (prohibido) | CRITICAL |
 | R5 | `domain → infra` (prohibido) | CRITICAL |
-| R6 | `domain → platform` (prohibido) | CRITICAL |
-| R7 | `infra → feature` (prohibido) | WARNING |
+| R6 | `domain → platform` (prohibido) | ERROR |
+| R7 | `infra → feature` (prohibido) | ERROR |
 | R8 | Cross-feature direct imports | ERROR |
 | R9 | Ciclos de dependencia | ERROR |
 | R10 | Bare specifiers en imports locales | ERROR |
 | R11 | Extensión `.ts` en imports (debe ser `.js`) | ERROR |
-| R12 | Import a archivo DI inexistente (ej: `bootstrap.di.js`) | CRITICAL |
-| R12b | `registerSingleton` con model() de Mongoose | CRITICAL |
+| R12 | Import a archivo DI inexistente (ej: `bootstrap.di.js`) | ERROR |
+| R12b | `registerSingleton` con model() de Mongoose | WARNING |
+| R13 | Platform con lógica dominio | CRITICAL |
+| R14 | `shared → domain` (prohibido) | CRITICAL |
 
 ### `temper` — Endurecimiento de DI
 
@@ -296,7 +298,7 @@ src/
 
 **Permitido**: `feature → platform`, `feature → shared`, `platform → infra`, `adapter → infra`, `feature → domain`
 
-**Prohibido**: `feature → infra` (R1), `platform → feature` (R2), `shared → feature` (R3), `shared → infra` (R4), `domain → infra` (R5), `domain → platform` (R6), `infra → feature` (R7), cross-feature (R8), ciclos (R9)
+**Prohibido**: `feature → infra` (R1), `platform → feature` (R2), `shared → feature` (R3), `shared → infra` (R4), `domain → infra` (R5), `domain → platform` (R6), `infra → feature` (R7), cross-feature (R8), ciclos (R9), platform con lógica dominio (R13), `shared → domain` (R14)
 
 ### Convenciones de nomenclatura
 
@@ -317,9 +319,9 @@ Ver `reference/patterns.md` para el detalle completo.
 ## Características clave
 
 - **4 dominios arquitectónicos**: Platform (backbone), Features (negocio), Shared (código puro), Infra (implementaciones)
-- **Architecture graph como fuente de verdad**: 6 tipos de nodo (platform, feature, shared, infra, domain, adapter), 9 reglas (R1-R9), risk score y dependency health
+- **Architecture graph como fuente de verdad**: 6 tipos de nodo (platform, feature, shared, infra, domain, adapter), 11 reglas (R1-R9 + R13 + R14), risk score y dependency health
 - **Ownership automático**: Detección de huérfanos, duplicados, componentes mal ubicados y sugerencias de reubicación
-- **Scoring arquitectónico**: 180 puntos en 10 categorías, normalizado a 0-100 con grado A-F
+- **Scoring arquitectónico**: 190 puntos en 11 categorías, normalizado a 0-100 con grado A-F
 - **10 perfiles tecnológicos predefinidos**: Express + MongoDB, Express + PostgreSQL, Express + Prisma, Express + Drizzle, Fastify + MongoDB, Fastify + PostgreSQL, Fastify + Prisma, NestJS + MongoDB, NestJS + PostgreSQL, NestJS + Prisma
 - **Boot sequence obligatoria**: 9 pasos que garantizan contexto completo antes de cualquier acción
 - **Documentación automática**: `ARCHITECTURE.md` vivo que se actualiza tras cada operación
@@ -364,14 +366,14 @@ Donde vive toda la inteligencia arquitectónica:
 | `scripts/context.mjs` | Detecta stack, platform, features, shared, infra, grafo y estado del proyecto |
 | `scripts/armorer.mjs` | Ownership: huérfanos, duplicados, mal ubicados, sugerencias |
 | `scripts/profile.mjs` | Matchea stack contra perfiles conocidos o sintetiza uno genérico |
-| `scripts/graph.mjs` | Grafo completo: 6 tipos de nodo, 4 capas, 9 reglas (R1-R9), risk score, dependency health |
+| `scripts/graph.mjs` | Grafo completo: 6 tipos de nodo, 4 capas, 11 reglas (R1-R9 + R13 + R14), risk score, dependency health |
 | `scripts/chain.mjs` | Grafo multi-capa (platform, features, shared, infra) con orden topológico |
-| `scripts/detect.mjs` | Validación de reglas R1-R12 con inline ignores, `--fix` e import conventions |
+| `scripts/detect.mjs` | Validación de reglas R1-R14 con inline ignores, `--fix` e import conventions |
 | `scripts/inspect.mjs` | Orquesta auditoría completa con reporte coloreado |
 | `scripts/architecture.mjs` | Genera/actualiza `ARCHITECTURE.md` vivo |
 | `scripts/bootstrap.mjs` | Inicializa platform/shared/infra según perfil (interno) |
 | `scripts/formatter.mjs` | Output unificado: colores, JSON, scoreBar, formatCheck |
-| `scripts/registry/rules.mjs` | Registry de reglas R1-R9 + custom rules desacoplado |
+| `scripts/registry/rules.mjs` | Registry de reglas R1-R9 + R13 + R14 + custom rules desacoplado |
 | `scripts/assay.mjs` | Ensayo multi-persona (Bezos, Fowler, Hacker, PM, Arquitecta) |
 | `scripts/forgeSentinel.mjs` | PostToolUse hook adapter para Claude/Codex/agents |
 | `scripts/forgeSentinel-lib.mjs` | Lógica compartida del hook PostToolUse |
@@ -462,7 +464,7 @@ Forge se despliega como **skill** en múltiples agentes de IA simultáneamente, 
 | **Codex CLI** | forgeSentinel | PostToolUse tras Edit/Write/apply_patch | Reporta violaciones como reminder |
 | **Gemini** | SKILL.md | Al cargar el agente | Instrucciones arquitectónicas |
 
-Todos los hooks comparten la misma lógica de detección de violaciones R1-R9 a través de `forgeSentinel-lib.mjs`.
+Todos los hooks comparten la misma lógica de detección de violaciones R1-R14 a través de `forgeSentinel-lib.mjs`.
 
 ---
 

@@ -47,6 +47,15 @@ Templa la arquitectura aplicando reglas de inyección de dependencias, seguridad
 - ❌ Importar tsyringe en archivos de dominio
 - ❌ Mezclar DI manual y contenedor en el mismo feature
 - ❌ Proxies automáticos o decoradores ocultos que dificulten el rastreo
+- ❌ Container centralizado que importe use cases de features (viola R2)
+
+## DI Distribuido
+
+Cada feature DEBE registrar sus propias dependencias en `src/features/<name>/di.ts`. El patrón correcto es DI distribuido, no centralizado:
+
+- ✅ `src/features/users/di.ts` — registra dependencias de users
+- ✅ `src/features/payments/di.ts` — registra dependencias de payments
+- ❌ `src/platform/di/Container.ts` — centraliza y registra features (viola R2)
 
 ## Ver también
 
