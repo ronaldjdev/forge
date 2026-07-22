@@ -208,7 +208,7 @@ Antes de implementar una feature completa, crear la estructura del feature y ver
 
 ```bash
 # Fase 1: scaffold
-mkdir -p src/features/payments/{domain,application/use-cases,adapters/in/http,adapters/out/persistence}
+mkdir -p src/features/payments/{domain,application/use-cases,adapters/in/http/controllers,adapters/in/http/routes,adapters/out/persistence/repositories,adapters/out/persistence/schemas}
 touch src/features/payments/domain/PaymentEntity.ts
 touch src/features/payments/domain/IPaymentRepository.ts
 

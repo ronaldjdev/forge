@@ -270,7 +270,7 @@ Cada API de mutación en el feature expone idempotency keys. Cada consumidor de 
 - [ ] **Estrategias de versionado**: URL path (/v1/), header (Accept: application/vnd.api+json;version=1), content negotiation, query param
 - [ ] **Compatibilidad**: backward compatible (additive changes), breaking changes (removal, rename, type change, required→optional) 
 - [ ] **Evolución de OpenAPI**: spec versionada, changelog automático, diff entre versiones
-- [ ] **Versionado en el modelo de Forge**: controllers versionados por feature (features/users/adapters/in/http/v1/, v2/), routes con prefijo
+- [ ] **Versionado en el modelo de Forge**: controllers versionados por feature (features/users/adapters/in/http/controllers/v1/, v2/), routes con prefijo
 - [ ] **Deprecación**: cabeceras Sunset, Deprecation, Retirement policy, migración de clientes
 - [ ] **Internal vs Public API**: versionado estricto para pública, semver para interna
 - [ ] **Integration testing multi-versión**: tests que corren contra v1 y v2 simultáneamente

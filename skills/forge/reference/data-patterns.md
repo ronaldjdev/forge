@@ -5,7 +5,7 @@
 ### Reglas
 
 - La interfaz del repositorio está en `domain/` del feature.
-- La implementación está en `adapters/out/persistence/`.
+- La implementación está en `adapters/out/persistence/repositories/`.
 - El use case recibe la interfaz por constructor y nunca sabe qué BD hay detrás.
 
 ```ts
@@ -19,7 +19,7 @@ export interface IUserRepository {
 ```
 
 ```ts
-// adapters/out/persistence/PostgresUser.repository.ts
+// adapters/out/persistence/repositories/PostgresUser.repository.ts
 export class PostgresUserRepository implements IUserRepository {
   constructor(private readonly db: PrismaClient) {}
   async findById(id: string) { … }

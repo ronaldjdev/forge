@@ -46,7 +46,7 @@ $ forge reforge src/features/users/domain/userEntity.ts
   ✓ Imports actualizados en 3 archivo(s):
        src/features/users/application/use-cases/CreateUser.uc.ts
        src/features/users/application/mappers/User.mapper.ts
-       src/features/users/adapters/in/http/User.controller.ts
+        src/features/users/adapters/in/http/controllers/User.controller.ts
 ```
 
 ## Caso B — `reforge` (completo con auto-fix naming)

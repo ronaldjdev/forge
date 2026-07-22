@@ -53,7 +53,7 @@ export class AppModule {}
 ## Persistence (Mongoose)
 
 ```typescript
-// adapters/out/persistence/Credit.schema.ts
+// adapters/out/persistence/schemas/Credit.schema.ts
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 
 @Schema({ timestamps: true })
@@ -66,7 +66,7 @@ export const CreditSchema = SchemaFactory.createForClass(CreditDocument);
 ```
 
 ```typescript
-// adapters/out/persistence/credit.module.ts
+// adapters/out/persistence/repositories/credit.module.ts
 @Module({
   imports: [MongooseModule.forFeature([{ name: "Credit", schema: CreditSchema }])],
   providers: [{ provide: ICreditRepository, useClass: CreditRepository }],

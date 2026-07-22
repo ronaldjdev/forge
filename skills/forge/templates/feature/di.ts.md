@@ -13,7 +13,7 @@
 
 import { container } from "tsyringe";
 import type { I<Domain>Repository } from "./domain/repositories/I<Domain>.repository.js";
-import { <Domain>Repository } from "./adapters/out/persistence/<Domain>.repository.js";
+import { <Domain>Repository } from "./adapters/out/persistence/repositories/<Domain>.repository.js";
 import { Create<Domain> } from "./application/use-cases/Create<Domain>.uc.js";
 import { Get<Domain> } from "./application/use-cases/Get<Domain>.uc.js";
 import { List<Domain> } from "./application/use-cases/List<Domain>.uc.js";
@@ -25,7 +25,7 @@ import { Delete<Domain> } from "./application/use-cases/Delete<Domain>.uc.js";
 container.registerSingleton<I<Domain>Repository>("I<Domain>Repository", <Domain>Repository);
 
 // Si <Domain>Repository es un modelo Mongoose (export default model()), usar:
-// import <Domain>Model from "./adapters/out/persistence/<Domain>.schema.js";
+// import <Domain>Model from "./adapters/out/persistence/schemas/<Domain>.schema.js";
 // container.register<I<Domain>Repository>("I<Domain>Repository", { useValue: <Domain>Model as any });
 
 // ── Use Cases ──

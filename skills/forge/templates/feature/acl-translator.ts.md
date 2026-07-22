@@ -1,5 +1,5 @@
 ```typescript
-// src/features/<domain>/adapters/out/legacy-<system>/<Domain>Translator.ts
+// src/features/<domain>/adapters/out/legacy-<system>/translators/<Domain>Translator.ts
 import type { <Domain>Entity } from "../../../domain/entities/<Domain>.entity.js";
 import type { External<Domain>DTO } from "./External<Domain>DTO.js";
 

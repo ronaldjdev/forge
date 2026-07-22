@@ -2,7 +2,7 @@
 
 ## Principios arquitectónicos
 
-- Las rutas/endpoints pertenecen a `adapters/in/http/`, nunca al dominio.
+- Las rutas/endpoints pertenecen a `adapters/in/http/routes/`, nunca al dominio.
 - El controller es la capa más delgada posible: parsea, delega, responde.
 - La validación de entrada ocurre en el controller o middleware, no en domain/.
 - El contrato API (OpenAPI/Swagger) se genera desde tipos compartidos.
@@ -42,7 +42,7 @@ export interface IPaginatedResponse<T> {
 ### Versionado
 
 - Preferir versionado por encabezado (`Accept: application/vnd.api+json;version=2`)
-- Si es por URL: `/api/v1/resources` (carpeta física `adapters/in/http/v1/`)
+- Si es por URL: `/api/v1/resources` (carpeta física `adapters/in/http/controllers/v1/`)
 - Deprecar con encabezado `Sunset: Sat, 01 Jan 2027 00:00:00 GMT`
 
 ## GraphQL

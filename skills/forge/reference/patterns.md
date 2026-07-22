@@ -43,10 +43,10 @@
 | `domain/` | `I<Name>.repository.ts` | `IUser.repository.ts` |
 | `application/use-cases/` | `<Action>.uc.ts` | `CreateUser.uc.ts`, `GetUser.uc.ts` |
 | `application/mappers/` | `<Name>.mapper.ts` | `User.mapper.ts` |
-| `adapters/in/http/` | `<Name>.controller.ts` | `User.controller.ts` |
-| `adapters/in/http/` | `<Name>.routes.ts` | `User.routes.ts` |
-| `adapters/out/persistence/` | `<Name>.repository.ts` | `User.repository.ts` |
-| `adapters/out/persistence/` | `<Name>.schema.ts` | `User.schema.ts` |
+| `adapters/in/http/controllers/` | `<Name>.controller.ts` | `User.controller.ts` |
+| `adapters/in/http/routes/` | `<Name>.routes.ts` | `User.routes.ts` |
+| `adapters/out/persistence/repositories/` | `<Name>.repository.ts` | `User.repository.ts` |
+| `adapters/out/persistence/schemas/` | `<Name>.schema.ts` | `User.schema.ts` |
 
 Estructura de directorios:
 
@@ -66,11 +66,15 @@ src/features/<feature-name>/
 │       └── <Domain>.mapper.ts
 └── adapters/
     ├── in/http/
-    │   ├── <Domain>.controller.ts
-    │   └── <Domain>.routes.ts
+    │   ├── controllers/
+    │   │   └── <Domain>.controller.ts
+    │   └── routes/
+    │       └── <Domain>.routes.ts
     └── out/persistence/
-        ├── <Domain>.repository.ts
-        └── <Domain>.schema.ts
+        ├── repositories/
+        │   └── <Domain>.repository.ts
+        └── schemas/
+            └── <Domain>.schema.ts
 ```
 
 ---

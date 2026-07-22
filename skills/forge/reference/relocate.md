@@ -28,6 +28,7 @@ También puede migrar componentes legacy a los layers Platform, Shared o Infrast
 6. **Eliminar estructura legacy por completo** — no dejar archivos huérfanos, barrel files (index.ts) vacíos, ni directorios legacy sin contenido. Verificar:
    - `src/application/use-cases/<name>/` queda vacío y se elimina
    - `src/adapters/in/http/controllers/` sin archivos del feature migrado
+   - `src/adapters/in/http/routes/` sin archivos del feature migrado
    - `src/domain/entities/`, `src/domain/repositories/` sin duplicados
    - `src/setting/dependencies/` sin `.di.ts` del feature migrado
    - Barrel files (`index.ts`) que solo exportaban código legacy se eliminan

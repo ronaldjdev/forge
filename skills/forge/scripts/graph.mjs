@@ -199,6 +199,19 @@ export function buildGraph(projectRoot = ROOT) {
     const adaptersPath = join(featuresDir, feat, "adapters");
     if (isDir(adaptersPath)) {
       addNode(`adapter:${feat}`, "adapter", `${feat}/adapters`, `src/features/${feat}/adapters/`);
+      const httpDir = join(adaptersPath, "in", "http");
+      if (isDir(httpDir)) {
+        if (isDir(join(httpDir, "controllers"))) addNode(`adapter:${feat}:controllers`, "adapter", `${feat}/adapters/in/http/controllers`, `src/features/${feat}/adapters/in/http/controllers/`);
+        if (isDir(join(httpDir, "routes"))) addNode(`adapter:${feat}:routes`, "adapter", `${feat}/adapters/in/http/routes`, `src/features/${feat}/adapters/in/http/routes/`);
+      }
+      const outDir = join(adaptersPath, "out");
+      if (isDir(outDir)) {
+        const pDir = join(outDir, "persistence");
+        if (isDir(pDir)) {
+          if (isDir(join(pDir, "repositories"))) addNode(`adapter:${feat}:repositories`, "adapter", `${feat}/adapters/out/persistence/repositories`, `src/features/${feat}/adapters/out/persistence/repositories/`);
+          if (isDir(join(pDir, "schemas"))) addNode(`adapter:${feat}:schemas`, "adapter", `${feat}/adapters/out/persistence/schemas`, `src/features/${feat}/adapters/out/persistence/schemas/`);
+        }
+      }
     }
   }
 

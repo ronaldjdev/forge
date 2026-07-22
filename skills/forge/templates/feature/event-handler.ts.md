@@ -1,5 +1,5 @@
 ```typescript
-// src/features/<domain>/adapters/out/events/<Domain>Created.handler.ts
+// src/features/<domain>/adapters/out/events/handlers/<Domain>Created.handler.ts
 import type { <Domain>CreatedEvent } from "../../domain/events/<Domain>Created.event.js";
 
 export class <Domain>CreatedHandler {

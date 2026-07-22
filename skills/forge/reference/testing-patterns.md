@@ -18,8 +18,8 @@
 | `domain/entity` | Unit | Reglas de negocio, invariantes, validaciones |
 | `application/use-cases` | Unit | Flujo completo con mocks de repositorios |
 | `application/mappers` | Unit | Mapeo dominio ↔ DTO |
-| `adapters/in/http` | Integration | HTTP requests, status codes, payloads |
-| `adapters/out/persistence` | Integration | Queries reales (test DB) |
+| `adapters/in/http/controllers` | Integration | HTTP requests, status codes, payloads |
+| `adapters/out/persistence/repositories` | Integration | Queries reales (test DB) |
 | `shared/errors` | Unit | Mensajes, códigos, instanceof |
 | `platform/` | Integration | Middleware, server, logger, cache |
 

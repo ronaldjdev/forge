@@ -19,9 +19,9 @@
 
 ```ts
 // src/app.ts — Composition Root
-import { PostgresUserRepository } from "./features/users/adapters/out/persistence/PostgresUser.repository.js";
+import { PostgresUserRepository } from "./features/users/adapters/out/persistence/repositories/PostgresUser.repository.js";
 import { CreateUserUseCase } from "./features/users/application/use-cases/CreateUser.uc.js";
-import { UserController } from "./features/users/adapters/in/http/User.controller.js";
+import { UserController } from "./features/users/adapters/in/http/controllers/User.controller.js";
 
 const userRepo = new PostgresUserRepository(db);
 const createUserUc = new CreateUserUseCase(userRepo);
@@ -47,7 +47,7 @@ import "@/features/credits/di.js";
 // src/features/users/di.ts — Registro del feature (fuente única)
 import { container } from "tsyringe";
 import { IUserRepository } from "./domain/IUser.repository.js";
-import { PostgresUserRepository } from "./adapters/out/persistence/PostgresUser.repository.js";
+import { PostgresUserRepository } from "./adapters/out/persistence/repositories/PostgresUser.repository.js";
 
 container.registerSingleton<IUserRepository>("IUserRepository", PostgresUserRepository);
 ```

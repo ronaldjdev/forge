@@ -1,5 +1,5 @@
 ```typescript
-// src/features/<domain>/adapters/in/http/<Domain>.controller.ts
+// src/features/<domain>/adapters/in/http/controllers/<Domain>.controller.ts
 //
 // IMPORTANTE — Convenciones:
 // 1. Nombres de métodos: usar createHandler (no "add", "store", etc.)

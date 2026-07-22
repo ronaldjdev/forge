@@ -77,7 +77,7 @@ Preguntar: "¿Esta estructura cubre el dominio? ¿Falta algo, sobra algo?"
 
 Antes de escribir código, confirmar las decisiones de integración:
 
-- **Repository**: "Inyecto `I<Name>Repository` vía interfaz. Implementación concreta en `adapters/out/persistence/`. ¿OK?"
+- **Repository**: "Inyecto `I<Name>Repository` vía interfaz. Implementación concreta en `adapters/out/persistence/repositories/`. ¿OK?"
 - **Controller**: "El controller parsea, llama al use case, responde. Sin lógica de negocio. ¿OK?"
 - **DI**: Según perfil: "Uso `@injectable()` + `@inject(Token)` con tsyringe" o "DI manual en bootstrap". ¿OK?
 - **Routing**: "Registro las rutas en el enrutador principal de HTTP. ¿OK?"

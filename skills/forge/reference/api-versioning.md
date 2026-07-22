@@ -14,7 +14,7 @@ GET /api/v2/orders
 ```
 
 ```ts
-// features/orders/adapters/in/http/v1/OrderController.ts
+// features/orders/adapters/in/http/controllers/v1/OrderController.ts
 @Router("/api/v1/orders")
 export class OrderV1Controller {
   @Get("/:id")
@@ -23,7 +23,7 @@ export class OrderV1Controller {
   }
 }
 
-// features/orders/adapters/in/http/v2/OrderController.ts
+// features/orders/adapters/in/http/controllers/v2/OrderController.ts
 @Router("/api/v2/orders")
 export class OrderV2Controller {
   @Get("/:id")
@@ -341,7 +341,7 @@ forge api --check-compatibility
 
 | Comando | Acción |
 |---|---|
-| `forge cast payments` | Crea feature con estructura v1/ en adapters/in/http/ |
+| `forge cast payments` | Crea feature con estructura v1/ en adapters/in/http/controllers/ |
 | `forge api --check-compatibility` | Verifica que los cambios no rompen versiones anteriores |
 | `forge api --usage` | Muestra distribución de tráfico entre versiones |
 | `forge reforge` | Migra controllers de v1 a v2, depreca la anterior |

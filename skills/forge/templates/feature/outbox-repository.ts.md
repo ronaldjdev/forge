@@ -1,5 +1,5 @@
 ```typescript
-// src/features/<domain>/adapters/out/persistence/<Domain>OutboxRepository.ts
+// src/features/<domain>/adapters/out/persistence/repositories/<Domain>OutboxRepository.ts
 import { injectable } from "tsyringe";
 import type { DomainEvent } from "../../../domain/events/DomainEvent.js";
 

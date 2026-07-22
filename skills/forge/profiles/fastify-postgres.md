@@ -19,7 +19,7 @@ DI manual. Sin contenedor de DI externo. Las dependencias se inyectan por constr
 // app.ts
 import Fastify from "fastify";
 import { PrismaClient } from "@prisma/client";
-import { creditRoutes } from "@/features/credit/adapters/in/http/credit.routes.js";
+import { creditRoutes } from "@/features/credit/adapters/in/http/routes/credit.routes.js";
 
 const app = Fastify({ logger: true });
 const prisma = new PrismaClient();

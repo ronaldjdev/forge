@@ -65,7 +65,7 @@ export class Credit {
 ```
 
 ```typescript
-// adapters/out/persistence/Credit.repository.ts
+// adapters/out/persistence/repositories/Credit.repository.ts
 @Injectable()
 export class CreditRepository implements ICreditRepository {
   constructor(@InjectRepository(Credit) private readonly repo: Repository<Credit>) {}

@@ -1,5 +1,5 @@
 ```typescript
-// src/features/<domain>/adapters/out/legacy-<system>/<Domain>Gateway.ts
+// src/features/<domain>/adapters/out/legacy-<system>/gateways/<Domain>Gateway.ts
 import { injectable } from "tsyringe";
 import type { External<Domain>DTO } from "./External<Domain>DTO.js";
 

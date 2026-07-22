@@ -1,6 +1,6 @@
 <img src="favicon.svg" alt="Forge Logo" width="100" height="100">
 
-> **v1.4.4** — Sincronización de reglas: R1-R14, severidades y rutas DI
+> **v1.5.0** — Adapters organizados en subdirectorios: `controllers/`, `routes/`, `repositories/`, `schemas/`
 
 ## Forge — Backend Architecture Operating System
 
@@ -66,8 +66,12 @@ src/features/<name>/
 │   ├── use-cases/     (<Action>.uc.ts)
 │   └── mappers/       (<Domain>.mapper.ts)
 └── adapters/
-    ├── in/http/       (<Domain>.controller.ts, <Domain>.routes.ts)
-    └── out/persistence/ (<Domain>.repository.ts, <Domain>.schema.ts)
+    ├── in/http/
+    │   ├── controllers/  (<Domain>.controller.ts)
+    │   └── routes/       (<Domain>.routes.ts)
+    └── out/persistence/
+        ├── repositories/ (<Domain>.repository.ts)
+        └── schemas/      (<Domain>.schema.ts)
 ```
 
 ### `inspect` — Auditoría arquitectónica
@@ -280,6 +284,12 @@ src/
 │       │   └── events/         (<Domain>Created.event.ts)
 │       ├── application/
 │       └── adapters/
+│           ├── in/http/
+│           │   ├── controllers/   (<Domain>.controller.ts)
+│           │   └── routes/        (<Domain>.routes.ts)
+│           └── out/persistence/
+│               ├── repositories/  (<Domain>.repository.ts)
+│               └── schemas/       (<Domain>.schema.ts)
 │
 ├── shared/          ← Componentes reutilizables puros
 │   ├── errors/         NotFoundError.ts, ValidationError.ts

@@ -68,7 +68,7 @@ Para eventos que **deben** entregarse de forma confiable (ej: notificar a otro s
 3. Elimina o marca como enviado tras confirmación del broker.
 
 ```
-features/<name>/adapters/out/persistence/
+features/<name>/adapters/out/persistence/repositories/
   ├── User.repository.ts
   └── Outbox.repository.ts
 ```

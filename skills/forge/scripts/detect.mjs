@@ -282,17 +282,23 @@ export function checkStructure(features) {
 
     if (hasSubdir(fDir, "adapters/in/http")) {
       const httpDir = join(fDir, "adapters/in/http");
-      if (hasFile(httpDir, /Controller\.ts$/)) {
-        checks.push({ ...severity(`${feat}: adapters/in/http/<Name>Controller.ts`, SEVERITY.INFO), pass: true });
+      if (hasSubdir(httpDir, "controllers") && hasFile(join(httpDir, "controllers"), /Controller\.ts$/)) {
+        checks.push({ ...severity(`${feat}: adapters/in/http/controllers/<Name>.controller.ts`, SEVERITY.INFO), pass: true });
         featScore += 3;
-      } else {
-        checks.push({ ...severity(`${feat}: falta controller en adapters/in/http/`, SEVERITY.ERROR), pass: false, fix: `Crear controller en ${feat}/adapters/in/http/` });
-      }
-      if (hasFile(httpDir, /\.routes\.ts$/)) {
-        checks.push({ ...severity(`${feat}: adapters/in/http/<name>.routes.ts`, SEVERITY.INFO), pass: true });
+      } else if (hasFile(httpDir, /Controller\.ts$/)) {
+        checks.push({ ...severity(`${feat}: adapters/in/http/<Name>.controller.ts (legacy path)`, SEVERITY.WARNING), pass: true, fix: `Mover a ${feat}/adapters/in/http/controllers/` });
         featScore += 2;
       } else {
-        checks.push({ ...severity(`${feat}: falta routes en adapters/in/http/`, SEVERITY.WARNING), pass: false, fix: `Crear routes en ${feat}/adapters/in/http/` });
+        checks.push({ ...severity(`${feat}: falta controller en adapters/in/http/controllers/`, SEVERITY.ERROR), pass: false, fix: `Crear controller en ${feat}/adapters/in/http/controllers/` });
+      }
+      if (hasSubdir(httpDir, "routes") && hasFile(join(httpDir, "routes"), /\.routes\.ts$/)) {
+        checks.push({ ...severity(`${feat}: adapters/in/http/routes/<name>.routes.ts`, SEVERITY.INFO), pass: true });
+        featScore += 2;
+      } else if (hasFile(httpDir, /\.routes\.ts$/)) {
+        checks.push({ ...severity(`${feat}: adapters/in/http/<name>.routes.ts (legacy path)`, SEVERITY.WARNING), pass: true, fix: `Mover a ${feat}/adapters/in/http/routes/` });
+        featScore += 1;
+      } else {
+        checks.push({ ...severity(`${feat}: falta routes en adapters/in/http/routes/`, SEVERITY.WARNING), pass: false, fix: `Crear routes en ${feat}/adapters/in/http/routes/` });
       }
     } else {
       checks.push({ ...severity(`${feat}: falta adapters/in/http/`, SEVERITY.ERROR), pass: false, fix: `Crear ${feat}/adapters/in/http/` });
@@ -300,17 +306,23 @@ export function checkStructure(features) {
 
     if (hasSubdir(fDir, "adapters/out/persistence")) {
       const pDir = join(fDir, "adapters/out/persistence");
-      if (hasFile(pDir, /Repository\.ts$/)) {
-        checks.push({ ...severity(`${feat}: adapters/out/persistence/<Name>Repository.ts`, SEVERITY.INFO), pass: true });
+      if (hasSubdir(pDir, "repositories") && hasFile(join(pDir, "repositories"), /Repository\.ts$/)) {
+        checks.push({ ...severity(`${feat}: adapters/out/persistence/repositories/<Name>.repository.ts`, SEVERITY.INFO), pass: true });
         featScore += 3;
-      } else {
-        checks.push({ ...severity(`${feat}: falta repository impl en persistence/`, SEVERITY.ERROR), pass: false, fix: `Migrar repository a ${feat}/adapters/out/persistence/` });
-      }
-      if (hasFile(pDir, /Schema\.ts$/)) {
-        checks.push({ ...severity(`${feat}: adapters/out/persistence/<Name>Schema.ts`, SEVERITY.INFO), pass: true });
+      } else if (hasFile(pDir, /Repository\.ts$/)) {
+        checks.push({ ...severity(`${feat}: adapters/out/persistence/<Name>.repository.ts (legacy path)`, SEVERITY.WARNING), pass: true, fix: `Mover a ${feat}/adapters/out/persistence/repositories/` });
         featScore += 2;
       } else {
-        checks.push({ ...severity(`${feat}: falta schema en persistence/`, SEVERITY.WARNING), pass: false, fix: `Migrar schema a ${feat}/adapters/out/persistence/` });
+        checks.push({ ...severity(`${feat}: falta repository impl en persistence/repositories/`, SEVERITY.ERROR), pass: false, fix: `Migrar repository a ${feat}/adapters/out/persistence/repositories/` });
+      }
+      if (hasSubdir(pDir, "schemas") && hasFile(join(pDir, "schemas"), /Schema\.ts$/)) {
+        checks.push({ ...severity(`${feat}: adapters/out/persistence/schemas/<Name>.schema.ts`, SEVERITY.INFO), pass: true });
+        featScore += 2;
+      } else if (hasFile(pDir, /Schema\.ts$/)) {
+        checks.push({ ...severity(`${feat}: adapters/out/persistence/<Name>.schema.ts (legacy path)`, SEVERITY.WARNING), pass: true, fix: `Mover a ${feat}/adapters/out/persistence/schemas/` });
+        featScore += 1;
+      } else {
+        checks.push({ ...severity(`${feat}: falta schema en persistence/schemas/`, SEVERITY.WARNING), pass: false, fix: `Migrar schema a ${feat}/adapters/out/persistence/schemas/` });
       }
     } else {
       checks.push({ ...severity(`${feat}: falta adapters/out/persistence/`, SEVERITY.ERROR), pass: false, fix: `Crear ${feat}/adapters/out/persistence/` });
@@ -404,7 +416,8 @@ export function checkLayers(features) {
     }
 
     /* Controller business logic */
-    const ctrlFiles = findFiles(join(fDir, "adapters/in/http"), ".ts", 3);
+    const ctrlDir = join(fDir, "adapters", "in", "http", "controllers");
+    const ctrlFiles = isDir(ctrlDir) ? findFiles(ctrlDir, ".ts", 2) : findFiles(join(fDir, "adapters", "in", "http"), ".ts", 3);
     let ctrlLogicOk = ctrlFiles.filter((f) => !f.endsWith(".routes.ts")).length > 0;
     for (const f of ctrlFiles) {
       if (f.endsWith(".routes.ts")) continue;
@@ -523,7 +536,8 @@ export function checkDecorators(features) {
       score += 4;
     }
 
-    const ctrlFiles = findFiles(join(fDir, "adapters/in/http"), ".ts", 3);
+    const ctrlDirInject = join(fDir, "adapters", "in", "http", "controllers");
+    const ctrlFiles = isDir(ctrlDirInject) ? findFiles(ctrlDirInject, ".ts", 2) : findFiles(join(fDir, "adapters", "in", "http"), ".ts", 3);
     let ctrlOk = true;
     for (const f of ctrlFiles) {
       if (f.endsWith(".routes.ts")) continue;
@@ -540,7 +554,8 @@ export function checkDecorators(features) {
       score += 4;
     }
 
-    const repoFiles = findFiles(join(fDir, "adapters/out/persistence"), ".ts", 3);
+    const repoDir = join(fDir, "adapters", "out", "persistence", "repositories");
+    const repoFiles = isDir(repoDir) ? findFiles(repoDir, ".ts", 2) : findFiles(join(fDir, "adapters", "out", "persistence"), ".ts", 3);
     let repoOk = true;
     for (const f of repoFiles) {
       if (f.endsWith("Schema.ts")) continue;

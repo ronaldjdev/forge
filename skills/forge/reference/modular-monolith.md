@@ -84,7 +84,7 @@ import { IUnitOfWork } from "src/shared/contracts/data";
 import { StockEntity } from "src/features/inventory/domain/StockEntity";
 
 // ❌ Prohibido: import directo a infra de otra feature (R1 + R8)
-import { prisma } from "src/features/inventory/adapters/out/persistence/prisma";
+import { prisma } from "src/features/inventory/adapters/out/persistence/repositories/prisma";
 ```
 
 ### Shared Kernel

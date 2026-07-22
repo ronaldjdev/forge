@@ -1,5 +1,5 @@
 ```typescript
-// src/features/<domain>/adapters/in/http/<Domain>.routes.ts
+// src/features/<domain>/adapters/in/http/routes/<Domain>.routes.ts
 //
 // IMPORTANTE: Los nombres de método del controller deben coincidir
 // con los invocados aquí. Si el controller usa "add" en vez de "createHandler",
@@ -7,7 +7,7 @@
 
 import { Router } from "express";
 import { container } from "tsyringe";
-import { <Domain>Controller } from "./<Domain>.controller.js";
+import { <Domain>Controller } from "../controllers/<Domain>.controller.js";
 
 const router = Router();
 const controller = container.resolve(<Domain>Controller);

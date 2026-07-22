@@ -1,6 +1,6 @@
 {
   "name": "@ronaldjdevfs/forge",
-  "version": "1.4.4",
+  "version": "1.5.0",
   "description": "Forge — Architecture Operating System for backend systems. Arquitectura Hexagonal, DDD pragmático y vertical slices.",
   "type": "module",
   "bin": {

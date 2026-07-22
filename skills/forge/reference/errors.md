@@ -42,7 +42,7 @@ export interface IUserRepository {
 ```
 
 ```ts
-// features/users/adapters/in/http/User.controller.ts
+// features/users/adapters/in/http/controllers/User.controller.ts
 import { NotFoundError } from "@/shared/errors/NotFoundError.js";
 
 async getUser(req, res, next) {

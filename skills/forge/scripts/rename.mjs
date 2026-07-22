@@ -80,10 +80,10 @@ const FEATURE_SUBDIR_RULES = [
   { subdir: "domain", pattern: "repository", prefix: "I", case: "pascal", description: "I<Name>.repository.ts" },
   { subdir: "application/use-cases", pattern: "uc", case: "pascal", description: "<Action>.uc.ts" },
   { subdir: "application/mappers", pattern: "mapper", case: "pascal", description: "<Name>.mapper.ts" },
-  { subdir: "adapters/in/http", pattern: "controller", case: "pascal", description: "<Name>.controller.ts" },
-  { subdir: "adapters/in/http", pattern: "routes", case: "pascal", description: "<Name>.routes.ts" },
-  { subdir: "adapters/out/persistence", pattern: "repository", case: "pascal", description: "<Name>.repository.ts" },
-  { subdir: "adapters/out/persistence", pattern: "schema", case: "pascal", description: "<Name>.schema.ts" },
+  { subdir: "adapters/in/http/controllers", pattern: "controller", case: "pascal", description: "<Name>.controller.ts" },
+  { subdir: "adapters/in/http/routes", pattern: "routes", case: "pascal", description: "<Name>.routes.ts" },
+  { subdir: "adapters/out/persistence/repositories", pattern: "repository", case: "pascal", description: "<Name>.repository.ts" },
+  { subdir: "adapters/out/persistence/schemas", pattern: "schema", case: "pascal", description: "<Name>.schema.ts" },
 ];
 
 const SHARED_RULES = {

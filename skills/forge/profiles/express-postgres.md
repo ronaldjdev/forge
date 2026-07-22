@@ -17,9 +17,9 @@ Este perfil usa **DI manual** (sin tsyringe). Las dependencias se inyectan por c
 
 ```typescript
 // app.ts — wiring manual
-import { CreditRepository } from "@/features/credit/adapters/out/persistence/CreditRepository.js";
+import { CreditRepository } from "@/features/credit/adapters/out/persistence/repositories/CreditRepository.js";
 import { AddCredit } from "@/features/credit/application/use-cases/Add.js";
-import { CreditController } from "@/features/credit/adapters/in/http/CreditController.js";
+import { CreditController } from "@/features/credit/adapters/in/http/controllers/CreditController.js";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
