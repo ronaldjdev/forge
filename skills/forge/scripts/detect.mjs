@@ -13,16 +13,6 @@ const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
 const FEATURES = join(SRC, "features");
 
-const LEGACY_DIRS = [
-  ["src/domain/entities", "Entidades legacy"],
-  ["src/domain/repositories", "Repository interfaces legacy"],
-  ["src/application/use-cases", "Casos de uso legacy (subcarpetas)"],
-  ["src/adapters/in/http/controllers", "Controllers legacy"],
-  ["src/adapters/out/database/repositories", "Repository impls legacy"],
-  ["src/adapters/out/database/schemas", "Schemas legacy"],
-  ["src/adapters/out/database/mappers", "Mappers legacy"],
-  ["src/setting/dependencies", "DI wiring legacy (.di.ts)"],
-];
 const INJECTABLE_RE = /@injectable\s*\(\)/g;
 const INJECT_RE = /@inject\s*\([^)]+\)/g;
 const BD_MODEL_RE = /\b\w+Model\s*\.\s*(find|findOne|findById|create|insertMany|updateOne|updateMany|deleteOne|deleteMany|aggregate|save|lean)\s*\(/g;
@@ -77,6 +67,66 @@ function findFiles(dir, ext, maxDepth = 5) {
   }
   if (existsSync(dir)) walk(dir, 0);
   return results;
+}
+
+/**
+ * Build a file cache by walking src/ once.
+ * Returns { files: Map<path, content>, dirs: Map<dir, string[]> }
+ * Eliminates redundant I/O across multiple check functions.
+ */
+function buildFileCache(srcDir = SRC, maxDepth = 6) {
+  const files = new Map();
+  const dirs = new Map();
+
+  function walk(dir, depth) {
+    if (depth > maxDepth) return;
+    const paths = [];
+    try {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) {
+          paths.push(full);
+          walk(full, depth + 1);
+        } else if (entry.name.endsWith(".ts") || entry.name.endsWith(".js")) {
+          try {
+            files.set(full, readFileSync(full, "utf-8"));
+          } catch { /* skip */ }
+          paths.push(full);
+        }
+      }
+    } catch { /* skip */ }
+    dirs.set(dir, paths);
+  }
+
+  if (existsSync(srcDir)) walk(srcDir, 0);
+  return { files, dirs };
+}
+
+/**
+ * Find files using cache when available, fallback to filesystem walk.
+ */
+function findFilesCached(dir, ext, maxDepth = 5, fileCache = null) {
+  if (fileCache && ext) {
+    const results = [];
+    function walk(d, depth) {
+      if (depth > maxDepth) return;
+      const entries = fileCache.dirs.get(d);
+      if (!entries) return;
+      for (const full of entries) {
+        const name = full.split("/").pop();
+        if (fileCache.files.has(full) && name.endsWith(ext)) {
+          results.push(full);
+        } else if (!fileCache.files.has(full)) {
+          // It's a directory — recurse
+          walk(full, depth + 1);
+        }
+      }
+    }
+    walk(dir, 0);
+    return results;
+  }
+  // Fallback to original
+  return findFiles(dir, ext, maxDepth);
 }
 
 export function detectFeaturesOnSrc() {
@@ -343,9 +393,11 @@ export function checkStructure(features) {
   return { score: Math.min(score, 30), checks };
 }
 
-export function checkLayers(features) {
+export function checkLayers(features, fileCache = null) {
   const checks = [];
   let score = 0;
+  const readF = (f) => fileCache?.files.get(f) ?? read(f);
+  const findF = (d, ext, dep) => findFilesCached(d, ext, dep, fileCache);
 
   if (features.length === 0) {
     checks.push({ ...severity("Sin features para analizar capas", SEVERITY.WARNING), pass: false, fix: "Migrar al menos un feature primero" });
@@ -356,10 +408,10 @@ export function checkLayers(features) {
     const fDir = join(FEATURES, feat);
 
     /* Domain layer */
-    const domainFiles = findFiles(join(fDir, "domain"), ".ts", 3);
+    const domainFiles = findF(join(fDir, "domain"), ".ts", 3);
     let domainOk = true;
     for (const f of domainFiles) {
-      const content = read(f);
+      const content = readF(f);
       if (!content) continue;
       const imports = parseImports(content, f);
       for (const imp of imports) {
@@ -381,10 +433,10 @@ export function checkLayers(features) {
     }
 
     /* Application layer */
-    const appFiles = findFiles(join(fDir, "application"), ".ts", 5);
+    const appFiles = findF(join(fDir, "application"), ".ts", 5);
     let appOk = true;
     for (const f of appFiles) {
-      const content = read(f);
+      const content = readF(f);
       if (!content) continue;
       const imports = parseImports(content, f);
       for (const imp of imports) {
@@ -417,11 +469,11 @@ export function checkLayers(features) {
 
     /* Controller business logic */
     const ctrlDir = join(fDir, "adapters", "in", "http", "controllers");
-    const ctrlFiles = isDir(ctrlDir) ? findFiles(ctrlDir, ".ts", 2) : findFiles(join(fDir, "adapters", "in", "http"), ".ts", 3);
+    const ctrlFiles = isDir(ctrlDir) ? findF(ctrlDir, ".ts", 2) : findF(join(fDir, "adapters", "in", "http"), ".ts", 3);
     let ctrlLogicOk = ctrlFiles.filter((f) => !f.endsWith(".routes.ts")).length > 0;
     for (const f of ctrlFiles) {
       if (f.endsWith(".routes.ts")) continue;
-      const content = read(f);
+      const content = readF(f);
       if (!content) continue;
       const logicMatches = content.match(LOGIC_KEYWORDS_RE);
       if (logicMatches && logicMatches.length > 3) {
@@ -444,8 +496,8 @@ export function checkLayers(features) {
   /* Cross-feature imports */
   if (features.length > 1) {
     let crossOk = true;
-    for (const f of findFiles(FEATURES, ".ts", 6)) {
-      const content = read(f);
+    for (const f of findF(FEATURES, ".ts", 6)) {
+      const content = readF(f);
       if (!content) continue;
       const imports = parseImports(content, f);
       for (const imp of imports) {
@@ -474,12 +526,12 @@ export function checkLayers(features) {
 
   /* Direct BD access */
   if (features.length > 0) {
-    const allAppFiles = findFiles(FEATURES, ".ts", 6);
+    const allAppFiles = findF(FEATURES, ".ts", 6);
     let directBdOk = true;
     for (const f of allAppFiles) {
       const rel = relative(ROOT, f);
       if (rel.includes("out/persistence") || rel.includes("Schema")) continue;
-      const content = read(f);
+      const content = readF(f);
       if (!content) continue;
       BD_MODEL_RE.lastIndex = 0;
       const bdMatch = content.match(BD_MODEL_RE);
@@ -503,9 +555,11 @@ export function checkLayers(features) {
   return { score: Math.min(Math.max(score, 0), 25), checks };
 }
 
-export function checkDecorators(features) {
+export function checkDecorators(features, fileCache = null) {
   const checks = [];
   let score = 0;
+  const readF = (f) => fileCache?.files.get(f) ?? read(f);
+  const findF = (d, ext, dep) => findFilesCached(d, ext, dep, fileCache);
 
   if (features.length === 0) {
     checks.push({ ...severity("Sin features para analizar decoradores", SEVERITY.WARNING), pass: false });
@@ -515,10 +569,10 @@ export function checkDecorators(features) {
   for (const feat of features) {
     const fDir = join(FEATURES, feat);
 
-    const ucFiles = findFiles(join(fDir, "application/use-cases"), ".ts", 3);
+    const ucFiles = findF(join(fDir, "application/use-cases"), ".ts", 3);
     let ucOk = true;
     for (const f of ucFiles) {
-      const content = read(f);
+      const content = readF(f);
       if (!content) continue;
       if (!hasDecorator(content, INJECTABLE_RE) && (content.includes("class ") && content.includes("constructor("))) {
         checks.push({ ...severity(`${feat}: falta @injectable() en ${basename(f)}`, SEVERITY.WARNING), pass: false, fix: `Agregar @injectable() a ${basename(f, ".ts")}` });
@@ -537,11 +591,11 @@ export function checkDecorators(features) {
     }
 
     const ctrlDirInject = join(fDir, "adapters", "in", "http", "controllers");
-    const ctrlFiles = isDir(ctrlDirInject) ? findFiles(ctrlDirInject, ".ts", 2) : findFiles(join(fDir, "adapters", "in", "http"), ".ts", 3);
+    const ctrlFiles = isDir(ctrlDirInject) ? findF(ctrlDirInject, ".ts", 2) : findF(join(fDir, "adapters", "in", "http"), ".ts", 3);
     let ctrlOk = true;
     for (const f of ctrlFiles) {
       if (f.endsWith(".routes.ts")) continue;
-      const content = read(f);
+      const content = readF(f);
       if (!content) continue;
       if (!hasDecorator(content, INJECTABLE_RE) && content.includes("class ")) {
         checks.push({ ...severity(`${feat}: falta @injectable() en ${basename(f)}`, SEVERITY.WARNING), pass: false, fix: `Agregar @injectable() al controller ${basename(f, ".ts")}` });
@@ -555,11 +609,11 @@ export function checkDecorators(features) {
     }
 
     const repoDir = join(fDir, "adapters", "out", "persistence", "repositories");
-    const repoFiles = isDir(repoDir) ? findFiles(repoDir, ".ts", 2) : findFiles(join(fDir, "adapters", "out", "persistence"), ".ts", 3);
+    const repoFiles = isDir(repoDir) ? findF(repoDir, ".ts", 2) : findF(join(fDir, "adapters", "out", "persistence"), ".ts", 3);
     let repoOk = true;
     for (const f of repoFiles) {
       if (f.endsWith("Schema.ts")) continue;
-      const content = read(f);
+      const content = readF(f);
       if (!content) continue;
       if (!hasDecorator(content, INJECTABLE_RE) && content.includes("class ") && content.includes("implements ")) {
         checks.push({ ...severity(`${feat}: falta @injectable() en ${basename(f)}`, SEVERITY.WARNING), pass: false, fix: `Agregar @injectable() al repository ${basename(f, ".ts")}` });
@@ -573,10 +627,10 @@ export function checkDecorators(features) {
     }
   }
 
-  const allFeatureFiles = findFiles(FEATURES, ".ts", 6);
+  const allFeatureFiles = findF(FEATURES, ".ts", 6);
   let hasTsyringe = false;
   for (const f of allFeatureFiles) {
-    const content = read(f);
+    const content = readF(f);
     if (content && content.includes('from "tsyringe"')) { hasTsyringe = true; break; }
   }
   if (hasTsyringe) {
@@ -586,7 +640,7 @@ export function checkDecorators(features) {
 
   let injectUsageOk = true;
   for (const f of allFeatureFiles) {
-    const content = read(f);
+    const content = readF(f);
     if (!content) continue;
     const injects = content.match(INJECT_RE);
     if (injects) {
@@ -605,123 +659,6 @@ export function checkDecorators(features) {
   }
 
   return { score: Math.min(Math.max(score, 0), 20), checks };
-}
-
-export function checkLegacy() {
-  const checks = [];
-  let score = 0;
-
-  for (const [dirPath, label] of LEGACY_DIRS) {
-    const fullPath = join(ROOT, dirPath);
-    if (!isDir(fullPath)) {
-      checks.push({ ...severity(`${label}: no existe (ok)`, SEVERITY.INFO), pass: true });
-      score += 1.5;
-      continue;
-    }
-    const files = listDir(fullPath).filter((f) => f.endsWith(".ts") && !f.endsWith(".d.ts"));
-    const subdirs = listDir(fullPath).filter((f) => isDir(join(fullPath, f)));
-    if (files.length === 0 && subdirs.length === 0) {
-      checks.push({ ...severity(`${label}: vacío (ok)`, SEVERITY.INFO), pass: true });
-      score += 2;
-    } else {
-      const items = [...files, ...subdirs.map((d) => `${d}/`)];
-      checks.push({
-        ...severity(`${label}: ${items.length} archivo(s) legacy`, SEVERITY.WARNING),
-        pass: false,
-        detail: items.slice(0, 5).join(", ") + (items.length > 5 ? `... (+${items.length - 5})` : ""),
-        fix: `Migrar contenido a src/features/ y eliminar ${dirPath}`,
-      });
-    }
-  }
-
-  return { score: Math.round(score), checks };
-}
-
-export function checkConfig() {
-  const checks = [];
-  let score = 0;
-
-  function stripJsonComments(raw) {
-    const lines = raw.split("\n");
-    const out = [];
-    for (let line of lines) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith("/*") && trimmed.endsWith("*/")) continue;
-      const slashSlash = trimmed.indexOf("//");
-      if (slashSlash === 0) continue;
-      const ci = line.indexOf("/*");
-      if (ci > 0 && line.slice(ci).trim().endsWith("*/")) { out.push(line.slice(0, ci)); continue; }
-      out.push(line);
-    }
-    return out.join("\n").replace(/,\s*([}\]])/g, "$1");
-  }
-
-  function readJson(path) {
-    const raw = read(path);
-    if (!raw) return null;
-    try { return JSON.parse(stripJsonComments(raw)); } catch { return null; }
-  }
-
-  const tsconfig = readJson(join(ROOT, "tsconfig.json"));
-  if (tsconfig) {
-    const opts = tsconfig.compilerOptions || {};
-    if (opts.experimentalDecorators === true) {
-      checks.push({ ...severity("tsconfig: experimentalDecorators: true", SEVERITY.INFO), pass: true });
-      score += 3;
-    } else {
-      checks.push({ ...severity("tsconfig: falta experimentalDecorators: true", SEVERITY.ERROR), pass: false, fix: 'Agregar "experimentalDecorators": true en compilerOptions' });
-    }
-    if (opts.emitDecoratorMetadata === true) {
-      checks.push({ ...severity("tsconfig: emitDecoratorMetadata: true", SEVERITY.INFO), pass: true });
-      score += 2;
-    } else {
-      checks.push({ ...severity("tsconfig: falta emitDecoratorMetadata: true", SEVERITY.ERROR), pass: false, fix: 'Agregar "emitDecoratorMetadata": true en compilerOptions' });
-    }
-  } else {
-    checks.push({ ...severity("No se pudo leer tsconfig.json", SEVERITY.ERROR), pass: false });
-  }
-
-  const pkg = readJson(join(ROOT, "package.json"));
-  if (pkg) {
-    const deps = pkg.dependencies || {};
-    const devDeps = pkg.devDependencies || {};
-    if (deps.tsyringe) {
-      checks.push({ ...severity("tsyringe instalado", SEVERITY.INFO), pass: true });
-      score += 2;
-    } else {
-      checks.push({ ...severity("tsyringe no instalado", SEVERITY.WARNING), pass: false, fix: "pnpm add tsyringe" });
-    }
-    if (deps["reflect-metadata"]) {
-      checks.push({ ...severity("reflect-metadata instalado", SEVERITY.INFO), pass: true });
-      score += 1;
-    } else {
-      checks.push({ ...severity("reflect-metadata no instalado", SEVERITY.WARNING), pass: false, fix: "pnpm add reflect-metadata" });
-    }
-    if (devDeps["@types/tsyringe"]) {
-      checks.push({ ...severity("@types/tsyringe instalado", SEVERITY.INFO), pass: true });
-      score += 1;
-    } else {
-      checks.push({ ...severity("@types/tsyringe no instalado (dev)", SEVERITY.SUGGESTION), pass: false, fix: "pnpm add -D @types/tsyringe" });
-    }
-  }
-
-  const serverPath = join(SRC, "server.ts");
-  const serverContent = read(serverPath);
-  if (serverContent && serverContent.includes("reflect-metadata")) {
-    checks.push({ ...severity("reflect-metadata importado en server.ts", SEVERITY.INFO), pass: true });
-    score += 1;
-  } else {
-    const idxPath = join(SRC, "index.ts");
-    const idxContent = read(idxPath);
-    if (idxContent && idxContent.includes("reflect-metadata")) {
-      checks.push({ ...severity("reflect-metadata importado en index.ts", SEVERITY.INFO), pass: true });
-      score += 1;
-    } else {
-      checks.push({ ...severity("reflect-metadata no importado en entry point", SEVERITY.ERROR), pass: false, fix: 'Agregar import "reflect-metadata" al inicio de server.ts' });
-    }
-  }
-
-  return { score, checks };
 }
 
 export function checkGraph(graph) {
@@ -865,14 +802,16 @@ export function checkPlatform(ctx) {
     }
   }
 
-  return { score: Math.min(score, 15), checks };
+  return { score: Math.min(score, 14), checks };
 }
 
 /* ── R13: Domain logic in platform ── */
 
-export function checkPlatformForDomain(ctx) {
+export function checkPlatformForDomain(ctx, fileCache = null) {
   const checks = [];
   let score = 0;
+  const readF = (f) => fileCache?.files.get(f) ?? read(f);
+  const findF = (d, ext, dep) => findFilesCached(d, ext, dep, fileCache);
 
   if (!ctx.platform || !ctx.platform.exists) {
     checks.push({ ...severity("Platform no existe — no hay domain artifacts que verificar", SEVERITY.INFO), pass: true });
@@ -886,7 +825,7 @@ export function checkPlatformForDomain(ctx) {
   const platformDir = join(ROOT, "src", "platform");
   if (!isDir(platformDir)) return { score: score, checks };
 
-  const allPlatformFiles = findFiles(platformDir, ".ts", 6).concat(findFiles(platformDir, ".js", 6));
+  const allPlatformFiles = findF(platformDir, ".ts", 6).concat(findF(platformDir, ".js", 6));
   let violations = 0;
 
   for (const f of allPlatformFiles) {
@@ -907,7 +846,7 @@ export function checkPlatformForDomain(ctx) {
     }
 
     // Check 2: Content references domain concepts
-    const content = read(f);
+    const content = readF(f);
     if (!content) continue;
 
     if (DOMAIN_KEYWORDS.test(content)) {
@@ -930,7 +869,7 @@ export function checkPlatformForDomain(ctx) {
   return { score: Math.max(score, 0), checks };
 }
 
-export function checkDependencies(ctx) {
+export function checkDependencies(ctx, fileCache = null) {
   const checks = [];
   let score = 0;
   const graph = ctx.graph || getGraph();
@@ -984,10 +923,12 @@ export function loadCustomRules() {
   }
 }
 
-export function checkCustomRules(features) {
+export function checkCustomRules(features, fileCache = null) {
   const rules = loadCustomRules();
   const checks = [];
   let score = 0;
+  const readF = (f) => fileCache?.files.get(f) ?? read(f);
+  const findF = (d, ext, dep) => findFilesCached(d, ext, dep, fileCache);
 
   if (rules.length === 0) {
     checks.push({ severity: SEVERITY.INFO, label: "Reglas custom: vacío (usa .forge/rules.json)", pass: true });
@@ -1015,12 +956,12 @@ export function checkCustomRules(features) {
     const featureFiles = [];
     for (const feat of features) {
       const featDir = join(FEATURES, feat);
-      if (isDir(featDir)) featureFiles.push(...findFiles(featDir));
+      if (isDir(featDir)) featureFiles.push(...findF(featDir));
     }
-    const targetFiles = featureFiles.length > 0 ? featureFiles : findFiles(SRC);
+    const targetFiles = featureFiles.length > 0 ? featureFiles : findF(SRC);
     for (const f of targetFiles) {
       if (fileRe && !fileRe.test(f)) continue;
-      const content = read(f);
+      const content = readF(f);
       if (!content) continue;
 
       contentRe.lastIndex = 0;
@@ -1049,14 +990,15 @@ export function checkCustomRules(features) {
   return { score, checks };
 }
 
-export function checkNaming(projectRoot = ROOT) {
+export function checkNaming(projectRoot = ROOT, fileCache = null) {
   const checks = [];
   let score = 10;
+  const findF = (d, ext, dep) => findFilesCached(d, ext, dep, fileCache);
 
   const violations = detectNamingViolations(projectRoot);
 
   if (violations.length === 0) {
-    if (findFiles(join(projectRoot, "src"), ".ts", 4).length === 0) {
+    if (findF(join(projectRoot, "src"), ".ts", 4).length === 0) {
       checks.push({ ...severity("Sin archivos .ts para verificar naming", SEVERITY.INFO), pass: true });
       return { score: 0, checks };
     }
@@ -1083,17 +1025,19 @@ export function checkNaming(projectRoot = ROOT) {
   return { score: Math.max(score, 0), checks };
 }
 
-export function checkImportConventions(features) {
+export function checkImportConventions(features, fileCache = null) {
   const checks = [];
   let score = 20;
+  const readF = (f) => fileCache?.files.get(f) ?? read(f);
+  const findF = (d, ext, dep) => findFilesCached(d, ext, dep, fileCache);
 
   if (features.length === 0) {
     checks.push({ ...severity("Sin features para verificar import conventions", SEVERITY.INFO), pass: true });
     return { score: 0, checks };
   }
 
-  const allFeatureFiles = findFiles(FEATURES, ".ts", 6).concat(findFiles(FEATURES, ".js", 6));
-  const allPlatformFiles = isDir(join(SRC, "platform")) ? findFiles(join(SRC, "platform"), ".ts", 6) : [];
+  const allFeatureFiles = findF(FEATURES, ".ts", 6).concat(findF(FEATURES, ".js", 6));
+  const allPlatformFiles = isDir(join(SRC, "platform")) ? findF(join(SRC, "platform"), ".ts", 6) : [];
   const files = [...allFeatureFiles, ...allPlatformFiles];
 
   let r10Violations = 0; // Bare specifiers
@@ -1101,7 +1045,7 @@ export function checkImportConventions(features) {
   let r12Violations = 0; // bootstrap.di.js imports
 
   for (const f of files) {
-    const content = read(f);
+    const content = readF(f);
     if (!content) continue;
     const imports = parseImportsWithLines(content, f);
 
@@ -1188,24 +1132,25 @@ export function checkImportConventions(features) {
     score += 2;
   }
 
-  return { score: Math.max(score, 0), checks };
+  return { score: Math.min(Math.max(score, 0), 20), checks };
 }
 
 export function allChecks(features, graph, ctx) {
   const g = graph || getGraph();
   const c = ctx || {};
+  const fileCache = buildFileCache();
   return {
-    structure: checkStructure(features),
-    layers: checkLayers(features),
-    decorators: checkDecorators(features),
+    structure: checkStructure(features, fileCache),
+    layers: checkLayers(features, fileCache),
+    decorators: checkDecorators(features, fileCache),
     ownership: checkOwnership(c),
     platform: checkPlatform(c),
-    platformDomain: checkPlatformForDomain(c),
-    dependencies: checkDependencies(c),
+    platformDomain: checkPlatformForDomain(c, fileCache),
+    dependencies: checkDependencies(c, fileCache),
     graph: checkGraph(g),
-    customRules: checkCustomRules(features),
-    naming: checkNaming(),
-    importConventions: checkImportConventions(features),
+    customRules: checkCustomRules(features, fileCache),
+    naming: checkNaming(ROOT, fileCache),
+    importConventions: checkImportConventions(features, fileCache),
   };
 }
 

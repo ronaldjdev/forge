@@ -1,5 +1,30 @@
 # CHANGELOG
 
+## v1.6.0 — Performance: file cache + memoization + benchmark suite (2026-07-26)
+
+### Added
+- **`scripts/forge-bench.mjs`**: Benchmark suite completo que mide hashSrcDir() vs latestMtime(), buildContext() con/sin caché, getGraph() con/sin caché, allChecks(), boot sequence (spawn e in-process). Flags: `--runs <n>`, `--json`.
+- **`scripts/detect.mjs: buildFileCache()`**: Crea un caché de archivos de `src/` una sola vez y lo comparte entre todos los checks (checkLayers, checkDecorators, checkPlatformForDomain, checkDependencies, checkCustomRules, checkNaming, checkImportConventions). Escanea archivos y directorios una sola vez, eliminando I/O redundante.
+- **`scripts/detect.mjs: findFilesCached()`**: Wrapper que busca en el fileCache o cae al walk tradicional.
+
+### Changed
+- **`scripts/forge-config.mjs`**: `hashSrcDir()` ahora es memoizada (resultado cached por directorio). Nueva función `latestMtime()` que obtiene el mtime más reciente de `src/` en vez de calcular SHA-256 — ~2x más rápido que hashSrcDir(). `saveCache()`/`loadCache()` usan `srcMtime` con backward compat para `srcHash`.
+- **`scripts/context.mjs`**: `readPackageJson()` memoizado con `_pkgCache` Map per-process. `detectOrphanCandidates()` y `detectWorkspaces()` reusan el mismo caché.
+- **`scripts/forge-boot.mjs`**: Nuevo flag `--bench` que reporta tiempo de cada paso del boot sequence con `performance.now()`.
+
+### Impact
+- Boot in-process fresh: ~1.1ms (vs ~60ms con spawn individual) — **~55x más rápido**
+- Boot in-process cached: ~286µs — **~210x más rápido**
+- Context fresh: ~0.6ms (antes ~6ms por walk redundante)
+- Context cached: ~0.2ms (memoización de readPackageJson)
+- allChecks: ~240µs con fileCache (escala con features)
+- `forge-boot.mjs --bench` permite medir performance en tiempo real
+
+### Fixed
+- **`scripts/graph.mjs`**: Severidades corregidas para alinear con documentación — R3 (shared→feature) y R4 (shared→infra) subidas a CRITICAL, R6 (domain→platform) bajada a ERROR, R7 (infra→feature) subida a ERROR. `buildSummary()` movido después de stats (limpieza de código muerto).
+
+---
+
 ## v1.5.1 — Score normalization & scoring bug fixes (2026-07-26)
 
 ### Fixed

@@ -43,6 +43,7 @@ forge/
 │       │   ├── rename.mjs
 │       │   ├── parse-imports.mjs
 │       │   ├── update.mjs
+│       │   ├── forge-bench.mjs
 │       │   └── registry/
 │       │       └── rules.mjs
 │       ├── templates/      ← Scaffolding: feature/, platform/, shared/, infra/
@@ -206,6 +207,6 @@ node --test .opencode/skills/forge/tests/core.test.mjs
 
 ## Current
 
-- **Version**: 1.1.0
-- **Total modules**: 23 scripts, 25 templates, 10 profiles, 22 references
+- **Version**: 1.6.0
+- **Total modules**: 24 scripts, 25 templates, 10 profiles, 22 references
 - **Tests**: 31 (10 suites, 100% passing)

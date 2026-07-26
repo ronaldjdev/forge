@@ -381,16 +381,16 @@ export function buildGraph(projectRoot = ROOT) {
       edge.type = "violates";
     }
 
-    /* R3: shared → feature = ERROR */
+    /* R3: shared → feature = CRITICAL */
     if (fromType === "shared" && toType === "feature") {
-      addViolation(edge.from, edge.to, SEVERITY.ERROR, "R3",
+      addViolation(edge.from, edge.to, SEVERITY.CRITICAL, "R3",
         "Shared no debe importar de features (shared debe ser puro)", edge.file);
       edge.type = "violates";
     }
 
-    /* R4: shared → infra = ERROR */
+    /* R4: shared → infra = CRITICAL */
     if (fromType === "shared" && toType === "infra") {
-      addViolation(edge.from, edge.to, SEVERITY.ERROR, "R4",
+      addViolation(edge.from, edge.to, SEVERITY.CRITICAL, "R4",
         "Shared no debe importar infraestructura (shared debe ser agnóstico)", edge.file);
       edge.type = "violates";
     }
@@ -402,16 +402,16 @@ export function buildGraph(projectRoot = ROOT) {
       edge.type = "violates";
     }
 
-    /* R6: domain → platform = CRITICAL */
+    /* R6: domain → platform = ERROR */
     if (fromType === "domain" && toType === "platform") {
-      addViolation(edge.from, edge.to, SEVERITY.CRITICAL, "R6",
+      addViolation(edge.from, edge.to, SEVERITY.ERROR, "R6",
         "Domain no puede importar platform directamente (debe ser puro)", edge.file);
       edge.type = "violates";
     }
 
-    /* R7: infra → feature = WARNING */
+    /* R7: infra → feature = ERROR */
     if (fromType === "infra" && toType === "feature") {
-      addViolation(edge.from, edge.to, SEVERITY.WARNING, "R7",
+      addViolation(edge.from, edge.to, SEVERITY.ERROR, "R7",
         "Infraestructura no debería importar features directamente", edge.file);
       edge.type = "violates";
     }
@@ -463,14 +463,6 @@ export function buildGraph(projectRoot = ROOT) {
       "Ciclo de dependencia detectado en el grafo global");
   }
 
-  /* ── 7a. Summary output (compact) ── */
-function buildSummary(graph) {
-  return {
-    stats: graph.stats,
-    violations: graph.violations.map(v => ({ rule: v.rule, severity: v.severity, from: v.from, to: v.to, description: v.description })),
-  };
-}
-
 /* ── 8. Stats ── */
   const bySeverity = { CRITICAL: 0, ERROR: 0, WARNING: 0 };
   for (const v of violations) {
@@ -516,6 +508,14 @@ function buildSummary(graph) {
       dependencyHealth,
       layers: layerStats,
     },
+  };
+}
+
+/* ── Summary output (compact) ── */
+function buildSummary(graph) {
+  return {
+    stats: graph.stats,
+    violations: graph.violations.map(v => ({ rule: v.rule, severity: v.severity, from: v.from, to: v.to, description: v.description })),
   };
 }
 

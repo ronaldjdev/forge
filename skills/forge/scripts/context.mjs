@@ -10,6 +10,9 @@ const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
 const FEATURES = join(SRC, "features");
 
+// Memoized package.json cache (per-process)
+const _pkgCache = new Map();
+
 export const PLATFORM_KNOWN = ["config", "database", "http", "server", "logger", "cache", "security", "events", "scheduler", "observability", "di"];
 export const SHARED_KNOWN = ["errors", "contracts", "types", "utils", "helpers", "constants", "enums"];
 export const INFRA_KNOWN = ["prisma", "mongodb", "postgres", "redis", "mail", "s3", "cloudinary", "stripe", "sqs", "rabbitmq", "kafka", "smtp"];
@@ -136,6 +139,17 @@ function readJson(path) {
   }
 }
 
+/**
+ * Memoized package.json reader — avoids re-parsing in the same process.
+ */
+function readPackageJson(root) {
+  const pkgPath = join(root, "package.json");
+  if (_pkgCache.has(pkgPath)) return _pkgCache.get(pkgPath);
+  const pkg = readJson(pkgPath) || {};
+  _pkgCache.set(pkgPath, pkg);
+  return pkg;
+}
+
 // ── Monorepo detection (D2) ──
 
 function resolveGlob(pattern, base) {
@@ -193,7 +207,7 @@ export function detectMonorepo(projectRoot = ROOT) {
   }
 
   // package.json workspaces
-  const pkg = readJson(join(projectRoot, "package.json"));
+  const pkg = readPackageJson(projectRoot);
   if (pkg?.workspaces) {
     const patterns = Array.isArray(pkg.workspaces) ? pkg.workspaces : pkg.workspaces.packages || [];
     if (patterns.length > 0) {
@@ -211,7 +225,7 @@ export function detectMonorepo(projectRoot = ROOT) {
 
 export function detectWorkspaces(projectRoot = ROOT) {
   const workspaces = [];
-  const pkg = readJson(join(projectRoot, "package.json"));
+  const pkg = readPackageJson(projectRoot);
 
   // 1. pnpm-workspace.yaml
   const pnpmYaml = join(projectRoot, "pnpm-workspace.yaml");
@@ -275,7 +289,7 @@ export async function buildContext(projectRoot = ROOT, workspaceScope = null, op
     }
   }
 
-  const pkg = readJson(join(root, "package.json")) || {};
+  const pkg = readPackageJson(root);
   const tsconfig = readJson(join(root, "tsconfig.json"));
 
   const framework = detectFramework(pkg);

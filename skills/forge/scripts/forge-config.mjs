@@ -207,54 +207,68 @@ function saveCacheMeta(meta) {
 }
 
 /**
- * Compute a hash of the src/ directory tree (file paths + mtimes).
- * Used to detect if the project changed since last cache.
+ * Walk src/ and return the latest mtime of any .ts/.js/.tsx/.json file.
+ * Much faster than hashSrcDir() — no SHA-256, just track max mtime.
  */
-export function hashSrcDir(projectRoot = ROOT) {
+export function latestMtime(projectRoot = ROOT) {
   const src = join(projectRoot, "src");
-  if (!existsSync(src)) return null;
-  const hash = createHash("sha256");
-  const entries = [];
+  if (!existsSync(src)) return 0;
+  let latest = 0;
   function walk(dir) {
     let dirEntries;
     try { dirEntries = readdirSync(dir); } catch { return; }
-    for (const entry of dirEntries.sort()) {
+    for (const entry of dirEntries) {
       const full = join(dir, entry);
       let st;
       try { st = statSync(full); } catch { continue; }
       if (st.isDirectory()) {
         walk(full);
       } else if (entry.endsWith(".ts") || entry.endsWith(".js") || entry.endsWith(".tsx") || entry.endsWith(".json")) {
-        entries.push(relative(projectRoot, full) + ":" + st.mtimeMs);
+        if (st.mtimeMs > latest) latest = st.mtimeMs;
       }
     }
   }
   walk(src);
-  hash.update(entries.join("\n"));
-  return hash.digest("hex").slice(0, 16);
+  return latest;
+}
+
+// Memoized mtime cache (per-process lifetime)
+let _mtimeCache = null;
+let _mtimeCacheRoot = null;
+
+/**
+ * Compute a hash of the src/ directory tree (file paths + mtimes).
+ * Used to detect if the project changed since last cache.
+ * Memoized per-process to avoid redundant walks.
+ */
+export function hashSrcDir(projectRoot = ROOT) {
+  if (_mtimeCache !== null && _mtimeCacheRoot === projectRoot) return _mtimeCache;
+  _mtimeCache = latestMtime(projectRoot);
+  _mtimeCacheRoot = projectRoot;
+  return _mtimeCache;
 }
 
 /**
- * Save a value to the cache with a src hash for invalidation.
+ * Save a value to the cache with a src mtime for invalidation.
  */
 export function saveCache(key, data, projectRoot = ROOT) {
   if (!CACHE_KEYS.includes(key)) return false;
-  const srcHash = hashSrcDir(projectRoot);
+  const srcMtime = hashSrcDir(projectRoot);
   const payload = {
     key,
-    srcHash,
+    srcMtime,
     cachedAt: Date.now(),
     data,
   };
   const ok = writeJson(cachePath(key), payload);
   if (ok) {
-    saveCacheMeta({ [key]: { srcHash, cachedAt: Date.now() } });
+    saveCacheMeta({ [key]: { srcMtime, cachedAt: Date.now() } });
   }
   return ok;
 }
 
 /**
- * Load a value from cache if valid (same src hash and not expired).
+ * Load a value from cache if valid (same src mtime and not expired).
  * Returns { data, valid } where valid is false if cache is stale.
  */
 export function loadCache(key, projectRoot = ROOT) {
@@ -268,9 +282,10 @@ export function loadCache(key, projectRoot = ROOT) {
     return { data: null, valid: false };
   }
 
-  // Check src hash match
-  const currentHash = hashSrcDir(projectRoot);
-  if (currentHash && currentHash !== cached.srcHash) {
+  // Check src mtime match (fast — memoized, no re-walk)
+  const currentMtime = hashSrcDir(projectRoot);
+  const cachedMtime = cached.srcMtime ?? cached.srcHash; // backward compat
+  if (currentMtime && currentMtime !== cachedMtime) {
     return { data: null, valid: false };
   }
 

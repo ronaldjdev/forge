@@ -1,6 +1,6 @@
 <img src="favicon.svg" alt="Forge Logo" width="100" height="100">
 
-> **v1.5.1** — Score normalization & scoring bug fixes
+> **v1.6.0** — Performance: file cache + memoization + benchmark suite
 
 ## Forge — Backend Architecture Operating System
 
@@ -400,6 +400,7 @@ Donde vive toda la inteligencia arquitectónica:
 | `scripts/rename.mjs` | Renombrado bulk de componentes |
 | `scripts/parse-imports.mjs` | Parsing de imports ESM |
 | `scripts/update.mjs` | Verificador de actualizaciones |
+| `scripts/forge-bench.mjs` | Benchmark suite para medir performance de boot, context, graph y checks |
 | `reference/` | Documentación detallada de cada comando y principios |
 | `reference/patterns.md` | Convenciones de nomenclatura globales |
 | `reference/assay.md` | Documentación del comando assay |

@@ -4,7 +4,7 @@
  * forge-boot.mjs — Boot orchestrator with conditional depth.
  *
  * Uso:
- *   node forge-boot.mjs --depth minimal|standard|full [--command <name>] [--json] [--force]
+ *   node forge-boot.mjs --depth minimal|standard|full [--command <name>] [--json] [--force] [--bench]
  *
  * Profundidades:
  *   minimal  → context + profile (cast, temper, smelt, relocate, reforge, inscribe)
@@ -17,8 +17,15 @@
  */
 
 import { join } from "path";
+import { performance } from "perf_hooks";
 
 const ROOT = process.cwd();
+
+function formatMs(ms) {
+  if (ms < 1) return `${(ms * 1000).toFixed(0)}µs`;
+  if (ms < 1000) return `${ms.toFixed(1)}ms`;
+  return `${(ms / 1000).toFixed(2)}s`;
+}
 
 async function main() {
   const args = process.argv.slice(2);
@@ -27,15 +34,29 @@ async function main() {
     : "full";
   const isJson = args.includes("--json");
   const force = args.includes("--force");
+  const bench = args.includes("--bench");
+
+  const t0 = performance.now();
+  const timings = {};
+  function mark(label) {
+    if (bench) timings[label] = performance.now();
+  }
+  function elapsed(label) {
+    if (bench && timings[label]) return formatMs(performance.now() - timings[label]);
+    return "";
+  }
 
   const result = { depth, bootTime: Date.now(), context: null, profile: null, graph: null, chain: null, ownership: null, inspect: null };
 
   // 1. Context
+  mark("context");
   const { buildContext } = await import("./context.mjs");
   const ctx = await buildContext(ROOT, null, { force });
   result.context = ctx;
+  timings.context = elapsed("context");
 
   // 2. Profile
+  mark("profile");
   const { detectProfile, detectProfileExtended } = await import("./profile.mjs");
   const profileExtended = detectProfileExtended(ctx);
   result.profile = {
@@ -46,10 +67,16 @@ async function main() {
     layers: profileExtended.layers,
     complementary: profileExtended.complementary,
   };
+  timings.profile = elapsed("profile");
 
   if (depth === "minimal") {
-    if (isJson) return console.log(JSON.stringify(result, null, 2));
+    timings.total = formatMs(performance.now() - t0);
+    if (isJson) {
+      if (bench) result.timings = timings;
+      return console.log(JSON.stringify(result, null, 2));
+    }
     console.log(`Boot [${depth}]: ${result.profile.profile} | ${ctx.features.total} features | ${ctx.framework} | ${ctx.database}`);
+    if (bench) console.log(`  Timings: context=${timings.context} profile=${timings.profile} total=${timings.total}`);
     return;
   }
 
@@ -57,6 +84,7 @@ async function main() {
   result.graph = ctx.graph;
 
   // 4. Chain
+  mark("chain");
   const { buildDependencyGraph } = await import("./chain.mjs");
   const chain = buildDependencyGraph(ROOT, result.graph);
   result.chain = {
@@ -67,10 +95,16 @@ async function main() {
     isolated: chain.isolated.length,
     topologicalOrder: chain.topologicalOrder,
   };
+  timings.chain = elapsed("chain");
 
   if (depth === "standard") {
-    if (isJson) return console.log(JSON.stringify(result, null, 2));
+    timings.total = formatMs(performance.now() - t0);
+    if (isJson) {
+      if (bench) result.timings = timings;
+      return console.log(JSON.stringify(result, null, 2));
+    }
     console.log(`Boot [${depth}]: ${result.profile.profile} | ${ctx.features.total} features | ${result.graph.stats.totalNodes} nodes | chains: ${result.chain.illegalChains}`);
+    if (bench) console.log(`  Timings: context=${timings.context} profile=${timings.profile} chain=${timings.chain} total=${timings.total}`);
     return;
   }
 
@@ -86,6 +120,7 @@ async function main() {
   };
 
   // 6. Inspect (full audit)
+  mark("inspect");
   const { allChecks } = await import("./detect.mjs");
   const checks = allChecks(ctx.features.migrated, result.graph, ctx);
   const violations = [];
@@ -100,9 +135,15 @@ async function main() {
     errors: violations.filter(v => v.severity === "ERROR").length,
     warnings: violations.filter(v => v.severity === "WARNING").length,
   };
+  timings.inspect = elapsed("inspect");
+  timings.total = formatMs(performance.now() - t0);
 
-  if (isJson) return console.log(JSON.stringify(result, null, 2));
+  if (isJson) {
+    if (bench) result.timings = timings;
+    return console.log(JSON.stringify(result, null, 2));
+  }
   console.log(`Boot [${depth}]: ${result.profile.profile} | features: ${ctx.features.total} | graph: ${result.graph.stats.totalNodes}n/${result.graph.stats.totalEdges}e | violations: ${result.inspect.totalChecks} [CRIT:${result.inspect.critical} ERR:${result.inspect.errors} WARN:${result.inspect.warnings}]`);
+  if (bench) console.log(`  Timings: context=${timings.context} profile=${timings.profile} chain=${timings.chain} inspect=${timings.inspect} total=${timings.total}`);
 }
 
 if (process.argv[1] && (process.argv[1].endsWith("forge-boot.mjs") || process.argv[1].endsWith("forge-boot.js"))) {
