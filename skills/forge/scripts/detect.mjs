@@ -872,9 +872,10 @@ export function checkPlatform(ctx) {
 
 export function checkPlatformForDomain(ctx) {
   const checks = [];
-  let score = 10;
+  let score = 0;
 
   if (!ctx.platform || !ctx.platform.exists) {
+    checks.push({ ...severity("Platform no existe — no hay domain artifacts que verificar", SEVERITY.INFO), pass: true });
     return { score, checks };
   }
 
@@ -1055,6 +1056,10 @@ export function checkNaming(projectRoot = ROOT) {
   const violations = detectNamingViolations(projectRoot);
 
   if (violations.length === 0) {
+    if (findFiles(join(projectRoot, "src"), ".ts", 4).length === 0) {
+      checks.push({ ...severity("Sin archivos .ts para verificar naming", SEVERITY.INFO), pass: true });
+      return { score: 0, checks };
+    }
     checks.push({ ...severity("Naming conventions: sin violaciones", SEVERITY.INFO), pass: true });
     return { score, checks };
   }
@@ -1082,7 +1087,10 @@ export function checkImportConventions(features) {
   const checks = [];
   let score = 20;
 
-  if (features.length === 0) return { score: 20, checks };
+  if (features.length === 0) {
+    checks.push({ ...severity("Sin features para verificar import conventions", SEVERITY.INFO), pass: true });
+    return { score: 0, checks };
+  }
 
   const allFeatureFiles = findFiles(FEATURES, ".ts", 6).concat(findFiles(FEATURES, ".js", 6));
   const allPlatformFiles = isDir(join(SRC, "platform")) ? findFiles(join(SRC, "platform"), ".ts", 6) : [];

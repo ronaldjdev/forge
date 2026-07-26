@@ -29,7 +29,7 @@ const CAT_MAX = {
   layers: 25,
   decorators: 20,
   ownership: 20,
-  platform: 15,
+  platform: 14,
   platformDomain: 10,
   dependencies: 15,
   graph: 20,
@@ -41,7 +41,7 @@ const CAT_MAX = {
 function countBySeverity(checks) {
   const counts = {};
   for (const c of checks) {
-    if (!c.pass) {
+    if (!c.pass && c.severity !== "INFO") {
       counts[c.severity] = (counts[c.severity] || 0) + 1;
     }
   }
@@ -65,7 +65,8 @@ function buildReport(result) {
     }
   }
 
-  return { total, max: maxTotal, categories: result.categories, violations, recommendations, severityCounts: countBySeverity(violations) };
+  const normalizedTotal = maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
+  return { total: normalizedTotal, max: 100, categories: result.categories, violations, recommendations, severityCounts: countBySeverity(violations) };
 }
 
 function printReport(report, ctx, profile, graph, archGraph, profileExtended) {
@@ -292,16 +293,17 @@ async function main() {
     let maxScore = 0;
     for (const [key, cat] of Object.entries(result)) {
       totalScore += cat.score;
-      maxScore += CAT_MAX[key] || 20;
+      maxScore += CAT_MAX[key] || 10;
     }
-    const pct = Math.round((totalScore / maxScore) * 100);
+    const normalizedTotal = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+    const pct = normalizedTotal;
 
     if (!isJson) {
-      console.log(`${BOLD}Score en features afectados: ${pct >= 80 ? GREEN : pct >= 50 ? YELLOW : RED}${totalScore}/${maxScore} (${pct}%)${RESET}\n`);
+      console.log(`${BOLD}Score en features afectados: ${pct >= 80 ? GREEN : pct >= 50 ? YELLOW : RED}${normalizedTotal}/100 (${pct}%)${RESET}\n`);
 
       for (const [key, cat] of Object.entries(result)) {
         const name = key.charAt(0).toUpperCase() + key.slice(1);
-        const cmax = CAT_MAX[key] || cat.max || 20;
+        const cmax = CAT_MAX[key] || cat.max || 10;
         console.log(`  ${BOLD}${name} (${cat.score}/${cat.score === 0 && cat.checks.length > 0 ? "—" : cmax})${RESET}`);
         for (const check of cat.checks) {
           const icon = check.pass ? `${GREEN}✔${RESET}` : `${RED}✘${RESET}`;
@@ -316,12 +318,12 @@ async function main() {
       }
     } else {
       console.log(JSON.stringify({
-        diff: { changedFiles: changedFiles.length, changedFeatures, totalScore, maxScore, pct },
+        diff: { changedFiles: changedFiles.length, changedFeatures, totalScore: normalizedTotal, maxScore: 100, pct },
         categories: result,
       }, null, 2));
     }
-    updateStateFromAudit({ total: totalScore, max: maxScore, grade: `${pct}%`, violations: [], health: "diff", context: { features: { total: features.length, migrated: features, legacy: [] } } });
-    saveHistory({ score: totalScore, grade: `${pct}%`, violationCount: 0, totalFeatures: features.length, migratedFeatures: features.length });
+    updateStateFromAudit({ total: normalizedTotal, max: 100, grade: `${pct}%`, violations: [], health: "diff", context: { features: { total: features.length, migrated: features, legacy: [] } } });
+    saveHistory({ score: normalizedTotal, grade: `${pct}%`, violationCount: 0, totalFeatures: features.length, migratedFeatures: features.length });
     process.exit(0);
   }
 

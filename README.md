@@ -1,6 +1,6 @@
 <img src="favicon.svg" alt="Forge Logo" width="100" height="100">
 
-> **v1.5.0** — Adapters organizados en subdirectorios: `controllers/`, `routes/`, `repositories/`, `schemas/`
+> **v1.5.1** — Score normalization & scoring bug fixes
 
 ## Forge — Backend Architecture Operating System
 

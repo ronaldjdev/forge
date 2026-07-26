@@ -159,12 +159,13 @@ async function main() {
   const features = ctx.features.migrated;
   const result = allChecks(features, graph, ctx);
 
-  const CAT_MAX = { structure: 30, layers: 25, decorators: 20, ownership: 20, platform: 15, dependencies: 15, graph: 20, customRules: 5, naming: 10 };
+  const CAT_MAX = { structure: 30, layers: 25, decorators: 20, ownership: 20, platform: 14, platformDomain: 10, dependencies: 15, graph: 20, customRules: 5, naming: 10, importConventions: 20 };
   const totalScore = (result.structure?.score || 0) + (result.layers?.score || 0)
     + (result.ownership?.score || 0) + (result.platform?.score || 0)
-    + (result.dependencies?.score || 0) + (result.graph?.score || 0)
-    + (result.decorators?.score || 0) + (result.customRules?.score || 0)
-    + (result.naming?.score || 0);
+    + (result.platformDomain?.score || 0) + (result.dependencies?.score || 0)
+    + (result.graph?.score || 0) + (result.decorators?.score || 0)
+    + (result.customRules?.score || 0) + (result.naming?.score || 0)
+    + (result.importConventions?.score || 0);
   const maxScore = Object.values(CAT_MAX).reduce((a, b) => a + b, 0);
   const auditScore = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
 

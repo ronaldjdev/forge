@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## v1.5.1 — Score normalization & scoring bug fixes (2026-07-26)
+
+### Fixed
+- **`scripts/inspect.mjs`**: Score total normalizado a 100 (antes el max variaba según categorías, ej: 189). `buildReport()` ahora retorna `{ total: normalized, max: 100 }`.
+- **`scripts/inspect.mjs`**: `CAT_MAX.platform` corregido de 15 a 14 (max alcanzable real: 2 + 6×2 = 14).
+- **`scripts/inspect.mjs`**: Diff mode inconsistencia corregida — defaults `|| 20` → `|| 10` (consistente con `buildReport`).
+- **`scripts/inspect.mjs`**: `countBySeverity()` excluye checks `INFO` del conteo de violaciones (INFO no es una violación real).
+- **`scripts/detect.mjs`**: `checkPlatformForDomain()` retorna 0/10 cuando no hay platform (antes daba 10/10 sin verificar nada).
+- **`scripts/detect.mjs`**: `checkImportConventions()` retorna 0/20 sin features (antes daba 20/20).
+- **`scripts/detect.mjs`**: `checkNaming()` retorna 0/10 sin archivos .ts para verificar (antes daba 10/10).
+- **`scripts/architecture.mjs`**: CAT_MAX incompleto — agregadas categorías `platformDomain: 10` e `importConventions: 20`; platform 15→14. `totalScore` ahora incluye ambas categorías.
+
+### Impact
+- Proyectos greenfield: score baja de ~33% a ~12% (antes obtenían puntos "gratuitos" por categorías sin verificar).
+- Score siempre se muestra como `X/100` en todos los modos (full, diff, summary).
+
+---
+
 ## v1.4.3 — DI: feature/di.ts como fuente única de registro (2026-07-16)
 
 ### Fixed
