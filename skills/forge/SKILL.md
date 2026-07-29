@@ -94,7 +94,7 @@ Si `$boot` contiene datos cacheados en `.forge/cache/` se reusan automáticament
 | Intención | Comando | Referencia |
 |---|---|---|
 | Ayuda | `forge --help` | `reference/help.md` |
-| Setup inicial | `forge` | `reference/forge.md` |
+| Setup inicial | `init` | `reference/init.md` |
 | Crear feature | `cast` | `reference/cast.md` |
 | Auditar | `inspect` | `reference/inspect.md` |
 | Relocalizar feature | `relocate` | `reference/relocate.md` |
@@ -111,15 +111,15 @@ Si `$boot` contiene datos cacheados en `.forge/cache/` se reusan automáticament
 | Rollback | `forge rollback` | `{{AGENT_PATH}}/scripts/rollback.mjs` |
 | Estado | `forge state` | `{{AGENT_PATH}}/scripts/forge-state.mjs` |
 | Ensayo cualitativo | `assay` | `reference/assay.md` |
-| Bounded context | `forge` | `reference/bounded-contexts.md` |
-| Modular monolith | `forge` | `reference/modular-monolith.md` |
+| Bounded context | `init` | `reference/bounded-contexts.md` |
+| Modular monolith | `init` | `reference/modular-monolith.md` |
 | ADR | `inscribe` | `reference/adr.md` |
 | Anti-corruption layer | `relocate` | `reference/anti-corruption-layer.md` |
 | Evolutionary arch | `reforge` | `reference/evolutionary-architecture.md` |
 | CQRS | `cast` | `reference/cqrs.md` |
 | Sagas | `cast` | `reference/sagas.md` |
 | Outbox | `cast` | `reference/transactional-outbox.md` |
-| Idempotencia | `forge` | `reference/idempotency.md` |
+| Idempotencia | `init` | `reference/idempotency.md` |
 | API versioning | `forge api` | `reference/api-versioning.md` |
 
 ---
@@ -147,7 +147,7 @@ El boot usa caché de `.forge/cache/`. Si los archivos `src/` no cambiaron, los 
 - Si el lenguaje natural matchea exactamente un comando, ejecutarlo directamente.
 - Si hay ambigüedad, preguntar al usuario: "¿Quieres decir: cast, relocate o reforge?"
 - Si el comando requiere un perfil que no está detectado, preguntar antes de continuar.
-- Si el proyecto no tiene `src/features/` y el comando es `cast`, sugerir `forge` primero.
+- Si el proyecto no tiene `src/features/` y el comando es `cast`, sugerir `init` primero.
 - Si el proyecto no tiene `src/platform/`, ejecutar `bootstrapPlatform()` automáticamente.
 - Si `ARCHITECTURE.md` está desactualizado (fecha de auditoría > 7 días), sugerir `forge inscribe`.
 - Todos los resultados se muestran con severidades: `[CRITICAL]`, `[ERROR]`, `[WARNING]`, `[INFO]`, `[SUGGESTION]`.

@@ -1,5 +1,32 @@
 # CHANGELOG
 
+## v1.7.0 — `init` command, Pre-Init Discovery, Shared Services DI (2026-07-29)
+
+### Added
+- **`init` command**: Replaces `forge` (bare) as the setup command. Ejecuta Pre-Init Discovery obligatorio antes de cualquier migración de código. Pregunta al usuario: modelo operativo, equipo, BD, DI strategy, tipo de proyecto, código legacy. Persiste respuestas en `.forge/config.json`.
+- **`reference/init.md`**: Documentación completa del comando `init` con Gate 0 (Pre-Init Discovery) en 2 rondas de preguntas, post-discovery actions y flujo de inicialización de 14 pasos.
+- **`reference/di-shared-services.md`**: Patrón Service Provider para servicios compartidos entre features. Documenta `service-provider.ts`, orden explícito en `app.ts`, contrato en `shared/contracts/`, variantes manual vs decorators.
+- **`templates/feature/service-provider.ts.md`**: Template que genera `register<Domain>Shared(container)` con soporte para DI manual y decorators según `diStrategy`.
+- **`DEFAULT_CONFIG`**: Nuevos campos `operatingModel`, `teamSize`, `dbStrategy`, `projectType`, `domains`, `hasLegacyCode`, `initCompleted` para persistir respuestas del Pre-Init Discovery.
+
+### Changed
+- **`forge` (bare) → `init`**: El comando `forge` sin argumentos queda reemplazado por `init`. `forge` se mantiene como namespace para subcomandos (`forge hook`, `forge api`, `forge rollback`, `forge state`).
+- **`SKILL.md`**: Command routing actualizado — `Setup inicial → init`, bounded-contexts/modular-monolith/idempotencia → `init`. Routing rule: `sugerir init primero`.
+- **`command/forge.md`**: Tabla de comandos: `forge --force` → `init (Pre-Init Discovery)`. Sección Build: flujo de 16 pasos con discovery obligatorio.
+- **`reference/help.md`**: `forge` → `init` en lista de comandos.
+- **`reference/forge.md`**: Redirect note: "reemplazado por `init`".
+- **`templates/agents/SKILL.md.template`**: `forge` → `init` en command routing y routing rules.
+- **`templates/feature/di.ts.md`**: Simplificado a solo DI interna, referencia a `service-provider.ts` para servicios compartidos.
+- **`reference/cast.md`**: Post-Cast DI Wiring actualizado con `di.ts` + `service-provider.ts` + orden en `app.ts`. Checklist validado incluye verificación de `service-provider.ts`.
+- **`scripts/pin.mjs`**: `'init'` agregado a `VALID_COMMANDS`.
+- **`README.md`**: Documentación de `init`, Servicios Compartidos, contadores actualizados (24 references, 20 templates).
+
+### Notes
+- `init` requiere Node ≥ 18 y ejecuta boot sequence full depth.
+- Las respuestas del Pre-Init Discovery están disponibles para `cast`, `relocate` y otros comandos via `.forge/config.json`.
+
+---
+
 ## v1.6.0 — Performance: file cache + memoization + benchmark suite (2026-07-26)
 
 ### Added

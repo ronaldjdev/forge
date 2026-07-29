@@ -1,6 +1,6 @@
 <img src="favicon.svg" alt="Forge Logo" width="100" height="100">
 
-> **v1.6.0** — Performance: file cache + memoization + benchmark suite
+> **v1.7.0** — `init` command, Pre-Init Discovery, Shared Services DI
 
 ## Forge — Backend Architecture Operating System
 
@@ -27,7 +27,7 @@ Los proyectos backend degeneran en código acoplado porque la infraestructura t�
 
 | Escenario | Comando | Descripción |
 |-----------|---------|-------------|
-| **Proyecto nuevo** | `forge` | Inicializa platform/features/shared/infra, detecta stack, crea `ARCHITECTURE.md` |
+| **Proyecto nuevo** | `init` | Pre-Init Discovery + inicialización completa con preguntas obligatorias |
 | **Crear un nuevo dominio** | `cast` | Genera un feature completo desde cero (verifica platform/shared/infra primero) |
 | **Auditar arquitectura** | `inspect` | Evaluación completa 190pts → 0-100 con ownership, platform, grafo e import conventions |
 | **Migrar código legacy** | `relocate` | Traslada código a platform/, shared/, infra/ o features/ |
@@ -43,13 +43,27 @@ Los proyectos backend degeneran en código acoplado porque la infraestructura t�
 
 ## Comandos en detalle
 
-### `forge` — Inicialización
+### `init` — Inicialización con Pre-Init Discovery
 
-Detecta el stack tecnológico, ejecuta bootstrap de platform/shared/infra si no existen, determina el perfil activo, analiza ownership y prepara el proyecto. Crea `ARCHITECTURE.md` si no existe.
+**Antes de cualquier acción, pregunta obligatoriamente al usuario cómo desea operar** (modelo operativo, equipo, BD, DI strategy, tipo de proyecto, código legacy). Según las respuestas, muestra referencias relevantes y persiste la configuración en `.forge/config.json`. Luego ejecuta la inicialización completa.
 
 ```
-Boot sequence: context → armorer → profile → graph → chain → inspect → architecture → execute → architecture
+Pre-Init Discovery → context → bootstrap → config → armorer → graph → chain → detect → architecture
 ```
+
+### Servicios Compartidos entre Features
+
+Cuando un feature necesita exponer servicios a otros features (ej: Inventory provee `IInventoryService` a Orders), se usa el patrón **Service Provider**:
+
+```
+src/features/inventory/
+├── di.ts                       # DI interna (repos, use cases, controllers)
+└── service-provider.ts         # Servicios compartidos (registerInventoryShared)
+
+src/app.ts                      # registerInventoryShared(container) ANTES que orders/di
+```
+
+Ver `reference/di-shared-services.md` para el detalle completo.
 
 ### `cast` — Crear feature
 
@@ -380,6 +394,7 @@ Donde vive toda la inteligencia arquitectónica:
 | `scripts/chain.mjs` | Grafo multi-capa (platform, features, shared, infra) con orden topológico |
 | `scripts/detect.mjs` | Validación de reglas R1-R14 con inline ignores, `--fix` e import conventions |
 | `scripts/inspect.mjs` | Orquesta auditoría completa con reporte coloreado |
+| `scripts/forge-boot.mjs` | Boot orchestrator con profundidades minimal/standard/full y caché |
 | `scripts/architecture.mjs` | Genera/actualiza `ARCHITECTURE.md` vivo |
 | `scripts/bootstrap.mjs` | Inicializa platform/shared/infra según perfil (interno) |
 | `scripts/formatter.mjs` | Output unificado: colores, JSON, scoreBar, formatCheck |
@@ -405,8 +420,10 @@ Donde vive toda la inteligencia arquitectónica:
 | `reference/patterns.md` | Convenciones de nomenclatura globales |
 | `reference/assay.md` | Documentación del comando assay |
 | `reference/hooks.md` | Documentación del sistema de hooks |
+| `reference/init.md` | Pre-Init Discovery + inicialización |
+| `reference/di-shared-services.md` | Service Provider para servicios compartidos entre features |
 | `profiles/` | 10 perfiles tecnológicos detallados |
-| `templates/feature/` | 19 templates TypeScript para features |
+| `templates/feature/` | 20 templates TypeScript para features (nuevo: service-provider) |
 | `templates/platform/` | 6 templates para componentes de platform |
 | `templates/shared/` | 4 templates para shared (errors, contracts, types, utils) |
 | `templates/infra/` | 4 templates para infra (prisma, mongodb, redis, mail) |
@@ -442,7 +459,7 @@ Una vez instalada, OpenCode carga automáticamente la skill `forge` al trabajar 
 
 | Lenguaje natural | Comando |
 |---|---|
-| "inicializar", "setup", "empezar" | `forge` |
+| "inicializar", "setup", "empezar" | `init` |
 | "crear feature", "nuevo dominio" | `cast` |
 | "inspeccionar", "diagnóstico", "evaluar" | `inspect` |
 | "trasladar", "mover" | `relocate` |

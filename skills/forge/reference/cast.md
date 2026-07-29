@@ -156,14 +156,42 @@ NUNCA buscar entidades en `src/platform/domain/entities/` — esto viola R13 (pl
 
 ## ⚠️ Post-Cast: DI Wiring
 
-Después de crear los archivos del feature, generar `di.ts` siguiendo el template `templates/feature/di.ts.md`:
+Después de crear los archivos del feature, generar los archivos de DI siguiendo los templates:
 
-1. **Feature con DI propia (siempre)**: crear `src/features/<name>/di.ts` usando el template. Este archivo es la **fuente única** de registro para el feature.
-2. **app.ts**: importar el `di.ts` del feature (ej: `import "@/features/<name>/di.js";`). No registrar las mismas dependencias en app.ts.
-3. **Controllers**: asegurar que el import en el controller apunte a `./di.js` (del feature), NUNCA a `bootstrap.di.js`
-4. **Mongoose model()**: si el schema exporta `export default model()` (objeto, no clase), el DI debe usar `container.register(..., { useValue: ... })`, NO `registerSingleton`
+### `di.ts` — DI interna (siempre)
 
-> **⚠️ Cada feature DEBE registrar sus propias dependencias en `src/features/<name>/adapters/<name>.di.ts`.** El Container centralizado en `platform/di/Container.ts` NO debe importar use cases de features (viola R2). El DI distribuido es la arquitectura correcta.
+Crear `src/features/<name>/di.ts` usando `templates/feature/di.ts.md`. Este archivo es la **fuente única** de registro para dependencias internas del feature.
+
+### `service-provider.ts` — servicios compartidos (solo si aplica)
+
+Si el feature expone servicios que otras features consumen (vía `src/shared/contracts/`), crear `src/features/<name>/service-provider.ts` usando `templates/feature/service-provider.ts.md`.
+
+Ejemplo: Inventory provee `IInventoryService` → Orders lo consume.
+
+### `app.ts` — orquestación
+
+```ts
+// app.ts
+import { container } from "tsyringe";
+
+// 1. Service providers (proveedores ANTES que consumidores)
+import { registerInventoryShared } from "@/features/inventory/service-provider.js";
+registerInventoryShared(container);
+
+// 2. DI de features
+import "@/features/inventory/di.js";
+import "@/features/orders/di.js";
+```
+
+### Reglas
+
+1. **`di.ts`**: solo dependencias internas del feature (repos, use cases, controllers)
+2. **`service-provider.ts`**: solo servicios compartidos vía `@/shared/contracts/`
+3. **app.ts**: importar `di.ts` de cada feature (ej: `import "@/features/<name>/di.js";`). No registrar las mismas dependencias en app.ts.
+4. **Controllers**: importar `./di.js` (del feature), NUNCA `bootstrap.di.js`
+5. **Mongoose model()**: si el schema exporta `export default model()` (objeto, no clase), el DI debe usar `container.register(..., { useValue: ... })`, NO `registerSingleton`
+
+> **⚠️ Cada feature DEBE registrar sus propias dependencias.** El Container centralizado en `platform/di/Container.ts` NO debe importar use cases de features (viola R2). El DI distribuido es la arquitectura correcta.
 
 ## ⚠️ Post-Cast: Tests
 
@@ -185,6 +213,8 @@ Antes de dar por terminado el feature, verificar CADA archivo generado:
 - [ ] Todos los imports tienen extensión `.js` — sin extensión `.ts`
 - [ ] Entidades compartidas usan `@/shared/contracts/` — sin paths relativos rotos
 - [ ] Controllers importan desde `./di.js` — no desde `bootstrap.di.js`
+- [ ] Si el feature expone servicios compartidos, tiene `service-provider.ts` con función `register<Domain>Shared()`
+- [ ] `app.ts` llama a `register<Domain>Shared(container)` ANTES de importar features consumidoras
 - [ ] Nombres de método del controller coinciden con los de la ruta (ej: `createHandler` en controller → `controller.createHandler` en routes)
 - [ ] DI usa `register({ useValue })` para modelos Mongoose — no `registerSingleton`
 - [ ] Tests: `.js` extension, `as const`, `!`, `as any` para _id

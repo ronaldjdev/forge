@@ -20,6 +20,13 @@ const DEFAULT_CONFIG = {
   orm: null,
   diStrategy: null,
   runtime: null,
+  operatingModel: null,
+  teamSize: null,
+  dbStrategy: null,
+  projectType: null,
+  domains: [],
+  hasLegacyCode: false,
+  initCompleted: false,
   ignorePaths: ["src/generated", "src/__tests__/fixtures", "src/**/*.spec.ts", "src/**/*.test.ts"],
   lastContextUpdate: null,
 };

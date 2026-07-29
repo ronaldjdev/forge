@@ -24,7 +24,7 @@ const HARNESS_DIRS = [
 ];
 
 const VALID_COMMANDS = [
-  'forge', 'cast', 'inspect', 'quench', 'temper', 'chain', 'graph',
+  'init', 'forge', 'cast', 'inspect', 'quench', 'temper', 'chain', 'graph',
   'relocate', 'reforge', 'smelt', 'inscribe', 'armorer',
   'assay', 'nail', 'unnail', 'hook', 'api', 'rollback', 'state',
 ];

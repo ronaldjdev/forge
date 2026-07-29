@@ -5,7 +5,7 @@
 
 ## Comandos
 
-  forge               Inicializar proyecto (boot sequence completa)
+  init                Inicializar proyecto con Pre-Init Discovery
   cast                Crear nuevo feature con estructura hexagonal
   inspect             Auditoría arquitectónica (190pts → 0-100%)
   relocate            Migrar código legacy a features/platform/shared/infra

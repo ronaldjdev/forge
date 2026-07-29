@@ -113,7 +113,7 @@ import { buildGraph } from './graph.mjs'
 
 Agregar archivo `.ts.md` en el directorio correspondiente de `templates/`:
 
-- `templates/feature/` — 11 templates (entity, repository interface, schema, repository impl, use case, controller, routes, mapper, domain-error, domain-event, event-handler)
+- `templates/feature/` — 20 templates (entity, repository interface, schema, repository impl, use case, controller, routes, mapper, domain-error, domain-event, event-handler, service-provider)
 - `templates/platform/` — 6 templates (config, logger, http, server, database, di)
 - `templates/shared/` — 4 templates (errors, contracts, types, utils)
 - `templates/infra/` — 4 templates (prisma, mongodb, redis, mail)
@@ -207,6 +207,6 @@ node --test .opencode/skills/forge/tests/core.test.mjs
 
 ## Current
 
-- **Version**: 1.6.0
-- **Total modules**: 24 scripts, 25 templates, 10 profiles, 22 references
+- **Version**: 1.7.0
+- **Total modules**: 24 scripts, 26 templates, 10 profiles, 24 references
 - **Tests**: 31 (10 suites, 100% passing)

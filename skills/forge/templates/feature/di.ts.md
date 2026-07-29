@@ -1,10 +1,12 @@
 ```typescript
 // src/features/<domain>/di.ts
-// ── FUENTE ÚNICA de registro DI para el feature <Domain> ──
+// ── FUENTE ÚNICA de registro DI INTERNO del feature <Domain> ──
 //
-// Este archivo es la ÚNICA lugar donde se registran las dependencias de este feature.
-// app.ts importa este archivo para que el contenedor conozca las implementaciones.
-// NUNCA registrar las mismas dependencias en app.ts directamente.
+// Este archivo registra SOLO las dependencias internas del feature:
+// repositorios, use cases, controladores, mappers.
+//
+// Para servicios compartidos con otras features (vía shared/contracts/),
+// crear service-provider.ts en la raíz del feature.
 //
 // Reglas:
 // - Si el repositorio exporta un modelo Mongoose (model()), usar container.register() con useValue.

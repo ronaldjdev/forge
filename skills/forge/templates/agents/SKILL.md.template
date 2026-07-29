@@ -102,7 +102,7 @@ inspect=$(node {{AGENT_PATH}}/scripts/inspect.mjs --json 2>/dev/null)
 | Lenguaje natural | Comando | Archivo |
 |---|---|---|
 | "ayuda", "help", "comandos", "lista", "--help" | `forge --help` | `reference/help.md` |
-| "inicializar", "setup", "empezar" | `forge` | `reference/forge.md` |
+| "inicializar", "setup", "empezar" | `init` | `reference/init.md` |
 | "crear feature", "nuevo dominio" | `cast` | `reference/cast.md` |
 | "inspeccionar", "diagnóstico", "evaluar" | `inspect` | `reference/inspect.md` |
 | "trasladar", "mover", "reestructurar feature" | `relocate` | `reference/relocate.md` |
@@ -145,7 +145,7 @@ Para cada comando, Forge sigue este flujo:
 - Si el lenguaje natural matchea exactamente un comando, ejecutarlo directamente.
 - Si hay ambigüedad, preguntar al usuario: "¿Quieres decir: cast, relocate o reforge?"
 - Si el comando requiere un perfil que no está detectado, preguntar antes de continuar.
-- Si el proyecto no tiene `src/features/` y el comando es `cast`, sugerir `forge` primero.
+- Si el proyecto no tiene `src/features/` y el comando es `cast`, sugerir `init` primero.
 - Si el proyecto no tiene `src/platform/`, ejecutar `bootstrapPlatform()` automáticamente.
 - Si `ARCHITECTURE.md` está desactualizado (fecha de auditoría > 7 días), sugerir `forge inscribe`.
 - Todos los resultados se muestran con severidades: `[CRITICAL]`, `[ERROR]`, `[WARNING]`, `[INFO]`, `[SUGGESTION]`.

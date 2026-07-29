@@ -1,5 +1,8 @@
 # Forge
 
+> ⚠️ **Este comando ha sido reemplazado por `init`.**  
+> Usa `init` para inicializar el proyecto con Pre-Init Discovery obligatorio.
+
 Inicializa un proyecto para trabajar con Forge como Backend Architecture Operating System.
 
 ## Cuándo usarlo

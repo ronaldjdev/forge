@@ -1,5 +1,5 @@
 ---
-description: Forge — Backend Architecture OS. Comandos: forge, cast, inspect, assay, quench, chain, graph, armorer, inscribe, smelt, relocate, reforge, temper.
+description: Forge — Backend Architecture OS. Comandos: init, forge, cast, inspect, assay, quench, chain, graph, armorer, inscribe, smelt, relocate, reforge, temper.
 agent: build
 ---
 
@@ -9,7 +9,7 @@ Si el subcomando NO tiene flags en $ARGUMENTS y tiene flags disponibles (ver tab
 
 | Comando | Flags disponibles |
 |---------|------------------|
-| `forge` | `--force` |
+| `init` | Sin flags (Pre-Init Discovery obligatorio) |
 | `cast` | Sin flags (pide nombre del feature interactivamente) |
 | `inspect` | `--json`, `--diff`, `--full`, `--summary`, `--severity=<nivel>`, `--force` |
 | `assay` | `--persona=<id>`, `--json`, `--save`, `history` |
@@ -25,21 +25,26 @@ Si el subcomando NO tiene flags en $ARGUMENTS y tiene flags disponibles (ver tab
 
 ## Build
 
-### forge
+### init
 
-Inicializa el proyecto arquitectónicamente con configuración persistente.
+Inicializa el proyecto con **Pre-Init Discovery obligatorio**. No ejecuta bootstrap ni migra código sin antes preguntar al usuario cómo desea operar.
 
-1. `node {{AGENT_PATH}}/scripts/context.mjs` — detectar stack actual
-2. `node {{AGENT_PATH}}/scripts/bootstrap.mjs` — crear platform/, shared/, infra/
-3. Crear `src/features/` — si no existe
-4. `node {{AGENT_PATH}}/scripts/forge-config.mjs --init` — crear `.forge/config.json` + `.forge/state.json`
-5. `node {{AGENT_PATH}}/scripts/forge-config.mjs --update` — detectar y persistir perfil
-6. Verificar `tsconfig.json` — agregar `experimentalDecorators` y `emitDecoratorMetadata` si falta
-7. `node {{AGENT_PATH}}/scripts/armorer.mjs` — ownership
-8. `node {{AGENT_PATH}}/scripts/graph.mjs` — grafo arquitectónico
-9. `node {{AGENT_PATH}}/scripts/chain.mjs` — dependencias multi-capa
-10. `node {{AGENT_PATH}}/scripts/detect.mjs --summary` — auditoría base
-11. `node {{AGENT_PATH}}/scripts/architecture.mjs` — generar `ARCHITECTURE.md`
+1. **Pre-Init Discovery** — preguntar al usuario: modelo operativo, equipo, BD, tipo de proyecto, dominios, legacy
+2. Según respuestas, mostrar referencias relevantes y confirmar plan
+3. `node {{AGENT_PATH}}/scripts/context.mjs` — detectar stack actual
+4. `node {{AGENT_PATH}}/scripts/bootstrap.mjs` — crear platform/, shared/, infra/
+5. Crear `src/features/` — si no existe
+6. `node {{AGENT_PATH}}/scripts/forge-config.mjs --init` — crear `.forge/config.json` + `.forge/state.json` (con respuestas del discovery)
+7. `node {{AGENT_PATH}}/scripts/forge-config.mjs --update` — detectar y persistir perfil
+8. Verificar `tsconfig.json` — agregar `experimentalDecorators` y `emitDecoratorMetadata` si falta
+9. `node {{AGENT_PATH}}/scripts/armorer.mjs` — ownership
+10. `node {{AGENT_PATH}}/scripts/graph.mjs` — grafo arquitectónico
+11. `node {{AGENT_PATH}}/scripts/chain.mjs` — dependencias multi-capa
+12. `node {{AGENT_PATH}}/scripts/detect.mjs --summary` — auditoría base
+13. `node {{AGENT_PATH}}/scripts/architecture.mjs` — generar `ARCHITECTURE.md`
+14. Marcar `initCompleted: true` en `.forge/config.json`
+15. Si el usuario indicó código legacy, sugerir `forge relocate`
+16. Si el proyecto está listo, sugerir `forge cast`
 
 ### cast
 
